@@ -161,16 +161,27 @@ function receiveTrackpadConfig(data) {
 
 // Function to periodically receive data from the device at 1-second intervals
 const startPeriodicReceive = (device) => {
-    const id = encodeDeviceId(device)
+    const id = encodeDeviceId(device);
+    
+    // Clear any existing interval
     if (receiveIntervals[id]) {
-        clearInterval(receiveIntervals[id])
+        clearInterval(receiveIntervals[id]);
+        receiveIntervals[id] = null;
     }
     
     receiveIntervals[id] = setInterval(() => {
-        if (kbd[id] && connectKbd[id] && !isReceiving[id]) {            
-            writeCommand(device, { id: commandId.customGet })
+        // Only send command if device is properly connected and not already receiving
+        if (!kbd[id] || !connectKbd[id] || isReceiving[id]) {
+            return;
         }
-    }, 1000)
+        
+        try {
+            writeCommand(device, { id: commandId.customGet })
+                .catch(err => console.error(`Periodic receive error for device ${id}:`, err));
+        } catch (err) {
+            console.error(`Error setting up periodic receive for device ${id}:`, err);
+        }
+    }, 1000);
 }
 
 // Function to set the pomodoro editing state
@@ -210,35 +221,42 @@ const addKbd = (device) => {
 }
 
 const start = async (device) => {
+    if (!device) {
+        throw new Error("Device information is required");
+    }
+    
     try {
         addKbd(device);
         const id = encodeDeviceId(device);
-        if(!connectKbd[id]){
-            try {
-                connectKbd[id] = {
-                    config: {},
-                    deviceType: "keyboard",
-                    gpkRCVersion: 0,
-                    connected: true,
-                };
-                isReceiving[id] = false;
-                activeTabPerDevice[id] = "mouse";
-                
+        
+        if (!connectKbd[id]) {
+            connectKbd[id] = {
+                config: {},
+                deviceType: "keyboard",
+                gpkRCVersion: 0,
+                connected: true,
+            };
+            isReceiving[id] = false;
+            activeTabPerDevice[id] = "mouse";
+            
+            if (kbd[id]) {
                 kbd[id].on('error', (err) => {
+                    console.error(`Device error: ${id}`, err);
                     stop(device);
                 });
                 
                 kbd[id].on('data', buffer => {
                     try {
-                        const gpkRCVersion = buffer.toString()
-                        const identifier = buffer.slice(0, 6).toString();   
-                        if(identifier === "gpktps") {
+                        const gpkRCVersion = buffer.toString();
+                        const identifier = buffer.slice(0, 6).toString();
+                        
+                        if (identifier === "gpktps") {
                             const receivedConfig = receiveTrackpadConfig(buffer);
                             connectKbd[id].config = receivedConfig;
                             connectKbd[id].connected = true;
                             connectKbd[id].gpkRCVersion = 1;
-                            const changeDeviceType = connectKbd[id].deviceType !== "trackpad"
-                            if (global.mainWindow && changeDeviceType) {
+                            
+                            if (global.mainWindow && connectKbd[id].deviceType !== "trackpad") {
                                 connectKbd[id].deviceType = "trackpad";
                                 global.mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
@@ -246,11 +264,10 @@ const start = async (device) => {
                                     gpkRCVersion: 1,
                                     deviceType: "trackpad",
                                 });
-                            }                    
+                            }
                             isReceiving[id] = false;
-                        } else if(connectKbd[id].deviceType !== "trackpad" && gpkRCVersion.match(/gpk_rc_1/)){
-                            const changeVersion = connectKbd[id].gpkRCVersion === 0
-                            if (global.mainWindow && changeVersion) {
+                        } else if (connectKbd[id].deviceType !== "trackpad" && gpkRCVersion.match(/gpk_rc_1/)) {
+                            if (global.mainWindow && connectKbd[id].gpkRCVersion === 0) {
                                 connectKbd[id].gpkRCVersion = 1;
                                 global.mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
@@ -262,25 +279,37 @@ const start = async (device) => {
                             isReceiving[id] = false;
                         }
                     } catch (err) {
+                        console.error(`Error processing device data: ${id}`, err);
                         isReceiving[id] = false;
                     }
                 });
                 
                 // Start periodic data reception
-                startPeriodicReceive(device, commandId);
+                startPeriodicReceive(device);
                 
                 // Get initial configuration
-                writeCommand(device, { id: commandId.customGet });
-            } catch (err) {
-                return;
+                try {
+                    await writeCommand(device, { id: commandId.customGet });
+                } catch (cmdErr) {
+                    console.error(`Failed to get initial config: ${id}`, cmdErr);
+                }
             }
         } else {
             // Reset receiving flag if connection already exists
             isReceiving[id] = false;
+            
             // Retrieve configuration even if connection already exists
-            writeCommand(device, { id: commandId.customGet });
+            try {
+                await writeCommand(device, { id: commandId.customGet });
+            } catch (cmdErr) {
+                console.error(`Failed to refresh config: ${id}`, cmdErr);
+            }
         }
+        
+        return connectKbd[id];
     } catch (err) {
+        console.error("Error starting device:", err);
+        throw err;
     }
 }
 
@@ -301,49 +330,65 @@ const stop = (device) => {
 }
 
 const _close = (id) => {
-    try{
-        kbd[id].close()
-    } catch (e) {
+    if (!kbd[id]) {
+        return false;
+    }
+    
+    try {
+        kbd[id].close();
+        return true;
+    } catch (err) {
+        console.error(`Error closing device ${id}:`, err);
+        return false;
     }
 }
 
 const close = () => {
-    if(kbd) {
-        Object.keys(kbd).forEach(id => {
-            _close(id)
-            // Clear the interval
-            if (receiveIntervals[id]) {
-                clearInterval(receiveIntervals[id])
-                receiveIntervals[id] = undefined
-            }
-        })
+    if (!kbd) {
+        return;
     }
+    
+    Object.keys(kbd).forEach(id => {
+        _close(id);
+        
+        if (receiveIntervals[id]) {
+            clearInterval(receiveIntervals[id]);
+            receiveIntervals[id] = null;
+        }
+    });
 }
 
 const writeCommand = async (device, command) => {
+    const id = encodeDeviceId(device);
+    addKbd(device);
+    
+    if (!kbd[id]) {
+        throw new Error(`No keyboard connection found for device ${id}`);
+    }
+    
     try {
-        const id = encodeDeviceId(device);
-        addKbd(device);
-        if (kbd[id]) {
-            // If the command is a custom command, set the ID to customSet
-            const bytes = commandToBytes(command);
-            await kbd[id].write(bytes);
-            // If write is successful, ensure connection state is updated
-            if (connectKbd[id]) {
-                connectKbd[id].connected = true;
-                // Notify main process of connection state change for specific commands
-                if (global.mainWindow && (command.id === commandId.customGet || command.id === commandId.customSave)) {
-                    global.mainWindow.webContents.send("deviceConnectionStateChanged", {
-                        deviceId: id,
-                        connected: true,
-                        gpkRCVersion: connectKbd[id].gpkRCVersion,
-                        deviceType: connectKbd[id].deviceType,
-                    });
-                }
-            }   
+        const bytes = commandToBytes(command);
+        await kbd[id].write(bytes);
+        
+        if (connectKbd[id]) {
+            connectKbd[id].connected = true;
+            
+            if (global.mainWindow && 
+                (command.id === commandId.customGet || 
+                 command.id === commandId.customSave || 
+                 command.id === commandId.gpkRCVersion)) {
+                global.mainWindow.webContents.send("deviceConnectionStateChanged", {
+                    deviceId: id,
+                    connected: true,
+                    gpkRCVersion: connectKbd[id].gpkRCVersion,
+                    deviceType: connectKbd[id].deviceType,
+                });
+            }
         }
+        return true;
     } catch (err) {
         console.error("Error writing command:", err);
+        throw err;
     }
 }
 
@@ -410,39 +455,47 @@ const startWindowMonitoring = async (ActiveWindow) => {
 
 // Switch layers based on active application
 const checkAndSwitchLayer = (appName) => {
-    if (!appName) return;
+    if (!appName || !settingsStore) return;
     
     Object.keys(connectKbd).forEach(id => {
         const device = connectKbd[id];
-        if (!settingsStore || !device || !device.connected) return;
+        if (!device || !device.connected) return;
     
         const autoLayerSettings = settingsStore.get('autoLayerSettings') || {};
-        
-        if (!autoLayerSettings[id]) return;
-                
         const settings = autoLayerSettings[id];
-        if (settings && settings.enabled && Array.isArray(settings.layerSettings) && settings.layerSettings.length > 0) {
-            // Find matching setting
-            const matchingSetting = settings.layerSettings.find(s => s.appName === appName);
         
-            const deviceInfo = parseDeviceId(id);
-            if (deviceInfo) {
-                
-                if (!currentLayers[id]) {
-                    currentLayers[id] = 0;
-                }
-                
-                const targetLayer = matchingSetting ? (matchingSetting.layer || 0) : 0;
-                // Only issue switch command if current layer is different
-                if (currentLayers[id] !== targetLayer) {
-                    writeCommand(deviceInfo, {
-                        id: commandId.switchLayer,
-                        data: [targetLayer] 
-                    });
-                    
-                    // Update current layer
+        if (!settings || !settings.enabled || !Array.isArray(settings.layerSettings) || !settings.layerSettings.length) {
+            return;
+        }
+        
+        // Find matching setting for the current application
+        const matchingSetting = settings.layerSettings.find(s => s.appName === appName);
+        const deviceInfo = parseDeviceId(id);
+        
+        if (!deviceInfo) return;
+        
+        // Initialize current layer tracking if needed
+        if (currentLayers[id] === undefined) {
+            currentLayers[id] = 0;
+        }
+        
+        // Determine target layer (0 is default if no matching setting)
+        const targetLayer = matchingSetting ? (matchingSetting.layer || 0) : 0;
+        
+        // Only switch if current layer is different
+        if (currentLayers[id] !== targetLayer) {
+            try {
+                writeCommand(deviceInfo, {
+                    id: commandId.switchLayer,
+                    data: [targetLayer] 
+                }).then(() => {
+                    // Update current layer after successful switch
                     currentLayers[id] = targetLayer;
-                }
+                }).catch(err => {
+                    console.error(`Error switching layer for device ${id}:`, err);
+                });
+            } catch (err) {
+                console.error(`Failed to initiate layer switch for device ${id}:`, err);
             }
         }
     });
