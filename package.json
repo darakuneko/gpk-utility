@@ -1,0 +1,86 @@
+{
+  "license": "MIT",
+  "scripts": {
+    "build": "rm -rf ./public/build && rm -rf ./build && rm -rf ./dist && npx webpack --config webpack.config.cjs",
+    "build:win": "del /s /q public\\build && del /s /q build && del /s /q dist && npx webpack --config webpack.config.cjs",
+    "start": "npx webpack --config webpack.config.cjs && npx electron .",
+    "start:dev": "NODE_ENV=development npx webpack --config webpack.config.cjs && npx electron .",
+    "dist:win": "npm run build:win && electron-builder -w",
+    "dist:mac": "npm run build  && electron-builder -m",
+    "dist:linux": "npm run build && electron-builder -l"
+  },
+  "name": "gpk_utility",
+  "version": "1.0.0",
+  "description": "GPK Utility",
+  "homepage": "https://github.com/darakuneko",
+  "author": {
+    "name": "darakuneko",
+    "email": "tvkids@gmail.com"
+  },
+  "type": "module",
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "css-loader": "^7.1.2",
+    "electron": "32.1.0",
+    "electron-builder": "25.0.5",
+    "postcss": "^8.5.3",
+    "postcss-import": "^16.1.0",
+    "postcss-loader": "^7.3.4",
+    "style-loader": "^3.3.3",
+    "tailwindcss": "^3.3.5",
+    "webpack-cli": "5.1.4"
+  },
+  "main": "./index.js",
+  "dependencies": {
+    "@babel/core": "7.25.2",
+    "@babel/preset-env": "7.25.4",
+    "@babel/preset-react": "7.24.7",
+    "@electron/notarize": "^2.4.0",
+    "@emotion/babel-preset-css-prop": "^11.12.0",
+    "@emotion/react": "^11.14.0",
+    "@paymoapp/active-window": "^2.1.2",
+    "active-win": "^9.0.0",
+    "babel-loader": "9.2.1",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.4.5",
+    "electron-store": "^10.0.1",
+    "node-hid": "3.1.0",
+    "node-loader": "2.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "webpack": "5.94.0"
+  },
+  "build": {
+    "productName": "GPK Utility",
+    "appId": "app.darakuneko.gpk_utility",
+    "afterSign": "notarize.cjs",
+    "npmRebuild": false,
+    "files": [
+      "public/**/*",
+      "icons/*",
+      "index.js",
+      "preload.cjs",
+      "gpkrc.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icons/256x256.ico"
+    },
+    "mac": {
+      "icon": "icons/512x512.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "category": "public.app-category.productivity",
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "icons"
+    }
+  }
+}

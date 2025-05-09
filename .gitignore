@@ -1,0 +1,7 @@
+/.env
+/.idea
+node_modules
+/dist
+yarn.lock
+/public/build/
+.github
