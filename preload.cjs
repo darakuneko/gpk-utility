@@ -31,7 +31,7 @@ const command = {
         connectDevices = devices
     },
     exportFile: async (data) => await ipcRenderer.invoke('exportFile', data),
-    importFile: async (fn) => await ipcRenderer.invoke('importFile', fn ),
+    importFile: async () => await ipcRenderer.invoke('importFile'),
     setActiveTab: async (device, tabName) => await ipcRenderer.invoke('setActiveTab', device, tabName),
     setEditingPomodoro: async (device, isEditing) => await ipcRenderer.invoke('setEditingPomodoro', device, isEditing),
     startWindowMonitoring: async () => await ipcRenderer.invoke('startWindowMonitoring'),
@@ -47,153 +47,176 @@ const keyboardSendLoop = async () => {
        isPolling = true;
        
        const kbdList = await command.getKBDList();
-       
-       // Create a set of device IDs that are currently physically connected
        const connectedIds = new Set(kbdList.map(device => device.id));
        
-       // First update existing devices connectivity status
-       // Mark devices as disconnected if they no longer appear in kbdList
+       // Update connection status for existing devices
        connectDevices = connectDevices.map(device => {
-           // Check if the device is in the current kbdList
            const isConnected = connectedIds.has(device.id);
            if (!isConnected && device.connected) {
-               // Device was connected but is now disconnected
-               // Notify main process about disconnection
                ipcRenderer.send('deviceDisconnected', device.id);
-               
                return {
                    ...device,
                    connected: false,
-                   config: {} // Clear config for disconnected devices
+                   config: {}
                };
            }
            return device;
        });
        
-       // Add new devices that aren't in our tracking list yet
-       if (kbdList && kbdList.length > 0) {
-           kbdList.forEach(device => {
-               if (!connectDevices.find(cd => cd.id === device.id)) {
-                   connectDevices.push(device);
-               }
-           });
-       }
+       // Add new devices
+       kbdList.forEach(device => {
+           if (!connectDevices.find(cd => cd.id === device.id)) {
+               connectDevices.push(device);
+           }
+       });
        
-       // Force config update on connected devices periodically
        const currentTime = Date.now();
        const timeSinceLastPoll = currentTime - lastPollingTime;
-       const shouldForceUpdate = timeSinceLastPoll >= 5000; // Force update every 5 seconds
+       const shouldForceUpdate = timeSinceLastPoll >= 5000;
 
-       const devicePromises = connectDevices.map(async (cd, i) => {
-           // Skip processing for already marked disconnected devices
-           if (!cd.connected && !connectedIds.has(cd.id)) {
-               return cd;
+       // Process each device
+       const updatedDevices = await Promise.all(connectDevices.map(async (device, index) => {
+           // Skip disconnected devices that aren't in current list
+           if (!device.connected && !connectedIds.has(device.id)) {
+               return device;
            }
            
-           const isDeviceActive = isSliderActive && activeSliderDeviceId === cd.id;
-           let connectKbd = await command.getConnectKbd(cd.id);
-           if(!connectKbd && cd.connected) {
-               // Device appears disconnected
-               connectDevices[i].connected = false;
-               connectDevices[i].config = {};
-               return connectDevices[i];
-           } 
-           else if(connectedIds.has(cd.id) && (!connectKbd || !connectKbd.connected || !cd.connected)) {
-               // Device is physically connected but not initialized in our system
+           const isDeviceActive = isSliderActive && activeSliderDeviceId === device.id;
+           const connectKbd = await command.getConnectKbd(device.id);
+           
+           // Handle disconnected device
+           if (!connectKbd && device.connected) {
+               return {
+                   ...device,
+                   connected: false,
+                   config: {}
+               };
+           }
+           
+           // Handle device that needs initialization
+           if (connectedIds.has(device.id) && (!connectKbd || !connectKbd.connected || !device.connected)) {
+               const updatedDevice = { ...device };
+               
                if (!connectKbd) {
-                   await command.start(cd);
-                   connectKbd = await command.getConnectKbd(cd.id);
+                   await command.start(device);
                }
                
-               if (connectKbd) {
-                   connectDevices[i].connected = true;
-                   try {
-                       await command.getConfig(connectDevices[i]);
-                   } catch (e) {
-                   }
+               updatedDevice.connected = true;
+               
+               try {
+                   await command.getConfig(updatedDevice);
+               } catch (error) {
+                   console.error(`Error getting config for device: ${device.id}`, error);
                }
-               return connectDevices[i];
-           } 
-           else if(connectKbd && connectKbd.config) {
-                const connectKbd_changed = connectKbd.config.changed;
-                const connectKbd_oledSettings_enabled = connectKbd.config?.oledSettings?.enabled === true
-                const connectKbd_pomodoro_timer_active = connectKbd.config?.pomodoro_timer_active === 1
-                const connectDevices_pomodoro_timer_active = connectDevices[i].config?.pomodoro_timer_active === 1
-
-               // Update pomodoro timer related information even during slider operation
-               if(connectKbd_oledSettings_enabled) { 
-                    await command.dateTimeOledWrite(connectDevices[i]);
-                }
+               
+               return updatedDevice;
+           }
+           
+           // Handle connected device with configuration
+           if (connectKbd && connectKbd.config) {
+               const updatedDevice = { ...device };
+               const connectKbd_changed = connectKbd.config.changed;
+               const connectKbd_oledSettings_enabled = connectKbd.config?.oledSettings?.enabled === true;
+               const connectKbd_pomodoro_timer_active = connectKbd.config?.pomodoro_timer_active === 1;
+               const device_pomodoro_timer_active = device.config?.pomodoro_timer_active === 1;
+               
+               // Update OLED even during slider operation
+               if (connectKbd_oledSettings_enabled) {
+                   await command.dateTimeOledWrite(device);
+               }
+               
+               // Update pomodoro timer state even during slider operation
                if (connectKbd_pomodoro_timer_active) {
-                   if (connectDevices_pomodoro_timer_active) {
-                       connectDevices[i].config.pomodoro_minutes = connectKbd.config.pomodoro_minutes;
-                       connectDevices[i].config.pomodoro_seconds = connectKbd.config.pomodoro_seconds;
-                       connectDevices[i].config.pomodoro_state = connectKbd.config.pomodoro_state;
-                       connectDevices[i].config.pomodoro_current_cycle = connectKbd.config.pomodoro_current_cycle;
+                   if (device_pomodoro_timer_active) {
+                       // Update only timer-related fields
+                       updatedDevice.config = {
+                           ...updatedDevice.config,
+                           pomodoro_minutes: connectKbd.config.pomodoro_minutes,
+                           pomodoro_seconds: connectKbd.config.pomodoro_seconds,
+                           pomodoro_state: connectKbd.config.pomodoro_state,
+                           pomodoro_current_cycle: connectKbd.config.pomodoro_current_cycle
+                       };
                    } else {
-                       connectDevices[i].config = { ...connectKbd.config };
+                       // Full config update
+                       updatedDevice.config = { ...connectKbd.config };
                        if (connectKbd_changed) {
-                           const originalChanged = connectDevices[i].config.changed;
-                           connectDevices[i].config = { ...connectKbd.config, changed: originalChanged };
+                           const originalChanged = updatedDevice.config.changed;
+                           updatedDevice.config = { 
+                               ...connectKbd.config, 
+                               changed: originalChanged 
+                           };
                        }
                    }
                }
                
-               // Skip updating device during slider operation
+               // Skip updating during slider operation
                if (isDeviceActive) {
-                   connectDevices[i].connected = connectKbd.connected;
-                   return connectDevices[i];
+                   updatedDevice.connected = connectKbd.connected;
+                   return updatedDevice;
                }
                
-               // Keep changed state if device config is modified
+               // Keep changed state if modified
                if (connectKbd_changed) {
-                   return connectDevices[i];
+                   return updatedDevice;
                }
                
-               // Periodically force config update even if pomodoro is in editing mode
-               if (shouldForceUpdate && cd.connected) {
+               // Force config update periodically
+               if (shouldForceUpdate && device.connected) {
                    try {
-                       await command.getConfig(connectDevices[i]);
-                       connectKbd = await command.getConnectKbd(cd.id);
-                   } catch (e) {
+                       await command.getConfig(updatedDevice);
+                       // Get fresh data after forced update
+                       const freshKbd = await command.getConnectKbd(device.id);
+                       if (freshKbd && freshKbd.config) {
+                           updatedDevice.config = { ...freshKbd.config, changed: false };
+                       }
+                   } catch (error) {
+                       console.error(`Error forcing config update: ${device.id}`, error);
+                   }
+               } else {
+                   // Normal update
+                   updatedDevice.connected = true;
+                   updatedDevice.config = { ...connectKbd.config, changed: false };
+                   
+                   if (updatedDevice.config.init === undefined) {
+                       updatedDevice.config.init = 1;
                    }
                }
                
-               connectDevices[i].connected = true;
-               connectDevices[i].config = { ...connectKbd.config };
-               
-               if (connectDevices[i].config.init === undefined) {
-                   connectDevices[i].config.init = 1;
-               }
-
-               connectDevices[i].config.changed = false;
-
-               return connectDevices[i];
-           } 
-           else if(connectDevices[i] && connectDevices[i].config.changed) {
-
-               await command.sendDeviceConfig(connectDevices[i]);
-               const updatedConfig = await command.getConfig(connectDevices[i]);
-               if (updatedConfig && updatedConfig.config) {
-                   connectDevices[i].config = { ...updatedConfig.config };
-               }
-               connectDevices[i].config.changed = false;
-               return connectDevices[i];
+               return updatedDevice;
            }
-           return connectDevices[i];
-       });
+           
+           // Handle device with local changes
+           if (device && device.config && device.config.changed) {
+               const updatedDevice = { ...device };
+               
+               try {
+                   await command.sendDeviceConfig(device);
+                   const updatedConfig = await command.getConfig(device);
+                   
+                   if (updatedConfig && updatedConfig.config) {
+                       updatedDevice.config = { ...updatedConfig.config, changed: false };
+                   } else {
+                       updatedDevice.config.changed = false;
+                   }
+               } catch (error) {
+                   console.error(`Error sending device config: ${device.id}`, error);
+                   updatedDevice.config.changed = false;
+               }
+               
+               return updatedDevice;
+           }
+           
+           return device;
+       }));
        
-       const updatedDevices = await Promise.all(devicePromises);
-       
-       // Always notify of device changes to ensure UI gets updated
+       // Update and notify
        connectDevices = updatedDevices;
        await command.changeConnectDevice(connectDevices);
        
        isPolling = false;
        return connectDevices;
    } catch (err) {
-        console.error("Error in keyboardSendLoop:", err);
-    
+       console.error("Error in keyboardSendLoop:", err);
        isPolling = false;
        return connectDevices;
    }
@@ -307,26 +330,52 @@ contextBridge.exposeInMainWorld("api", {
     setConnectDevices: (device) => command.setConnectDevices(device),
     exportFile: async () => await command.exportFile(connectDevices),
     importFile: async () => {
-        const dat = await command.importFile()
-        if(dat) {
+        try {
+            const dat = await command.importFile();
+            if (!dat) {
+                return { success: false, message: "No file was imported" };
+            }
+            
             try {
-                const json = JSON.parse(dat)
-                connectDevices = await Promise.all(connectDevices.map(async (cd) => {
-                   const j = json.find((j) =>
+                const json = JSON.parse(dat);
+                
+                if (!Array.isArray(json)) {
+                    return { success: false, error: "Invalid file format: JSON array expected" };
+                }
+                
+                const updatedDevices = await Promise.all(connectDevices.map(async (cd) => {
+                    const matchingConfig = json.find((j) =>
                         j.id === cd.id &&
                         j.manufacturer === cd.manufacturer &&
                         j.product === cd.product &&
                         j.productId === cd.productId &&
-                        j.vendorId === cd.vendorId)
-                   if(j){
-                       await command.sendDeviceConfig(j)
-                       return j
-                   }
-                   return cd
-               }))
-               await command.changeConnectDevice(connectDevices)
-            } catch (e) {
+                        j.vendorId === cd.vendorId
+                    );
+                    
+                    if (matchingConfig) {
+                        try {
+                            await command.sendDeviceConfig(matchingConfig);
+                            return matchingConfig;
+                        } catch (err) {
+                            console.error(`Error applying config to device ${cd.id}:`, err);
+                            return cd;
+                        }
+                    }
+                    
+                    return cd;
+                }));
+                
+                connectDevices = updatedDevices;
+                await command.changeConnectDevice(connectDevices);
+                
+                return { success: true, devicesUpdated: updatedDevices.length };
+            } catch (parseErr) {
+                console.error("JSON parse error:", parseErr);
+                return { success: false, error: "Invalid JSON format" };
             }
+        } catch (err) {
+            console.error("Import file error:", err);
+            return { success: false, error: err.message || "Unknown error during import" };
         }
     },
     setSliderActive: (active, deviceId = null) => {

@@ -219,22 +219,33 @@ const exportFile = (data) => {
 }
 
 const importFile = async () => {
-    const  result = await dialog.showOpenDialog({
-        title: 'Import Config File',
-        buttonLabel: 'Open',
-        filters: [
-            { name: 'JSON Files', extensions: ['json'] },
-            { name: 'All Files', extensions: ['*'] }
-        ],
-        properties: ['openFile']
-    })
+    try {
+        const result = await dialog.showOpenDialog({
+            title: 'Import Config File',
+            buttonLabel: 'Open',
+            filters: [
+                { name: 'JSON Files', extensions: ['json'] },
+                { name: 'All Files', extensions: ['*'] }
+            ],
+            properties: ['openFile']
+        });
 
-    if (!result.canceled && result.filePaths.length > 0) {
+        if (result.canceled || result.filePaths.length === 0) {
+            return null;
+        }
+        
         const filePath = result.filePaths[0];
-        const file = await fs.readFile(filePath, 'utf-8')
-        return file
+        try {
+            const fileContent = await fs.readFile(filePath, 'utf-8');
+            return fileContent;
+        } catch (readErr) {
+            console.error(`Error reading file ${filePath}:`, readErr);
+            throw new Error(`Failed to read file: ${readErr.message}`);
+        }
+    } catch (err) {
+        console.error("Error in import file dialog:", err);
+        throw err;
     }
-    return undefined
 }
 
 ipcMain.handle('start', async (event, device) => {
@@ -292,8 +303,9 @@ ipcMain.handle('sleep', async (event, msec) => {
 
 ipcMain.handle("sendDeviceConfig", async (e, data) => {
     try {
-        // Convert settings to byte array
-        const byteArray = [];
+        if (!data || !data.config) {
+            throw new Error("Invalid data format: missing config");
+        }
         
         // Validate required properties
         const requiredProps = [
@@ -326,70 +338,37 @@ ipcMain.handle("sendDeviceConfig", async (e, data) => {
         }
         
         // Build byte array
-        const upper_scroll_term = (data.config.scroll_term & 0b1111110000) >> 4;
-        const lower_drag_term = (data.config.drag_term & 0b1111000000) >> 6;
-        const lower_default_speed = (data.config.default_speed & 0b110000) >> 4;
-
-        byteArray[0] = data.config.init | data.config.hf_waveform_number << 1;
-        byteArray[1] = data.config.can_hf_for_layer << 7 |
-            data.config.can_drag << 6 |
-            upper_scroll_term;
-        byteArray[2] = (data.config.scroll_term & 0b0000001111) << 4 | lower_drag_term;
-        byteArray[3] = (data.config.drag_term & 0b0000111111) << 2 |
-            data.config.can_trackpad_layer << 1 |
-            data.config.can_reverse_scrolling_direction;
-        byteArray[4] = data.config.drag_strength_mode << 7 |
-            data.config.drag_strength << 2 |
-            lower_default_speed;
-        byteArray[5] = (data.config.default_speed & 0b001111) << 4 |
-            data.config.scroll_step;
-        byteArray[6] = data.config.can_short_scroll << 7;
-        byteArray[7] = data.config.pomodoro_work_time;
-        byteArray[8] = data.config.pomodoro_break_time;
-        byteArray[9] = data.config.pomodoro_long_break_time;
-        byteArray[10] = data.config.pomodoro_cycles;
-        byteArray[11] = data.config.pomodoro_work_hf_pattern;
-        byteArray[12] = data.config.pomodoro_break_hf_pattern;
-        byteArray[13] = data.config.pomodoro_long_break_hf_pattern;
+        const byteArray = buildConfigByteArray(data.config);
         
-        // Validate byte array
-        for (let i = 0; i < byteArray.length; i++) {
-            if (byteArray[i] === undefined) {
-                throw new Error(`Byte array index ${i} is undefined. Please check the value of the corresponding property.`);
-            }
-        }
-
         // Send settings to device
         await saveDeviceConfig(data, byteArray);
         
-        // Shorten sleep time for immediate reflection of settings changes
-        await sleep(100);
-        
-        // Immediately send settings change notification
+        // Notify about config update
         mainWindow.webContents.send("configUpdated", {
             deviceId: data.id,
             config: data.config,
             identifier: data.identifier
         });
         
-        // If pomodoro-related settings are changed, reset isEditingPomodoro flag
+        // Handle pomodoro-related settings
         const isPomodoroConfig = Object.keys(data.config).some(key => key.startsWith('pomodoro_'));
         if (isPomodoroConfig) {
             setEditingPomodoro(data, false);
-            
-            // Immediately get the latest status after settings change
             await getDeviceConfig(data);
         } else {
-            // Start async task to get the latest settings immediately after change
+            // Get latest settings after changes
             setTimeout(async () => {
                 try {
                     await getDeviceConfig(data);
-                } catch (e) {}
+                } catch (error) {
+                    console.error(`Error refreshing config after update: ${data.id}`, error);
+                }
             }, 150);
         }
         
         return { success: true, config: data.config };
     } catch (error) {
+        console.error("Error in sendDeviceConfig:", error);
         return { success: false, error: error.message };
     }
 })
@@ -576,4 +555,44 @@ ipcMain.on('deviceDisconnected', (event, deviceId) => {
     // Remove the corresponding entry from lastFormattedDateMap
     handleDeviceDisconnect(deviceId);
 });
+
+// Convert config object to byte array for device communication
+const buildConfigByteArray = (config) => {
+    const byteArray = new Array(14);
+    
+    const upper_scroll_term = (config.scroll_term & 0b1111110000) >> 4;
+    const lower_drag_term = (config.drag_term & 0b1111000000) >> 6;
+    const lower_default_speed = (config.default_speed & 0b110000) >> 4;
+
+    byteArray[0] = config.init | config.hf_waveform_number << 1;
+    byteArray[1] = config.can_hf_for_layer << 7 |
+        config.can_drag << 6 |
+        upper_scroll_term;
+    byteArray[2] = (config.scroll_term & 0b0000001111) << 4 | lower_drag_term;
+    byteArray[3] = (config.drag_term & 0b0000111111) << 2 |
+        config.can_trackpad_layer << 1 |
+        config.can_reverse_scrolling_direction;
+    byteArray[4] = config.drag_strength_mode << 7 |
+        config.drag_strength << 2 |
+        lower_default_speed;
+    byteArray[5] = (config.default_speed & 0b001111) << 4 |
+        config.scroll_step;
+    byteArray[6] = config.can_short_scroll << 7;
+    byteArray[7] = config.pomodoro_work_time;
+    byteArray[8] = config.pomodoro_break_time;
+    byteArray[9] = config.pomodoro_long_break_time;
+    byteArray[10] = config.pomodoro_cycles;
+    byteArray[11] = config.pomodoro_work_hf_pattern;
+    byteArray[12] = config.pomodoro_break_hf_pattern;
+    byteArray[13] = config.pomodoro_long_break_hf_pattern;
+    
+    // Validate byte array
+    for (let i = 0; i < byteArray.length; i++) {
+        if (byteArray[i] === undefined) {
+            throw new Error(`Byte array index ${i} is undefined. Please check the value of the corresponding property.`);
+        }
+    }
+    
+    return byteArray;
+}
 
