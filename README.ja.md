@@ -1,7 +1,5 @@
 # GPK Utility
 
-## 利用可能な言語
-
 - [English](./README.md)
 - [日本語](./README.ja.md)
 
