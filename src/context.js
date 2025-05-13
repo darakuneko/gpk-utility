@@ -27,7 +27,7 @@ const reducer = (state, action) => {
             };
             
         case ACTION_TYPES.UPDATE_DEVICE_CONFIG:
-            const { deviceId, config, identifier } = action.payload;
+            const { deviceId, config } = action.payload;
             return {
                 ...state,
                 devices: state.devices.map(device => 
@@ -35,7 +35,6 @@ const reducer = (state, action) => {
                         ? { 
                             ...device, 
                             config: { ...config },
-                            ...(identifier ? { identifier } : {})
                         } 
                         : device
                 )
@@ -76,71 +75,6 @@ export function StateProvider({children}) {
         stateRef.current = state;
     }, [state]);
 
-    // Initial device retrieval from API
-    useEffect(() => {
-        const initState = async () => {
-            try {
-                if (!api) {
-                    dispatch({ type: ACTION_TYPES.SET_INIT, payload: false });
-                    return;
-                }
-                
-                const initialDevices = await api.keyboardSendLoop();
-                
-                if (Array.isArray(initialDevices) && initialDevices.length > 0) {
-                    lastDevicesRef.current = JSON.parse(JSON.stringify(initialDevices));
-                    dispatch({ type: ACTION_TYPES.SET_DEVICES, payload: initialDevices });
-                    dispatch({ type: ACTION_TYPES.SET_INIT, payload: false });
-                } else {
-                    if (deviceInitAttempts.current < maxInitAttempts) {
-                        deviceInitAttempts.current += 1;
-                        setTimeout(initState, 500);
-                    } else {
-                        dispatch({ type: ACTION_TYPES.SET_INIT, payload: false });
-                    }
-                }
-            } catch (error) {
-                dispatch({ type: ACTION_TYPES.SET_INIT, payload: false });
-            }
-        };
-        
-        initState();
-        
-        // changeConnectDevice event handler
-        const handleDeviceChange = (devices) => {
-            if (Array.isArray(devices)) {
-                lastDevicesRef.current = JSON.parse(JSON.stringify(devices));
-                dispatch({ type: ACTION_TYPES.SET_DEVICES, payload: devices });
-            }
-        };
-        
-        if (api && api.on) {
-            api.on("changeConnectDevice", handleDeviceChange);
-        }
-        
-        // Set up periodic synchronization with API
-        const syncInterval = setInterval(() => {
-            if (pendingUpdatesRef.current && api && api.setConnectDevices) {
-                pendingUpdatesRef.current = false;
-                api.setConnectDevices(stateRef.current.devices).catch(err => {
-                });
-            }
-        }, 500);
-        
-        // Cleanup
-        return () => {
-            if (api && api.off) {
-                api.off("changeConnectDevice", handleDeviceChange);
-            }
-            
-            if (apiSyncTimeoutRef.current) {
-                clearTimeout(apiSyncTimeoutRef.current);
-            }
-            
-            clearInterval(syncInterval);
-        };
-    }, []);
-    
     // Create custom handler to batch process state changes
     useEffect(() => {
         const currentJSON = JSON.stringify(state.devices);

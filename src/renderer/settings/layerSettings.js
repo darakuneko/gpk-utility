@@ -297,7 +297,6 @@ const LayerSettings = ({ device, handleChange }) => {
                 <div className="flex items-center mb-4">
                     <div className="flex-1">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">Trackpad Layer</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Enable layer switching by swiping on the trackpad.</p>
                     </div>
                     <div className="ml-4">
                         <CustomSwitch
@@ -315,7 +314,6 @@ const LayerSettings = ({ device, handleChange }) => {
                     <div className="flex items-center mb-4">
                         <div className="flex-1">
                             <h3 className="text-lg font-medium text-gray-900 dark:text-white">Layer Change Haptics</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Configure haptic feedback when changing layers</p>
                         </div>
                     </div>
                     

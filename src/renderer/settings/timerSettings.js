@@ -1,5 +1,6 @@
 import React from "react";
 import { CustomSlider, CustomSelect } from "../../components/CustomComponents.js";
+import { fullHapticOptions } from "../../data/hapticOptions.js";
 
 // Pomodoro active state display component
 const PomodoroActiveDisplay = ({ device, formatTime }) => (
@@ -41,7 +42,7 @@ const PomodoroActiveDisplay = ({ device, formatTime }) => (
 );
 
 // Pomodoro inactive state settings component
-const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd, fullHapticOptions }) => (
+const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => (
   <div>
     <div className="mb-4">
       <h4 className="text-md font-medium mb-2 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-1">Pomodoro Timer</h4>
@@ -131,9 +132,9 @@ const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, han
     <div className="mt-4">
       <h4 className="text-md font-medium mb-2 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-1">Haptic Feedback</h4>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="pt-2 w-full md:w-[30%]">
+        <div className="pt-2 w-full md:w-[48%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
-            <span>Work Start Pattern</span>
+            <span>Work Phase Pattern</span>
           </label>
           <CustomSelect
             id="config-pomodoro_work_hf_pattern"
@@ -142,9 +143,9 @@ const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, han
             options={fullHapticOptions}
           />
         </div>
-        <div className="pt-2 w-full md:w-[30%]">
+        <div className="pt-2 w-full md:w-[48%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
-            <span>Break Start Pattern</span>
+            <span>Break Phase Pattern</span>
           </label>
           <CustomSelect
             id="config-pomodoro_break_hf_pattern"
@@ -153,23 +154,12 @@ const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, han
             options={fullHapticOptions}
           />
         </div>
-        <div className="pt-2 w-full md:w-[30%]">
-          <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
-            <span>Long Break Start Pattern</span>
-          </label>
-          <CustomSelect
-            id="config-pomodoro_long_break_hf_pattern"
-            value={device.config.pomodoro_long_break_hf_pattern}
-            onChange={handleChange("pomodoro_long_break_hf_pattern", device.id)}
-            options={fullHapticOptions}
-          />
-        </div>
       </div>
     </div>
   </div>
 );
 
-const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd, fullHapticOptions, formatTime }) => {
+const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd, formatTime }) => {
   return (
     <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
       {device.config.pomodoro_timer_active ? (
@@ -180,7 +170,6 @@ const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEn
           handleChange={handleChange} 
           handleSliderStart={handleSliderStart} 
           handleSliderEnd={handleSliderEnd}
-          fullHapticOptions={fullHapticOptions}
         />
       )}
     </div>

@@ -1,12 +1,15 @@
 import React from "react";
 import { CustomSwitch, CustomSlider } from "../../components/CustomComponents.js";
+import { useLanguage } from "../../i18n/LanguageContext.js";
 
 const ScrollSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
+  const { t } = useLanguage();
+  
   return (
     <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
       <div className="flex flex-wrap items-center gap-6 mb-3">
         <div className="pt-2 w-[200px]">
-          <label className="block mb-1 text-gray-900 dark:text-white">Reverse Direction</label>
+          <label className="block mb-1 text-gray-900 dark:text-white">{t('scroll.reverseDirection')}</label>
           <CustomSwitch
             id="config-can_reverse_scrolling_direction"
             onChange={handleChange("can_reverse_scrolling_direction", device.id)}
@@ -14,7 +17,7 @@ const ScrollSettings = ({ device, handleChange, handleSliderStart, handleSliderE
           />
         </div>
         <div className="pt-2 w-[200px]">
-          <label className="block mb-1 text-gray-900 dark:text-white">Short Scroll</label>
+          <label className="block mb-1 text-gray-900 dark:text-white">{t('scroll.shortScroll')}</label>
           <CustomSwitch
             id="config-can_short_scroll"
             onChange={handleChange("can_short_scroll", device.id)}
@@ -25,7 +28,7 @@ const ScrollSettings = ({ device, handleChange, handleSliderStart, handleSliderE
       <div className="flex flex-wrap items-center gap-6 mb-6">
         <div className="pt-2 w-[45%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
-            <span>Term</span>
+            <span>{t('scroll.term')}</span>
             <span className="text-sm font-bold ml-2 mr-2">{device.config.scroll_term ? device.config.scroll_term : 0} ms</span>
           </label>
           <CustomSlider
@@ -45,7 +48,7 @@ const ScrollSettings = ({ device, handleChange, handleSliderStart, handleSliderE
         </div>
         <div className="pt-2 w-[45%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
-            <span>Step</span>
+            <span>{t('scroll.scrollStep')}</span>
             <span className="text-sm font-bold ml-2 mr-2">{device.config.scroll_step ? device.config.scroll_step + 1 : "1"} line</span>
           </label>
           <CustomSlider
