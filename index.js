@@ -19,9 +19,10 @@ import {
     startWindowMonitoring,
     getActiveWindows,
     updateAutoLayerSettings,
-    gpkRCVersion,
+    getGpkRCInfo,
     getDeviceConfig,
     saveDeviceConfig,
+    getPomodoroConfig,
     writeTimeToOled
 } from './gpkrc.js'
 import ActiveWindow from '@paymoapp/active-window'
@@ -185,9 +186,9 @@ app.on('ready', () => {
     createTray();
     createWindow();
     
-    if (process.env.NODE_ENV === 'development') {
+    //if (process.env.NODE_ENV === 'development') {
         mainWindow.webContents.openDevTools();
-    }
+    //}
 })
 
 app.on('activate', () => {
@@ -257,41 +258,8 @@ ipcMain.handle('stop', async (event, device) => {
 ipcMain.handle('encodeDeviceId', async (event, device) => await encodeDeviceId(device))
 ipcMain.handle('getKBDList', async (event) => await getKBDList())
 ipcMain.handle('getConnectKbd', async (event, id) => await getConnectKbd(id))
-ipcMain.handle('getConfig', async (event, device) => {
-    // Get settings from the device
-    const result = await getDeviceConfig(device);
-    
-    const id = encodeDeviceId(device);
-    const deviceData = getConnectKbd(id);
-    
-    // If device data exists and settings are available
-    if (deviceData && deviceData.config) {
-        // Integrate auto layer settings from electron-store
-        try {
-            const storedLayerSettings = store.get('autoLayerSettings');
-            const storedOledSettingsSettings = store.get('oledSettings');
-
-            if (storedLayerSettings && storedLayerSettings[id]) {
-                deviceData.config.auto_layer_enabled = storedLayerSettings[id].enabled ? 1 : 0;
-                deviceData.config.auto_layer_settings = storedLayerSettings[id].layerSettings || [];
-            }
-            if (storedOledSettingsSettings && storedOledSettingsSettings[id]) {
-                deviceData.config.oledSettings = storedOledSettingsSettings[id] || [];
-            }
-        } catch (error) {
-            // Do nothing on error
-        }
-        
-        // Notify renderer process
-        mainWindow.webContents.send("pomodoroStateUpdated", {
-            deviceId: id,
-            config: deviceData.config,
-            identifier: deviceData.identifier
-        });
-    }
-    
-    return result;
-})
+ipcMain.handle('getConfig', async (event, device) => await getDeviceConfig(device))
+ipcMain.handle('getPomodoroConfig', async (event, device) => await getPomodoroConfig(device))
 
 ipcMain.on("changeConnectDevice", (e, data) => {
     mainWindow.webContents.send("changeConnectDevice", data)
@@ -301,72 +269,17 @@ ipcMain.handle('sleep', async (event, msec) => {
     await sleep(msec)
 })
 
-ipcMain.handle("sendDeviceConfig", async (e, data) => {
+ipcMain.handle("sendDeviceConfig", async (e, device) => {
     try {
-        if (!data || !data.config) {
-            throw new Error("Invalid data format: missing config");
+        if (!device || !device.config) {
+            throw new Error("Invalid device format: missing config");
         }
-        
-        // Validate required properties
-        const requiredProps = [
-            'init', 'hf_waveform_number', 'can_hf_for_layer', 'can_drag', 
-            'scroll_term', 'drag_term', 'can_trackpad_layer', 'can_reverse_scrolling_direction', 
-            'drag_strength_mode', 'drag_strength', 'default_speed', 'scroll_step', 
-            'can_short_scroll', 'pomodoro_work_time', 
-            'pomodoro_break_time', 'pomodoro_long_break_time', 'pomodoro_cycles', 
-            'pomodoro_work_hf_pattern', 'pomodoro_break_hf_pattern', 'pomodoro_long_break_hf_pattern'
-        ];
-        
-        // Check for missing properties
-        const missingProps = requiredProps.filter(prop => 
-            data.config[prop] === undefined || data.config[prop] === null
-        );
-        
-        if (missingProps.length > 0) {
-            throw new Error(`Missing required properties: ${missingProps.join(', ')}`);
-        }
-        
-        // Ensure all values are numeric type before bit operations
-        const nonNumericProps = requiredProps.filter(prop => 
-            typeof data.config[prop] !== 'number'
-        );
-        
-        if (nonNumericProps.length > 0) {
-            throw new Error(`Non-numeric properties found: ${nonNumericProps.join(', ')} (values: ${
-                nonNumericProps.map(prop => `${prop}=${JSON.stringify(data.config[prop])}`).join(', ')
-            })`);
-        }
-        
-        // Build byte array
-        const byteArray = buildConfigByteArray(data.config);
-        
-        // Send settings to device
-        await saveDeviceConfig(data, byteArray);
-        
-        // Notify about config update
+        await saveDeviceConfig(device, buildConfigByteArray(device.config));    
         mainWindow.webContents.send("configUpdated", {
-            deviceId: data.id,
-            config: data.config,
-            identifier: data.identifier
-        });
-        
-        // Handle pomodoro-related settings
-        const isPomodoroConfig = Object.keys(data.config).some(key => key.startsWith('pomodoro_'));
-        if (isPomodoroConfig) {
-            setEditingPomodoro(data, false);
-            await getDeviceConfig(data);
-        } else {
-            // Get latest settings after changes
-            setTimeout(async () => {
-                try {
-                    await getDeviceConfig(data);
-                } catch (error) {
-                    console.error(`Error refreshing config after update: ${data.id}`, error);
-                }
-            }, 150);
-        }
-        
-        return { success: true, config: data.config };
+            deviceId: device.id,
+            config: device.config
+        });    
+        return { success: true, config: device.config };
     } catch (error) {
         console.error("Error in sendDeviceConfig:", error);
         return { success: false, error: error.message };
@@ -449,9 +362,9 @@ ipcMain.handle('dateTimeOledWrite', async (event, device) => {
     }
 });
 
-ipcMain.handle('gpkRCVersion', async (event, device) => {
+ipcMain.handle('getGpkRCInfo', async (event, device) => {
     try {
-        return await gpkRCVersion(device);;
+        return await getGpkRCInfo(device);
     } catch (error) {
         return { success: false, error: error.message };
     }
@@ -468,6 +381,9 @@ ipcMain.handle('saveOledSettings', async (event, deviceId, enabled) => {
         
         // Save settings
         store.set('oledSettings', currentSettings);
+        
+        // OLEDの設定変更を通知
+        mainWindow.webContents.send("oledSettingsChanged", { deviceId, enabled });
         
         return { success: true };
     } catch (error) {
@@ -558,8 +474,9 @@ ipcMain.on('deviceDisconnected', (event, deviceId) => {
 
 // Convert config object to byte array for device communication
 const buildConfigByteArray = (config) => {
-    const byteArray = new Array(14);
+    if(config.init === undefined) { return }
     
+    const byteArray = new Array(13);
     const upper_scroll_term = (config.scroll_term & 0b1111110000) >> 4;
     const lower_drag_term = (config.drag_term & 0b1111000000) >> 6;
     const lower_default_speed = (config.default_speed & 0b110000) >> 4;
@@ -584,7 +501,6 @@ const buildConfigByteArray = (config) => {
     byteArray[10] = config.pomodoro_cycles;
     byteArray[11] = config.pomodoro_work_hf_pattern;
     byteArray[12] = config.pomodoro_break_hf_pattern;
-    byteArray[13] = config.pomodoro_long_break_hf_pattern;
     
     // Validate byte array
     for (let i = 0; i < byteArray.length; i++) {

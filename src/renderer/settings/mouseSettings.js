@@ -1,13 +1,16 @@
 import React from "react";
 import { CustomSlider } from "../../components/CustomComponents.js";
+import { useLanguage } from "../../i18n/LanguageContext.js";
 
 const MouseSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
+  const { t } = useLanguage();
+  
   return (
     <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
       <div className="flex items-center justify-center mb-3">
         <div className="pt-4 w-full">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
-            <span>Speed</span>
+            <span>{t('mouse.speed')}</span>
             <span className="text-sm font-bold ml-2 mr-2">{device.config.default_speed ? (device.config.default_speed / 10).toFixed(1) : "0"}</span>
           </label>
           <CustomSlider

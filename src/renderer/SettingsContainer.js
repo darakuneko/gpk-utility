@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import SettingEdit from "./settingEdit.js"
 import { useStateContext } from "../context.js"
+import { useLanguage } from "../i18n/LanguageContext.js"
 
 // Hamburger menu icon component
 const HamburgerIcon = () => (
@@ -40,38 +41,45 @@ const LeftMenuItem = ({ active, onClick, children }) => (
   </button>
 )
 
-const getSupportedSettingTabs = (device) => {
+const getSupportedSettingTabs = (device, t) => {
     if (!device) return [];   
-
+    
     const isTrackpad = device.deviceType === "trackpad"
     if (isTrackpad) {
         const eixst_pomodoro_work_time = device.config?.pomodoro_work_time 
         return [
-            { id: "mouse", label: "Mouse" },
-            { id: "scroll", label: "Scroll" },
-            ...(device.product !== "NumNum Bento MAX" ? [{ id: "dragdrop", label: "Drag & Drop" }] : []),
-            { id: "layer", label: "Layer" },
-            ...(eixst_pomodoro_work_time ? [ { id: "timer", label: "Timer" }] : []),
+            { id: "mouse", label: t('tabs.mouse') },
+            { id: "scroll", label: t('tabs.scroll') },
+            ...(device.product !== "NumNum Bento MAX" ? [{ id: "dragdrop", label: t('tabs.dragDrop') }] : []),
+            { id: "layer", label: t('tabs.layer') },
+            { id: "timer", label: t('tabs.timer') }
         ];
     } else {
         return [
-            { id: "layer", label: "Layer" },
-            { id: "oled", label: "OLED" }
+            { id: "layer", label: t('tabs.layer') },
+            { id: "oled", label: t('tabs.oled') }
         ];
     }
 };
 
-const Setting = (() => {
+const SettingsContainer = (() => {
     const {state, dispatch} = useStateContext()
+    const { t, locale, changeLocale } = useLanguage();
     const [activeDeviceId, setActiveDeviceId] = useState(null)
     const [activeSettingTab, setActiveSettingTab] = useState("mouse")
-    const [menuOpen, setMenuOpen] = useState(false) 
+    const [menuOpen, setMenuOpen] = useState(false)
+    const [languageMenuOpen, setLanguageMenuOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [retryCount, setRetryCount] = useState(0)
     const [traySettings, setTraySettings] = useState({
         minimizeToTray: true,
         backgroundStart: false
     })
+
+    // Available languages
+    const availableLanguages = {
+        en: 'English'
+    };
 
     // Filter connected devices only
     const connectedDevices = state.devices ? state.devices.filter(d => d.connected && d.gpkRCVersion === 1) : []
@@ -111,24 +119,8 @@ const Setting = (() => {
                 // If currently selected device is not connected or no device is selected, select the first device
                 if (!currentDeviceIsConnected) {
                     setActiveDeviceId(connectedDevices[0].id);
-                    setActiveSettingTab(getSupportedSettingTabs(connectedDevices[0])[0]?.id || "layer");
+                    setActiveSettingTab(getSupportedSettingTabs(connectedDevices[0], t)[0]?.id || "layer");
                 }
-            } else if (state.devices && state.devices.length > 0 && retryCount < 3) {
-                setRetryCount(prev => prev + 1);
-                setTimeout(() => {
-                    if (window.api && window.api.keyboardSendLoop) {
-                        window.api.keyboardSendLoop().then(devices => {
-                            if (Array.isArray(devices) && devices.some(d => d.connected)) {
-                                dispatch({
-                                    type: "SET_DEVICES",
-                                    payload: devices
-                                });
-                            }
-                        }).catch(err => {
-                            // Error handling
-                        });
-                    }
-                }, 1000);
             } else if (connectedDevices.length === 0 && activeDeviceId) {
                 // Reset activeDeviceId if there are no connected devices
                 setActiveDeviceId(null);
@@ -136,7 +128,7 @@ const Setting = (() => {
         };
         
         checkDevices();
-    }, [connectedDevices, activeDeviceId, state.devices, retryCount, dispatch]);
+    }, [connectedDevices, activeDeviceId, state.devices, retryCount, dispatch, t]);
 
     // Setup listeners for configUpdated event
     useEffect(() => {
@@ -202,6 +194,19 @@ const Setting = (() => {
         }
     }
 
+    // Handle language change
+    const handleLanguageChange = (languageCode) => {
+        changeLocale(languageCode);
+        setLanguageMenuOpen(false);
+        setMenuOpen(false);
+    };
+
+    // Toggle language submenu
+    const toggleLanguageMenu = (e) => {
+        e.stopPropagation();
+        setLanguageMenuOpen(!languageMenuOpen);
+    };
+
     // Get current active device
     const getActiveDevice = () => {
         return connectedDevices.find(d => d.id === activeDeviceId) || null;
@@ -210,14 +215,15 @@ const Setting = (() => {
     // Get setting tabs for current device
     const getSettingTabs = () => {
         const device = getActiveDevice();
-        return getSupportedSettingTabs(device);
+        return getSupportedSettingTabs(device, t);
     }
 
     // Handler to close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuOpen && !event.target.closest('.menu-container')) {
-                setMenuOpen(false)
+                setMenuOpen(false);
+                setLanguageMenuOpen(false);
             }
         }
         
@@ -225,7 +231,7 @@ const Setting = (() => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside)
         }
-    }, [menuOpen])
+    }, [menuOpen]);
 
     // Set active setting tab and notify API
     const handleSettingTabChange = (tabId) => {
@@ -244,7 +250,7 @@ const Setting = (() => {
         return (
             <div className="bg-card-bg dark:bg-card-bg rounded-lg shadow-sm p-8">
                 <div className="text-center text-gray-600 dark:text-gray-400">
-                    <p className="text-lg mb-2">No devices found</p>
+                    <p className="text-lg mb-2">{t('header.noDevices')}</p>
                     <p className="text-sm">
                         Please connect a compatible device and ensure it is recognized by your system.
                     </p>
@@ -257,7 +263,7 @@ const Setting = (() => {
         return (
             <div className="bg-card-bg dark:bg-card-bg rounded-lg shadow-sm p-8">
                 <div className="text-center text-gray-600 dark:text-gray-400">
-                    <p className="text-lg mb-2">No connected devices</p>
+                    <p className="text-lg mb-2">{t('header.connecting')}</p>
                     <p className="text-sm">
                         Please connect a compatible device to configure settings.
                     </p>
@@ -282,7 +288,7 @@ const Setting = (() => {
                             onClick={() => {
                                 setActiveDeviceId(device.id);
                                 // When switching devices, select the first available settings tab for that device
-                                const supportedTabs = getSupportedSettingTabs(device);
+                                const supportedTabs = getSupportedSettingTabs(device, t);
                                 if (supportedTabs.length > 0) {
                                     setActiveSettingTab(supportedTabs[0].id);
                                     window.api.setActiveTab(device, supportedTabs[0].id);
@@ -307,22 +313,53 @@ const Setting = (() => {
                     {/* Dropdown Menu */}
                     {menuOpen && (
                         <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            <MenuItem onClick={handleImport}>Import Settings</MenuItem>
-                            <MenuItem onClick={handleExport}>Export Settings</MenuItem>
+                            {/* Language Settings */}
+                            <div className="relative">
+                                <MenuItem onClick={toggleLanguageMenu}>
+                                    <div className="flex justify-between items-center w-full">
+                                        <span>{t('settings.language')}</span>
+                                        <span className="text-sm text-gray-500">{availableLanguages[locale]}</span>
+                                    </div>
+                                </MenuItem>
+                                
+                                {/* Language Submenu */}
+                                {languageMenuOpen && (
+                                    <div className="absolute left-full top-0 mt-0 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-20 border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                        {Object.entries(availableLanguages).map(([code, name]) => (
+                                            <MenuItem 
+                                                key={code}
+                                                onClick={() => handleLanguageChange(code)}
+                                            >
+                                                <div className="flex items-center">
+                                                    <span className={locale === code ? "font-semibold" : ""}>{name}</span>
+                                                    {locale === code && (
+                                                        <svg className="ml-2 h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                            </MenuItem>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <MenuItem onClick={handleImport}>{t('settings.import')}</MenuItem>
+                            <MenuItem onClick={handleExport}>{t('settings.export')}</MenuItem>
                             <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                             <MenuItem 
                                 isToggle={true} 
                                 isChecked={traySettings.minimizeToTray}
                                 onClick={() => handleTraySettingChange('minimizeToTray', !traySettings.minimizeToTray)}
                             >
-                                Minimize to tray when closed
+                                {t('settings.minimizeToTray')}
                             </MenuItem>
                             <MenuItem 
                                 isToggle={true} 
                                 isChecked={traySettings.backgroundStart}
                                 onClick={() => handleTraySettingChange('backgroundStart', !traySettings.backgroundStart)}
                             >
-                                Start minimized to tray
+                                {t('settings.startInTray')}
                             </MenuItem>
                         </div>
                     )}
@@ -366,4 +403,4 @@ const Setting = (() => {
     )
 })
 
-export default Setting
+export default SettingsContainer

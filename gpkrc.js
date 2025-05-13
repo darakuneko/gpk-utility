@@ -1,3 +1,4 @@
+import { config } from 'dotenv'
 import HID from 'node-hid'
 
 let connectKbd = {}
@@ -16,13 +17,13 @@ let currentLayers = {} // Track current layer for each device
 
 // Command ID definitions
 const commandId = {
-    oledWrite: 103,
-    switchLayer: 114,
-    setOledState: 116,
-    gpkRCVersion: 117,
-    customSet: 118,
-    customGet: 119,
-    customSave: 120,
+    gpkRCPrefix: 0xFA,
+    gpkRCInfo: 0x01,
+    customSetValue: 0x02,
+    customGetValue: 0x03,
+    layerMove: 0x04,
+    oledWrite: 0x05,
+    pomodoroGetValue: 0x06,
 }
 
 const PACKET_PADDING = 64
@@ -38,28 +39,14 @@ const dataToBytes = (data) => {
     return data;
 }
 
-const lengthToBytes = (length) => {
-    const lengthBuffer = new ArrayBuffer(4)
-    const lengthDataView = new DataView(lengthBuffer)
-    lengthDataView.setUint32(0, length, true)
-    return new Uint8Array(lengthBuffer)
-}
-
 const commandToBytes = ({ id, data }) => {
     const bytes = data ? dataToBytes(data) : []
-    let unpadded
-    if (id !== commandId.customSet &&
-        id !== commandId.customGet &&
-        id !== commandId.customSave) {
-        unpadded = [
-            0, id,
-            ...lengthToBytes(bytes.length),
-            ...bytes
-        ]
-    } else {
-        unpadded = [0, id, ...bytes]
-    }
-    
+    const unpadded = [
+        0, 
+        commandId.gpkRCPrefix, 
+        id,
+        ...bytes
+    ]
     const padding = Array(PACKET_PADDING - (unpadded.length % PACKET_PADDING)).fill(0)
     return unpadded.concat(padding)
 }
@@ -127,62 +114,50 @@ function joinDefaultSpeed(a, b) {
     return (lower2Bits << 4) | upper4Bits
 }
 
-function receiveTrackpadConfig(data) {
+function receiveTrackpadConfig(buffer) {
     return {
         init: 1, // Always set to 1 to ensure settings items are displayed
-        hf_waveform_number: (data[6] & 0b11111110) >> 1,
-        can_hf_for_layer: (data[7] & 0b10000000) >> 7,
-        can_drag: (data[7] & 0b01000000) >> 6,
-        scroll_term: joinScrollTerm(data[7], data[8]),
-        drag_term: joinDragTerm(data[8], data[9]),
-        can_trackpad_layer: (data[9] & 0b00000010) >> 1,
-        can_reverse_scrolling_direction: data[9] & 0b00000001,
-        drag_strength_mode: (data[10] & 0b10000000) >> 7,
-        drag_strength: (data[10] & 0b01111100) >> 2,
-        default_speed: joinDefaultSpeed(data[10], data[11]),
-        scroll_step: data[11] & 0b00001111,
-        can_short_scroll: (data[12] & 0b10000000) >> 7,
-        pomodoro_work_time: data[13],
-        pomodoro_break_time: data[14],
-        pomodoro_long_break_time: data[15],
-        pomodoro_cycles: data[16],
-        pomodoro_work_hf_pattern: data[17],
-        pomodoro_break_hf_pattern: data[18],
-        pomodoro_long_break_hf_pattern: data[19],
-        pomodoro_timer_active: (data[20] & 0b10000000) >> 7,
-        pomodoro_state: data[20] & 0b00000011,
-        pomodoro_minutes: data[21],
-        pomodoro_seconds: data[22],
-        pomodoro_current_cycle: data[23],
+        hf_waveform_number: (buffer[2] & 0b11111110) >> 1,
+        can_hf_for_layer: (buffer[3] & 0b10000000) >> 7,
+        can_drag: (buffer[3] & 0b01000000) >> 6,
+        scroll_term: joinScrollTerm(buffer[3], buffer[4]),
+        drag_term: joinDragTerm(buffer[4], buffer[5]),
+        can_trackpad_layer: (buffer[5] & 0b00000010) >> 1,
+        can_reverse_scrolling_direction: buffer[5] & 0b00000001,
+        drag_strength_mode: (buffer[6] & 0b10000000) >> 7,
+        drag_strength: (buffer[6] & 0b01111100) >> 2,
+        default_speed: joinDefaultSpeed(buffer[6], buffer[7]),
+        scroll_step: buffer[7] & 0b00001111,
+        can_short_scroll: (buffer[8] & 0b10000000) >> 7,
+        pomodoro_work_time: buffer[9],
+        pomodoro_break_time: buffer[10],
+        pomodoro_long_break_time: buffer[11],
+        pomodoro_cycles: buffer[12],
+        pomodoro_work_hf_pattern: buffer[13],
+        pomodoro_break_hf_pattern: buffer[14],
+        pomodoro_timer_active: (buffer[15] & 0b10000000) >> 7,
+        pomodoro_state: buffer[15] & 0b00000011,
+        pomodoro_minutes: buffer[16],
+        pomodoro_seconds: buffer[17],
+        pomodoro_current_cycle: buffer[17],
         auto_layer_enabled: 0,
         auto_layer_settings: []
     }
 }
-
-// Function to periodically receive data from the device at 1-second intervals
-const startPeriodicReceive = (device) => {
-    const id = encodeDeviceId(device);
-    
-    // Clear any existing interval
-    if (receiveIntervals[id]) {
-        clearInterval(receiveIntervals[id]);
-        receiveIntervals[id] = null;
+function receivePomodoroConfig(buffer) {
+    return {
+        pomodoro_work_time: buffer[2],
+        pomodoro_break_time: buffer[3],
+        pomodoro_long_break_time: buffer[4],
+        pomodoro_cycles: buffer[5],
+        pomodoro_timer_active: (buffer[6] & 0b10000000) >> 7,
+        pomodoro_state: buffer[6] & 0b00000011,
+        pomodoro_minutes: buffer[7],
+        pomodoro_seconds: buffer[8],
+        pomodoro_current_cycle: buffer[9]
     }
-    
-    receiveIntervals[id] = setInterval(() => {
-        // Only send command if device is properly connected and not already receiving
-        if (!kbd[id] || !connectKbd[id] || isReceiving[id]) {
-            return;
-        }
-        
-        try {
-            writeCommand(device, { id: commandId.customGet })
-                .catch(err => console.error(`Periodic receive error for device ${id}:`, err));
-        } catch (err) {
-            console.error(`Error setting up periodic receive for device ${id}:`, err);
-        }
-    }, 1000);
 }
+
 
 // Function to set the pomodoro editing state
 const setEditingPomodoro = (device, isEditing) => {
@@ -215,9 +190,9 @@ const addKbd = (device) => {
     if (!d || !d.path) return;
     if(!kbd[id]){ 
         kbd[id] = new HID.HID(d.path);
-        const bytes = commandToBytes({id: commandId.gpkRCVersion});
-        kbd[id].write(bytes);
+        kbd[id].write(commandToBytes({id: commandId.gpkRCInfo}));
     }
+    return id;
 }
 
 const start = async (device) => {
@@ -226,9 +201,7 @@ const start = async (device) => {
     }
     
     try {
-        addKbd(device);
-        const id = encodeDeviceId(device);
-        
+        const id = addKbd(device);
         if (!connectKbd[id]) {
             connectKbd[id] = {
                 config: {},
@@ -247,63 +220,80 @@ const start = async (device) => {
                 
                 kbd[id].on('data', buffer => {
                     try {
-                        const gpkRCVersion = buffer.toString();
-                        const identifier = buffer.slice(0, 6).toString();
-                        
-                        if (identifier === "gpktps") {
-                            const receivedConfig = receiveTrackpadConfig(buffer);
-                            connectKbd[id].config = receivedConfig;
+                        if (buffer[0] === commandId.gpkRCPrefix) {
+                            const cmdId = buffer[1];
                             connectKbd[id].connected = true;
-                            connectKbd[id].gpkRCVersion = 1;
-                            
-                            if (global.mainWindow && connectKbd[id].deviceType !== "trackpad") {
-                                connectKbd[id].deviceType = "trackpad";
+                            if (cmdId === commandId.gpkRCInfo) {
+                                const dataOffset = 2;
+                                const version = buffer[dataOffset];
+                                const deviceType = buffer.slice(dataOffset + 1, dataOffset + 13).toString().replace(/\0/g, '');
+                                connectKbd[id].gpkRCVersion = version;
+                                connectKbd[id].deviceType = deviceType;
+                                
+                                // Load OLED settings from store for this device
+                                if (settingsStore) {
+                                    const oledSettings = settingsStore.get('oledSettings') || {};
+                                    if (oledSettings[id] !== undefined) {
+                                        // Add oled_enabled to the config
+                                        if (!connectKbd[id].config) {
+                                            connectKbd[id].config = {};
+                                        }
+                                        connectKbd[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
+                                    }
+                                }
+                                
                                 global.mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
-                                    connected: true,
-                                    gpkRCVersion: 1,
-                                    deviceType: "trackpad",
+                                    connected: connectKbd[id].connected,
+                                    gpkRCVersion: connectKbd[id].gpkRCVersion,
+                                    deviceType: connectKbd[id].deviceType,
+                                    config: connectKbd[id].config
                                 });
-                            }
-                            isReceiving[id] = false;
-                        } else if (connectKbd[id].deviceType !== "trackpad" && gpkRCVersion.match(/gpk_rc_1/)) {
-                            if (global.mainWindow && connectKbd[id].gpkRCVersion === 0) {
-                                connectKbd[id].gpkRCVersion = 1;
+                            } else if (cmdId === commandId.customGetValue) {
+                                connectKbd[id].config = receiveTrackpadConfig(buffer);
+                                
+                                // Preserve OLED settings when receiving other config data
+                                if (settingsStore) {
+                                    const oledSettings = settingsStore.get('oledSettings') || {};
+                                    if (oledSettings[id] !== undefined) {
+                                        connectKbd[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
+                                    }
+                                }
+                                
                                 global.mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
-                                    connected: true,
-                                    gpkRCVersion: 1,
-                                    deviceType: connectKbd[id].deviceType
+                                    connected: connectKbd[id].connected,
+                                    gpkRCVersion: connectKbd[id].gpkRCVersion,
+                                    deviceType: connectKbd[id].deviceType,
+                                    config: connectKbd[id].config
                                 });
-                            }
-                            isReceiving[id] = false;
+                            } else if (cmdId === commandId.pomodoroGetValue) {
+                                const pomodoroConfig = receivePomodoroConfig(buffer);
+                                connectKbd[id].config.pomodoro_work_time= pomodoroConfig.pomodoro_work_time;
+                                connectKbd[id].config.pomodoro_break_time= pomodoroConfig.pomodoro_break_time;
+                                connectKbd[id].config.pomodoro_long_break_time= pomodoroConfig.pomodoro_long_break_time;
+                                connectKbd[id].config.pomodoro_cycles= pomodoroConfig.pomodoro_cycles;
+                                connectKbd[id].config.pomodoro_timer_active= pomodoroConfig.pomodoro_timer_active;    
+                                connectKbd[id].config.pomodoro_state= pomodoroConfig.pomodoro_state;
+                                connectKbd[id].config.pomodoro_minutes= pomodoroConfig.pomodoro_minutes;
+                                connectKbd[id].config.pomodoro_seconds= pomodoroConfig.pomodoro_seconds;
+                                connectKbd[id].config.pomodoro_current_cycle= pomodoroConfig.pomodoro_current_cycle;  
+
+                                global.mainWindow.webContents.send("deviceConnectionStatePomodoroChanged", {
+                                    deviceId: id,
+                                    pomodoroConfig: connectKbd[id].config
+                                });
+                            } 
                         }
                     } catch (err) {
                         console.error(`Error processing device data: ${id}`, err);
-                        isReceiving[id] = false;
                     }
+                    isReceiving[id] = false;
                 });
-                
-                // Start periodic data reception
-                startPeriodicReceive(device);
-                
-                // Get initial configuration
-                try {
-                    await writeCommand(device, { id: commandId.customGet });
-                } catch (cmdErr) {
-                    console.error(`Failed to get initial config: ${id}`, cmdErr);
-                }
             }
         } else {
             // Reset receiving flag if connection already exists
             isReceiving[id] = false;
-            
-            // Retrieve configuration even if connection already exists
-            try {
-                await writeCommand(device, { id: commandId.customGet });
-            } catch (cmdErr) {
-                console.error(`Failed to refresh config: ${id}`, cmdErr);
-            }
         }
         
         return connectKbd[id];
@@ -359,33 +349,10 @@ const close = () => {
 }
 
 const writeCommand = async (device, command) => {
-    const id = encodeDeviceId(device);
-    addKbd(device);
-    
-    if (!kbd[id]) {
-        throw new Error(`No keyboard connection found for device ${id}`);
-    }
-    
+    const id = addKbd(device);
     try {
         const bytes = commandToBytes(command);
-        await kbd[id].write(bytes);
-        
-        if (connectKbd[id]) {
-            connectKbd[id].connected = true;
-            
-            if (global.mainWindow && 
-                (command.id === commandId.customGet || 
-                 command.id === commandId.customSave || 
-                 command.id === commandId.gpkRCVersion)) {
-                global.mainWindow.webContents.send("deviceConnectionStateChanged", {
-                    deviceId: id,
-                    connected: true,
-                    gpkRCVersion: connectKbd[id].gpkRCVersion,
-                    deviceType: connectKbd[id].deviceType,
-                });
-            }
-        }
-        return true;
+        await kbd[id].write(bytes);    
     } catch (err) {
         console.error("Error writing command:", err);
         throw err;
@@ -393,17 +360,11 @@ const writeCommand = async (device, command) => {
 }
 
 // Device config functions
-const getDeviceConfig = async (device) => {
-    try {
-        return await writeCommand(device, { id: commandId.customGet });
-    } catch (error) {
-        throw error;
-    }
-};
+const getDeviceConfig = async (device) => await writeCommand(device, { id: commandId.customGetValue });
 
 const saveDeviceConfig = async (device, data) => {
     try {
-        return await writeCommand(device, { id: commandId.customSave, data });
+        return await writeCommand(device, { id: commandId.customSetValue, data });
     } catch (error) {
         throw error;
     }
@@ -418,39 +379,33 @@ const writeTimeToOled = async (device, formattedDate) => {
     }
 };
 
-// Called when slider operation starts
-const setReceiving = (device, isActive) => {
-    const id = encodeDeviceId(device)
-    if (kbd[id]) {
-        isReceiving[id] = isActive
-    }
-}
+const getPomodoroConfig = async (device) => await writeCommand(device, { id: commandId.pomodoroGetValue });
 
 // Function for monitoring active windows and switching layers
 const startWindowMonitoring = async (ActiveWindow) => {    
-        try {
-            const result = await ActiveWindow.default.getActiveWindow();
-            if (!result) return;
-            const appName = result.application;
-            
-            if (!activeWindows.includes(appName)) {
-                activeWindows.push(appName);
+    try {
+        const result = await ActiveWindow.default.getActiveWindow();
+        if (!result) return;
+        const appName = result.application;
+        
+        if (!activeWindows.includes(appName)) {
+            activeWindows.push(appName);
 
-                if (activeWindows.length > 10) {
-                    activeWindows.shift();
-                }
-                
-                if (mainWindow) {
-                    mainWindow.webContents.send('activeWindow', appName);
-                }
-                
+            if (activeWindows.length > 10) {
+                activeWindows.shift();
             }
-            // Always switch layers based on active application
-            checkAndSwitchLayer(appName);
-        } catch (error) {
-           // Uncomment for debugging   
-           //  console.error("Error in window monitoring:", error);
+            
+            if (mainWindow) {
+                mainWindow.webContents.send('activeWindow', appName);
+            }
+            
         }
+        // Always switch layers based on active application
+        checkAndSwitchLayer(appName);
+    } catch (error) {
+       // Uncomment for debugging   
+       //  console.error("Error in window monitoring:", error);
+    }
 };
 
 // Switch layers based on active application
@@ -486,7 +441,7 @@ const checkAndSwitchLayer = (appName) => {
         if (currentLayers[id] !== targetLayer) {
             try {
                 writeCommand(deviceInfo, {
-                    id: commandId.switchLayer,
+                    id: commandId.layerMove,
                     data: [targetLayer] 
                 }).then(() => {
                     // Update current layer after successful switch
@@ -564,17 +519,18 @@ const updateAutoLayerSettings = (store) => {
     settingsStore = store;
     return true;
 }
-const gpkRCVersion = async (device) => await writeCommand(device, { id: commandId.gpkRCVersion });
+
+// Function to get GPK RC info/version
+const getGpkRCInfo = async (device) => await writeCommand(device, { id: commandId.gpkRCInfo });
 
 // Module exports
 export const getConnectKbd = (id) => connectKbd[id]
 export { getKBD, getKBDList }
 export { start, stop, close }
-export { setReceiving }
 export { setActiveTab, getActiveTab }
 export { setEditingPomodoro, setMainWindow }
 export { startWindowMonitoring, getActiveWindows }
 export { updateAutoLayerSettings }
 export { getSelectedAppSettings, addNewAppToAutoLayerSettings }
 export { encodeDeviceId, parseDeviceId }
-export { gpkRCVersion, getDeviceConfig, saveDeviceConfig, writeTimeToOled }
+export { getGpkRCInfo, getDeviceConfig, saveDeviceConfig, writeTimeToOled, getPomodoroConfig }

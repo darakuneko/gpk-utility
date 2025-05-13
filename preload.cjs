@@ -7,6 +7,26 @@ let activeSliderDeviceId = null;
 let keyboardPollingInterval = null;
 let lastPollingTime = Date.now();
 
+// Function to start keyboard polling at regular intervals
+const startKeyboardPolling = () => {
+    if (keyboardPollingInterval) {
+        clearInterval(keyboardPollingInterval);
+    }
+    
+    // Initial execution
+    keyboardSendLoop();
+    
+    // Set up interval for regular execution (1 second)
+    keyboardPollingInterval = setInterval(async () => {
+        await keyboardSendLoop();
+    }, 1000);
+};
+
+// Initialize polling when the window is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    startKeyboardPolling();
+});
+
 const command = {
     start: async (device) => await ipcRenderer.invoke('start', device),
     stop: async (device) => await ipcRenderer.invoke('stop', device),
@@ -17,16 +37,10 @@ const command = {
     changeConnectDevice: (dat) => ipcRenderer.send("changeConnectDevice", dat),
     getConnectKbd: async (id) => await ipcRenderer.invoke('getConnectKbd', id),
     getConfig: async (device) => await ipcRenderer.invoke('getConfig', device),
-    gpkRCVersion: async (device) => await ipcRenderer.invoke('gpkRCVersion', device),
+    getPomodoroConfig: async (device) => await ipcRenderer.invoke('getPomodoroConfig', device),
+    getGpkRCInfo: async (device) => await ipcRenderer.invoke('getGpkRCInfo', device),
     dateTimeOledWrite: async (device) => await ipcRenderer.invoke('dateTimeOledWrite', device),
-    sendDeviceConfig: async (data) => {
-        try {
-            const result = await ipcRenderer.invoke('sendDeviceConfig', data);
-            return result;
-        } catch (error) {
-            return { success: false, error: error.message };
-        }
-    },
+    sendDeviceConfig: async (device) => await ipcRenderer.invoke('sendDeviceConfig', device),
     setConnectDevices: async (devices) => {
         connectDevices = devices
     },
@@ -40,12 +54,6 @@ const command = {
 
 const keyboardSendLoop = async () => {
    try {
-       if (isPolling) {
-           return connectDevices;
-       }
-       
-       isPolling = true;
-       
        const kbdList = await command.getKBDList();
        const connectedIds = new Set(kbdList.map(device => device.id));
        
@@ -68,20 +76,10 @@ const keyboardSendLoop = async () => {
            if (!connectDevices.find(cd => cd.id === device.id)) {
                connectDevices.push(device);
            }
-       });
-       
-       const currentTime = Date.now();
-       const timeSinceLastPoll = currentTime - lastPollingTime;
-       const shouldForceUpdate = timeSinceLastPoll >= 5000;
+       });       
 
        // Process each device
-       const updatedDevices = await Promise.all(connectDevices.map(async (device, index) => {
-           // Skip disconnected devices that aren't in current list
-           if (!device.connected && !connectedIds.has(device.id)) {
-               return device;
-           }
-           
-           const isDeviceActive = isSliderActive && activeSliderDeviceId === device.id;
+       await Promise.all(connectDevices.map(async (device) => {
            const connectKbd = await command.getConnectKbd(device.id);
            
            // Handle disconnected device
@@ -94,193 +92,33 @@ const keyboardSendLoop = async () => {
            }
            
            // Handle device that needs initialization
-           if (connectedIds.has(device.id) && (!connectKbd || !connectKbd.connected || !device.connected)) {
-               const updatedDevice = { ...device };
-               
-               if (!connectKbd) {
-                   await command.start(device);
+           if (!connectKbd) {
+               await command.start(device);
+           } else {
+               if(!device.config) {
+                   await command.getConfig(device);
                }
-               
-               updatedDevice.connected = true;
-               
-               try {
-                   await command.getConfig(updatedDevice);
-               } catch (error) {
-                   console.error(`Error getting config for device: ${device.id}`, error);
-               }
-               
-               return updatedDevice;
-           }
-           
-           // Handle connected device with configuration
-           if (connectKbd && connectKbd.config) {
-               const updatedDevice = { ...device };
-               const connectKbd_changed = connectKbd.config.changed;
-               const connectKbd_oledSettings_enabled = connectKbd.config?.oledSettings?.enabled === true;
-               const connectKbd_pomodoro_timer_active = connectKbd.config?.pomodoro_timer_active === 1;
-               const device_pomodoro_timer_active = device.config?.pomodoro_timer_active === 1;
-               
-               // Update OLED even during slider operation
-               if (connectKbd_oledSettings_enabled) {
-                   await command.dateTimeOledWrite(device);
-               }
-               
-               // Update pomodoro timer state even during slider operation
-               if (connectKbd_pomodoro_timer_active) {
-                   if (device_pomodoro_timer_active) {
-                       // Update only timer-related fields
-                       updatedDevice.config = {
-                           ...updatedDevice.config,
-                           pomodoro_minutes: connectKbd.config.pomodoro_minutes,
-                           pomodoro_seconds: connectKbd.config.pomodoro_seconds,
-                           pomodoro_state: connectKbd.config.pomodoro_state,
-                           pomodoro_current_cycle: connectKbd.config.pomodoro_current_cycle
-                       };
-                   } else {
-                       // Full config update
-                       updatedDevice.config = { ...connectKbd.config };
-                       if (connectKbd_changed) {
-                           const originalChanged = updatedDevice.config.changed;
-                           updatedDevice.config = { 
-                               ...connectKbd.config, 
-                               changed: originalChanged 
-                           };
-                       }
+               // Handle connected device with configuration
+               if (device.config) {
+                   const oled_enabled = device.config?.oled_enabled === 1;
+                   const pomodoro_timer_active = device.config?.pomodoro_timer_active === 1;
+                   if (oled_enabled) {
+                       await command.dateTimeOledWrite(device);
+                   }
+                   if (pomodoro_timer_active) {
+                        await command.getPomodoroConfig(device);
                    }
                }
-               
-               // Skip updating during slider operation
-               if (isDeviceActive) {
-                   updatedDevice.connected = connectKbd.connected;
-                   return updatedDevice;
-               }
-               
-               // Keep changed state if modified
-               if (connectKbd_changed) {
-                   return updatedDevice;
-               }
-               
-               // Force config update periodically
-               if (shouldForceUpdate && device.connected) {
-                   try {
-                       await command.getConfig(updatedDevice);
-                       // Get fresh data after forced update
-                       const freshKbd = await command.getConnectKbd(device.id);
-                       if (freshKbd && freshKbd.config) {
-                           updatedDevice.config = { ...freshKbd.config, changed: false };
-                       }
-                   } catch (error) {
-                       console.error(`Error forcing config update: ${device.id}`, error);
-                   }
-               } else {
-                   // Normal update
-                   updatedDevice.connected = true;
-                   updatedDevice.config = { ...connectKbd.config, changed: false };
-                   
-                   if (updatedDevice.config.init === undefined) {
-                       updatedDevice.config.init = 1;
-                   }
-               }
-               
-               return updatedDevice;
-           }
-           
-           // Handle device with local changes
-           if (device && device.config && device.config.changed) {
-               const updatedDevice = { ...device };
-               
-               try {
-                   await command.sendDeviceConfig(device);
-                   const updatedConfig = await command.getConfig(device);
-                   
-                   if (updatedConfig && updatedConfig.config) {
-                       updatedDevice.config = { ...updatedConfig.config, changed: false };
-                   } else {
-                       updatedDevice.config.changed = false;
-                   }
-               } catch (error) {
-                   console.error(`Error sending device config: ${device.id}`, error);
-                   updatedDevice.config.changed = false;
-               }
-               
-               return updatedDevice;
-           }
-           
-           return device;
+            }
        }));
-       
-       // Update and notify
-       connectDevices = updatedDevices;
-       await command.changeConnectDevice(connectDevices);
-       
-       isPolling = false;
-       return connectDevices;
    } catch (err) {
        console.error("Error in keyboardSendLoop:", err);
-       isPolling = false;
-       return connectDevices;
    }
 }
 
-const startKeyboardPolling = () => {
-    if (keyboardPollingInterval) {
-        clearTimeout(keyboardPollingInterval);
-        keyboardPollingInterval = null;
-    }
-    
-    lastPollingTime = Date.now();
-    scheduleNextPoll(1000);
-};
-
-const scheduleNextPoll = (delay) => {
-    keyboardPollingInterval = setTimeout(async () => {
-        try {
-            const currentTime = Date.now();
-            const timeSinceLastPoll = currentTime - lastPollingTime;
-            
-            if (isPolling) {
-                scheduleNextPoll(1000);
-                return;
-            }
-            
-            lastPollingTime = currentTime;
-            const startTime = Date.now();
-            
-            await keyboardSendLoop();
-            
-            const executionTime = Date.now() - startTime;
-            const nextDelay = Math.max(1000 - executionTime, 0);
-            
-            scheduleNextPoll(nextDelay);
-        } catch (err) {
-            scheduleNextPoll(1000);
-        }
-    }, delay);
-};
-
-startKeyboardPolling();
-
-setTimeout(() => {
-    if (!keyboardPollingInterval) {
-        startKeyboardPolling();
-    }
-}, 2000);
-
-const setupEventListeners = () => {
-    ipcRenderer.on("configUpdated", (event, { deviceId, config, identifier }) => {
+    ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gpkRCVersion, deviceType, config }) => {
         const deviceIndex = connectDevices.findIndex(device => device.id === deviceId);
-        if (deviceIndex !== -1) {
-            connectDevices[deviceIndex].config = { ...config };
-            if (identifier) {
-                connectDevices[deviceIndex].identifier = identifier;
-            }
-            command.changeConnectDevice(connectDevices);
-        }
-    });
 
-    ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gpkRCVersion, deviceType }) => {
-        const deviceIndex = connectDevices.findIndex(device => device.id === deviceId);
-        if (deviceIndex >= 0) {
             const device = connectDevices[deviceIndex];
             // Only update if connection status changes or command version changes
             let changed = false;
@@ -296,37 +134,58 @@ const setupEventListeners = () => {
                 connectDevices[deviceIndex].deviceType = deviceType;
                 changed = true;
             }
+            if(device.config !== config) {
+                connectDevices[deviceIndex].config = config;
+                changed = true;
+            }
             if(changed) {
                 command.changeConnectDevice(connectDevices);
             }
+        
+    });
+
+    // OLEDの設定が変更されたときのイベントリスナー
+    ipcRenderer.on("oledSettingsChanged", (event, { deviceId, enabled }) => {
+        const deviceIndex = connectDevices.findIndex(device => device.id === deviceId);
+        if (deviceIndex !== -1) {
+            if (!connectDevices[deviceIndex].config) {
+                connectDevices[deviceIndex].config = {};
+            }
+            connectDevices[deviceIndex].config.oled_enabled = enabled ? 1 : 0;
+            command.changeConnectDevice(connectDevices);
+            // デバイス構成の更新をサーバーに送信
+            command.sendDeviceConfig(connectDevices[deviceIndex]);
         }
     });
-}
 
-setupEventListeners();
+    ipcRenderer.on("deviceConnectionStatePomodoroChanged", (event, { deviceId, pomodoroConfig }) => {     
+        const deviceIndex = connectDevices.findIndex(device => device.id === deviceId);
+        connectDevices[deviceIndex].config.pomodoro_work_time = pomodoroConfig.pomodoro_work_time;
+        connectDevices[deviceIndex].config.pomodoro_break_time = pomodoroConfig.pomodoro_break_time;
+        connectDevices[deviceIndex].config.pomodoro_long_break_time = pomodoroConfig.pomodoro_long_break_time;
+        connectDevices[deviceIndex].config.pomodoro_cycles = pomodoroConfig.pomodoro_cycles;
+        connectDevices[deviceIndex].config.pomodoro_timer_active = pomodoroConfig.pomodoro_timer_active;    
+        connectDevices[deviceIndex].config.pomodoro_state = pomodoroConfig.pomodoro_state;
+        connectDevices[deviceIndex].config.pomodoro_minutes = pomodoroConfig.pomodoro_minutes;
+        connectDevices[deviceIndex].config.pomodoro_seconds = pomodoroConfig.pomodoro_seconds;
+        connectDevices[deviceIndex].config.pomodoro_current_cycle = pomodoroConfig.pomodoro_current_cycle;  
+
+        command.changeConnectDevice(connectDevices);
+    });
+
+    ipcRenderer.on("configUpdated", (event, { deviceId, config, identifier }) => {
+        const deviceIndex = connectDevices.findIndex(device => device.id === deviceId);
+        if (deviceIndex !== -1) {
+            connectDevices[deviceIndex].config = { ...config };
+            command.changeConnectDevice(connectDevices);
+        }
+    });
 
 contextBridge.exposeInMainWorld("api", {
     start: async (device) => await command.start(device),
     stop: async (device) => await command.stop(device),
-    gpkRCVersion: async (device) => await command.gpkRCVersion(device),
-    keyboardSendLoop: async () => {
-        // Device list retrieval for UI initialization
-        // Return current device list if polling is already in progress
-        if (isPolling) {
-            return connectDevices;
-        }
-        
-        // First execution if polling has not started yet
-        if (!keyboardPollingInterval) {
-            startKeyboardPolling();
-            
-            // Wait for first result after polling starts
-            await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        return connectDevices;
-    },
-    sendDeviceConfig: async (data) => await command.sendDeviceConfig(data),
+    getGpkRCInfo: async (device) => await command.getGpkRCInfo(device),
+    sendDeviceConfig: async (device) => await command.sendDeviceConfig(device),
     setConnectDevices: (device) => command.setConnectDevices(device),
     exportFile: async () => await command.exportFile(connectDevices),
     importFile: async () => {
@@ -409,4 +268,3 @@ process.on('exit', () => {
         clearInterval(keyboardPollingInterval);
     }
 });
-

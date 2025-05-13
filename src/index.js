@@ -2,6 +2,7 @@ import React from "react"
 import { createRoot } from 'react-dom/client'
 import Content from "./content.js"
 import {StateProvider} from "./context.js"
+import { LanguageProvider } from "./i18n/LanguageContext.js"
 import "./styles.css"
 
 // Set initial background color immediately
@@ -28,9 +29,11 @@ const App = () => {
     return (
         <React.StrictMode>
             <StateProvider>
-                <div className="min-h-screen">
-                    <Content />
-                </div>
+                <LanguageProvider>
+                    <div className="min-h-screen">
+                        <Content />
+                    </div>
+                </LanguageProvider>
             </StateProvider>
         </React.StrictMode>
     )

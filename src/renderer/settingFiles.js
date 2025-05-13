@@ -1,4 +1,6 @@
 import React from "react"
+import { useLanguage } from "../i18n/LanguageContext.js";
+
 const {api} = window
 
 const CustomButton = ({ onClick, children }) => (
@@ -11,14 +13,16 @@ const CustomButton = ({ onClick, children }) => (
 )
 
 const SettingFiles = (() => {
+    const { t } = useLanguage();
+    
     const handleImport = async (event) => await api.importFile()
     const handleExport = async (event) => await api.exportFile()
 
     return (
         <div className="pt-4 pl-16 text-text-primary dark:text-white">
             <div className="flex justify-between max-w-[260px]">
-                <CustomButton onClick={handleImport}>Import</CustomButton>
-                <CustomButton onClick={handleExport}>Export</CustomButton>
+                <CustomButton onClick={handleImport}>{t('common.import')}</CustomButton>
+                <CustomButton onClick={handleExport}>{t('common.export')}</CustomButton>
             </div>
         </div>
     )
