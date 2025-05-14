@@ -161,8 +161,10 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
         }
     });
 
-    ipcRenderer.on("deviceConnectionStatePomodoroChanged", (event, { deviceId, pomodoroConfig }) => {     
+    ipcRenderer.on("deviceConnectionStatePomodoroChanged", (event, { deviceId, pomodoroConfig, stateChanged }) => {     
         const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
+        if (deviceIndex === -1) return;      
+        // Update cached values
         cachedDeviceRegistry[deviceIndex].config.pomodoro_work_time = pomodoroConfig.pomodoro_work_time;
         cachedDeviceRegistry[deviceIndex].config.pomodoro_break_time = pomodoroConfig.pomodoro_break_time;
         cachedDeviceRegistry[deviceIndex].config.pomodoro_long_break_time = pomodoroConfig.pomodoro_long_break_time;
@@ -174,6 +176,34 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
         cachedDeviceRegistry[deviceIndex].config.pomodoro_current_cycle = pomodoroConfig.pomodoro_current_cycle;  
 
         command.changeConnectDevice(cachedDeviceRegistry);
+        
+        // Send notification to main process when state changes and timer is active
+        // Only trigger notification if stateChanged flag is true and timer is active
+        if (stateChanged && pomodoroConfig.pomodoro_timer_active) {
+            // Get device name properly, fallback to product name or 'Keyboard'
+            const deviceName = cachedDeviceRegistry[deviceIndex].product || cachedDeviceRegistry[deviceIndex].name || 'Keyboard';
+            const newState = pomodoroConfig.pomodoro_state;
+            let minutes = 0;
+            
+            // Determine the phase minutes
+            switch (newState) {
+                case 1: // Work state
+                    minutes = pomodoroConfig.pomodoro_work_time;
+                    break;
+                case 2: // Break state
+                    minutes = pomodoroConfig.pomodoro_break_time;
+                    break;
+                case 3: // Long break state
+                    minutes = pomodoroConfig.pomodoro_long_break_time;
+                    break;
+            }
+            
+            ipcRenderer.send('pomodoroStateChanged', {
+                deviceName: deviceName,
+                state: newState,
+                minutes: minutes
+            });
+        }
     });
 
     ipcRenderer.on("configUpdated", (event, { deviceId, config, identifier }) => {
@@ -256,6 +286,8 @@ contextBridge.exposeInMainWorld("api", {
     // Save and load tray settings
     saveTraySettings: async (settings) => await ipcRenderer.invoke('saveTraySettings', settings),
     loadTraySettings: async () => await ipcRenderer.invoke('loadTraySettings'),
+    // Set application locale
+    setAppLocale: async (locale) => await ipcRenderer.invoke('setAppLocale', locale),
     on: (channel, func) => {
         ipcRenderer.on(channel, (event, ...args) => func(...args));
     },

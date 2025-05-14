@@ -20,6 +20,13 @@ export function LanguageProvider({ children }) {
       .then(module => {
         setTranslations(module.default);
         localStorage.setItem('locale', locale);
+        
+        // Notify main process about locale change
+        if (window.api && window.api.setAppLocale) {
+          window.api.setAppLocale(locale).catch(err => {
+            console.error('Error updating app locale:', err);
+          });
+        }
       })
       .catch(() => {
         console.error(`Could not load locale: ${locale}`);
