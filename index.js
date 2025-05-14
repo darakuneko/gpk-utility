@@ -220,9 +220,20 @@ app.on('ready', () => {
 })
 
 // Handle pomodoro state notifications
-ipcMain.on('pomodoroStateChanged', (event, { deviceName, state, minutes }) => {
+ipcMain.on('pomodoroStateChanged', (event, { deviceName, deviceId, state, minutes }) => {
     // Do not show notifications if the app is focused
     if (mainWindow && mainWindow.isFocused()) {
+        return;
+    }
+    
+    // Check if notifications are enabled for this device
+    const pomodoroNotificationsSettings = store.get('pomodoroNotificationsSettings') || {};
+    
+    // Use provided deviceId directly if available, otherwise generate it from device name
+    const idToUse = deviceId || encodeDeviceId({ id: deviceName });
+    
+    // Skip notification if disabled for this device
+    if (pomodoroNotificationsSettings[idToUse] === false) {
         return;
     }
     
@@ -584,6 +595,48 @@ ipcMain.handle('setAppLocale', async (event, locale) => {
         store.set('locale', locale);
         return { success: true };
     } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+// Save pomodoro notification settings
+ipcMain.handle('savePomodoroNotificationSettings', async (event, deviceId, enabled) => {
+    try {
+        // Get current settings
+        const currentSettings = store.get('pomodoroNotificationsSettings') || {};
+        
+        // Update settings for this device
+        currentSettings[deviceId] = enabled;
+        
+        // Save settings
+        store.set('pomodoroNotificationsSettings', currentSettings);
+        
+        return { success: true };
+    } catch (error) {
+        console.error("Error saving pomodoro notification settings:", error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Load pomodoro notification settings
+ipcMain.handle('loadPomodoroNotificationSettings', async (event, deviceId) => {
+    try {
+        // Load settings from electron-store
+        const settings = store.get('pomodoroNotificationsSettings') || {};
+        
+        // Return settings for this device, use stored value if exists, default to true only if completely undefined
+        let enabled = true; // Default value is true
+        
+        if (settings[deviceId] !== undefined) {
+            enabled = settings[deviceId] === true; // Use stored value if it exists
+        }
+        
+        return { 
+            success: true, 
+            enabled: enabled
+        };
+    } catch (error) {
+        console.error("Error loading pomodoro notification settings:", error);
         return { success: false, error: error.message };
     }
 });
