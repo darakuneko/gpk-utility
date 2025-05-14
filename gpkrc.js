@@ -267,19 +267,26 @@ const start = async (device) => {
                                 });
                             } else if (cmdId === commandId.pomodoroGetValue) {
                                 const pomodoroConfig = receivePomodoroConfig(buffer);
-                                deviceStatusMap[id].config.pomodoro_work_time= pomodoroConfig.pomodoro_work_time;
-                                deviceStatusMap[id].config.pomodoro_break_time= pomodoroConfig.pomodoro_break_time;
-                                deviceStatusMap[id].config.pomodoro_long_break_time= pomodoroConfig.pomodoro_long_break_time;
-                                deviceStatusMap[id].config.pomodoro_cycles= pomodoroConfig.pomodoro_cycles;
-                                deviceStatusMap[id].config.pomodoro_timer_active= pomodoroConfig.pomodoro_timer_active;    
-                                deviceStatusMap[id].config.pomodoro_state= pomodoroConfig.pomodoro_state;
-                                deviceStatusMap[id].config.pomodoro_minutes= pomodoroConfig.pomodoro_minutes;
-                                deviceStatusMap[id].config.pomodoro_seconds= pomodoroConfig.pomodoro_seconds;
-                                deviceStatusMap[id].config.pomodoro_current_cycle= pomodoroConfig.pomodoro_current_cycle;  
-
+                                
+                                // Check if state actually changed before updating
+                                const oldState = deviceStatusMap[id].config.pomodoro_state;
+                                const newState = pomodoroConfig.pomodoro_state;
+                                
+                                deviceStatusMap[id].config.pomodoro_work_time = pomodoroConfig.pomodoro_work_time;
+                                deviceStatusMap[id].config.pomodoro_break_time = pomodoroConfig.pomodoro_break_time;
+                                deviceStatusMap[id].config.pomodoro_long_break_time = pomodoroConfig.pomodoro_long_break_time;
+                                deviceStatusMap[id].config.pomodoro_cycles = pomodoroConfig.pomodoro_cycles;
+                                deviceStatusMap[id].config.pomodoro_timer_active = pomodoroConfig.pomodoro_timer_active;    
+                                deviceStatusMap[id].config.pomodoro_state = pomodoroConfig.pomodoro_state;
+                                deviceStatusMap[id].config.pomodoro_minutes = pomodoroConfig.pomodoro_minutes;
+                                deviceStatusMap[id].config.pomodoro_seconds = pomodoroConfig.pomodoro_seconds;
+                                deviceStatusMap[id].config.pomodoro_current_cycle = pomodoroConfig.pomodoro_current_cycle;
+                                
+                               
                                 global.mainWindow.webContents.send("deviceConnectionStatePomodoroChanged", {
                                     deviceId: id,
-                                    pomodoroConfig: deviceStatusMap[id].config
+                                    pomodoroConfig: deviceStatusMap[id].config,
+                                    stateChanged: oldState !== newState,
                                 });
                             } 
                         }

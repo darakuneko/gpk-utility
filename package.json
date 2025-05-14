@@ -4,7 +4,7 @@
     "build": "rm -rf ./public/build && rm -rf ./build && rm -rf ./dist && npx webpack --config webpack.config.cjs",
     "build:win": "del /s /q public\\build && del /s /q build && del /s /q dist && npx webpack --config webpack.config.cjs",
     "start": "npx webpack --config webpack.config.cjs && npx electron .",
-    "start:dev": "NODE_ENV=development npx webpack --config webpack.config.cjs && npx electron .",
+    "start:dev": "cross-env NODE_ENV=development npx webpack --config webpack.config.cjs && cross-env NODE_ENV=development npx electron .",
     "dist:win": "npm run build:win && electron-builder -w",
     "dist:mac": "npm run build  && electron-builder -m",
     "dist:linux": "npm run build && electron-builder -l"
@@ -20,6 +20,7 @@
   "type": "module",
   "devDependencies": {
     "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
     "css-loader": "^7.1.2",
     "electron": "32.1.0",
     "electron-builder": "25.0.5",

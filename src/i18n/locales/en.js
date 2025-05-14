@@ -115,5 +115,15 @@ export default {
       error: 'Error',
       success: 'Success'
     }
+  },
+  notifications: {
+    pomodoro: {
+      workTitle: 'Focus Session Started',
+      workBody: 'You\'ve got {{minutes}} minutes to stay focused',
+      breakTitle: 'Break Time!',
+      breakBody: 'Time to relax for {{minutes}} minutes',
+      longBreakTitle: 'Long Break Started!',
+      longBreakBody: 'Take it easy for {{minutes}} minutes'
+    }
   }
 };

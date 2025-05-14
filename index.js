@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, dialog, nativeImage } from "electron"
+import { app, BrowserWindow, ipcMain, Tray, Menu, dialog, nativeImage, Notification } from "electron"
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -6,6 +6,8 @@ import Store from 'electron-store';
 import dayjs from 'dayjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// Import translation utilities
+import enTranslations from './src/i18n/locales/en.js';
 import {
     start, 
     stop, 
@@ -38,9 +40,36 @@ const store = new Store({
         oledSettings: {},
         minimizeToTray: true,
         backgroundStart: false,
-        windowBounds: { width: 1280, height: 800, x: undefined, y: undefined }
+        windowBounds: { width: 1280, height: 800, x: undefined, y: undefined },
+        locale: 'en'
     }
 });
+
+// Translation utility function
+const translate = (key, params = {}) => {
+    const locale = store.get('locale') || 'en';
+    let translations = enTranslations;
+    
+    // Get nested value from translations using key path
+    const getValue = (obj, path) => {
+        return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
+    };
+    
+    let text = getValue(translations, key);
+    
+    // Fall back to English if translation not found
+    if (text === undefined && locale !== 'en') {
+        text = getValue(enTranslations, key);
+    }
+    
+    // If still undefined, return key
+    if (text === undefined) {
+        return key;
+    }
+    
+    // Replace parameters
+    return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? params[param] : match);
+};
 
 // Store last formatted date for each device
 const lastFormattedDateMap = new Map();
@@ -185,9 +214,46 @@ app.on('window-all-closed', () => {
 app.on('ready', () => {
     createTray();
     createWindow();
-    
     if (process.env.NODE_ENV === 'development') {
         mainWindow.webContents.openDevTools();
+    }
+})
+
+// Handle pomodoro state notifications
+ipcMain.on('pomodoroStateChanged', (event, { deviceName, state, minutes }) => {
+    // Do not show notifications if the app is focused
+    if (mainWindow && mainWindow.isFocused()) {
+        return;
+    }
+    
+    let titleKey = '';
+    let bodyKey = '';
+    
+    switch (state) {
+        case 1: // Work state
+            titleKey = 'notifications.pomodoro.workTitle';
+            bodyKey = 'notifications.pomodoro.workBody';
+            break;
+        case 2: // Break state
+            titleKey = 'notifications.pomodoro.breakTitle';
+            bodyKey = 'notifications.pomodoro.breakBody';
+            break;
+        case 3: // Long break state
+            titleKey = 'notifications.pomodoro.longBreakTitle';
+            bodyKey = 'notifications.pomodoro.longBreakBody';
+            break;
+    }
+    
+    // Get translated text with minutes parameter
+    const title = translate(titleKey);
+    const body = translate(bodyKey, { minutes });
+    
+    if (title && Notification.isSupported()) {
+        new Notification({ 
+            title, 
+            body,
+            icon: path.join(__dirname, 'icons', '256x256.png')
+        }).show();
     }
 })
 
@@ -510,4 +576,15 @@ const buildConfigByteArray = (config) => {
     
     return byteArray;
 }
+
+// Handle language change
+ipcMain.handle('setAppLocale', async (event, locale) => {
+    try {
+        // Save locale to electron-store
+        store.set('locale', locale);
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
 
