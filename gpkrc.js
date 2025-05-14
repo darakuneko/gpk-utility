@@ -1,11 +1,8 @@
 import { config } from 'dotenv'
 import HID from 'node-hid'
 
-let connectKbd = {}
-let kbd = {}
-// Flag to determine if polling is in progress to get data from device
-let isReceiving = {}
-let receiveIntervals = {}
+let deviceStatusMap = {}
+let hidDeviceInstances = {}
 // Object to manage tab state for each device
 let activeTabPerDevice = {}
 // Object to manage whether pomodoro settings are being edited
@@ -89,8 +86,8 @@ const getKBDList = () => HID.devices().filter(d =>
     ).sort((a, b) => `${a.manufacturer}${a.product}` > `${b.manufacturer}${b.product}` ? 1 : -1)
     .map(device => {
         const id = encodeDeviceId(device)        
-        if (connectKbd[id]) {
-            return {...device, id: id, deviceType: connectKbd[id].deviceType, gpkRCVersion: connectKbd[id].gpkRCVersion}
+        if (deviceStatusMap[id]) {
+            return {...device, id: id, deviceType: deviceStatusMap[id].deviceType, gpkRCVersion: deviceStatusMap[id].gpkRCVersion}
         } else {
             return {...device, id: id}
         }
@@ -144,6 +141,7 @@ function receiveTrackpadConfig(buffer) {
         auto_layer_settings: []
     }
 }
+
 function receivePomodoroConfig(buffer) {
     return {
         pomodoro_work_time: buffer[2],
@@ -188,9 +186,9 @@ const addKbd = (device) => {
     const d = getKBD(device);
     const id = encodeDeviceId(device);
     if (!d || !d.path) return;
-    if(!kbd[id]){ 
-        kbd[id] = new HID.HID(d.path);
-        kbd[id].write(commandToBytes({id: commandId.gpkRCInfo}));
+    if(!hidDeviceInstances[id]){ 
+        hidDeviceInstances[id] = new HID.HID(d.path);
+        hidDeviceInstances[id].write(commandToBytes({id: commandId.gpkRCInfo}));
     }
     return id;
 }
@@ -202,101 +200,97 @@ const start = async (device) => {
     
     try {
         const id = addKbd(device);
-        if (!connectKbd[id]) {
-            connectKbd[id] = {
+        if (!deviceStatusMap[id]) {
+            deviceStatusMap[id] = {
                 config: {},
                 deviceType: "keyboard",
                 gpkRCVersion: 0,
                 connected: true,
             };
-            isReceiving[id] = false;
+            
             activeTabPerDevice[id] = "mouse";
             
-            if (kbd[id]) {
-                kbd[id].on('error', (err) => {
+            if (hidDeviceInstances[id]) {
+                hidDeviceInstances[id].on('error', (err) => {
                     console.error(`Device error: ${id}`, err);
                     stop(device);
                 });
                 
-                kbd[id].on('data', buffer => {
+                hidDeviceInstances[id].on('data', buffer => {
                     try {
                         if (buffer[0] === commandId.gpkRCPrefix) {
                             const cmdId = buffer[1];
-                            connectKbd[id].connected = true;
+                            deviceStatusMap[id].connected = true;
                             if (cmdId === commandId.gpkRCInfo) {
                                 const dataOffset = 2;
                                 const version = buffer[dataOffset];
                                 const deviceType = buffer.slice(dataOffset + 1, dataOffset + 13).toString().replace(/\0/g, '');
-                                connectKbd[id].gpkRCVersion = version;
-                                connectKbd[id].deviceType = deviceType;
+                                deviceStatusMap[id].gpkRCVersion = version;
+                                deviceStatusMap[id].deviceType = deviceType;
                                 
                                 // Load OLED settings from store for this device
                                 if (settingsStore) {
                                     const oledSettings = settingsStore.get('oledSettings') || {};
                                     if (oledSettings[id] !== undefined) {
                                         // Add oled_enabled to the config
-                                        if (!connectKbd[id].config) {
-                                            connectKbd[id].config = {};
+                                        if (!deviceStatusMap[id].config) {
+                                            deviceStatusMap[id].config = {};
                                         }
-                                        connectKbd[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
+                                        deviceStatusMap[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
                                     }
                                 }
                                 
                                 global.mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
-                                    connected: connectKbd[id].connected,
-                                    gpkRCVersion: connectKbd[id].gpkRCVersion,
-                                    deviceType: connectKbd[id].deviceType,
-                                    config: connectKbd[id].config
+                                    connected: deviceStatusMap[id].connected,
+                                    gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
+                                    deviceType: deviceStatusMap[id].deviceType,
+                                    config: deviceStatusMap[id].config
                                 });
                             } else if (cmdId === commandId.customGetValue) {
-                                connectKbd[id].config = receiveTrackpadConfig(buffer);
+
+                                deviceStatusMap[id].config = receiveTrackpadConfig(buffer);
                                 
                                 // Preserve OLED settings when receiving other config data
                                 if (settingsStore) {
                                     const oledSettings = settingsStore.get('oledSettings') || {};
                                     if (oledSettings[id] !== undefined) {
-                                        connectKbd[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
+                                        deviceStatusMap[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
                                     }
                                 }
-                                
                                 global.mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
-                                    connected: connectKbd[id].connected,
-                                    gpkRCVersion: connectKbd[id].gpkRCVersion,
-                                    deviceType: connectKbd[id].deviceType,
-                                    config: connectKbd[id].config
+                                    connected: deviceStatusMap[id].connected,
+                                    gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
+                                    deviceType: deviceStatusMap[id].deviceType,
+                                    config: deviceStatusMap[id].config
                                 });
                             } else if (cmdId === commandId.pomodoroGetValue) {
                                 const pomodoroConfig = receivePomodoroConfig(buffer);
-                                connectKbd[id].config.pomodoro_work_time= pomodoroConfig.pomodoro_work_time;
-                                connectKbd[id].config.pomodoro_break_time= pomodoroConfig.pomodoro_break_time;
-                                connectKbd[id].config.pomodoro_long_break_time= pomodoroConfig.pomodoro_long_break_time;
-                                connectKbd[id].config.pomodoro_cycles= pomodoroConfig.pomodoro_cycles;
-                                connectKbd[id].config.pomodoro_timer_active= pomodoroConfig.pomodoro_timer_active;    
-                                connectKbd[id].config.pomodoro_state= pomodoroConfig.pomodoro_state;
-                                connectKbd[id].config.pomodoro_minutes= pomodoroConfig.pomodoro_minutes;
-                                connectKbd[id].config.pomodoro_seconds= pomodoroConfig.pomodoro_seconds;
-                                connectKbd[id].config.pomodoro_current_cycle= pomodoroConfig.pomodoro_current_cycle;  
+                                deviceStatusMap[id].config.pomodoro_work_time= pomodoroConfig.pomodoro_work_time;
+                                deviceStatusMap[id].config.pomodoro_break_time= pomodoroConfig.pomodoro_break_time;
+                                deviceStatusMap[id].config.pomodoro_long_break_time= pomodoroConfig.pomodoro_long_break_time;
+                                deviceStatusMap[id].config.pomodoro_cycles= pomodoroConfig.pomodoro_cycles;
+                                deviceStatusMap[id].config.pomodoro_timer_active= pomodoroConfig.pomodoro_timer_active;    
+                                deviceStatusMap[id].config.pomodoro_state= pomodoroConfig.pomodoro_state;
+                                deviceStatusMap[id].config.pomodoro_minutes= pomodoroConfig.pomodoro_minutes;
+                                deviceStatusMap[id].config.pomodoro_seconds= pomodoroConfig.pomodoro_seconds;
+                                deviceStatusMap[id].config.pomodoro_current_cycle= pomodoroConfig.pomodoro_current_cycle;  
 
                                 global.mainWindow.webContents.send("deviceConnectionStatePomodoroChanged", {
                                     deviceId: id,
-                                    pomodoroConfig: connectKbd[id].config
+                                    pomodoroConfig: deviceStatusMap[id].config
                                 });
                             } 
                         }
                     } catch (err) {
                         console.error(`Error processing device data: ${id}`, err);
                     }
-                    isReceiving[id] = false;
                 });
             }
-        } else {
-            // Reset receiving flag if connection already exists
-            isReceiving[id] = false;
-        }
+        } 
         
-        return connectKbd[id];
+        return deviceStatusMap[id];
     } catch (err) {
         console.error("Error starting device:", err);
         throw err;
@@ -305,27 +299,21 @@ const start = async (device) => {
 
 const stop = (device) => {
     const id = encodeDeviceId(device)
-    if (kbd[id]) {
-        kbd[id].removeAllListeners("data")
+    if (hidDeviceInstances[id]) {
+        hidDeviceInstances[id].removeAllListeners("data")
         _close(id)
-        kbd[id] = undefined
-        connectKbd[id] = undefined
-        
-        // Clear the interval
-        if (receiveIntervals[id]) {
-            clearInterval(receiveIntervals[id])
-            receiveIntervals[id] = undefined
-        }
+        hidDeviceInstances[id] = undefined
+        deviceStatusMap[id] = undefined
     }
 }
 
 const _close = (id) => {
-    if (!kbd[id]) {
+    if (!hidDeviceInstances[id]) {
         return false;
     }
     
     try {
-        kbd[id].close();
+        hidDeviceInstances[id].close();
         return true;
     } catch (err) {
         console.error(`Error closing device ${id}:`, err);
@@ -334,17 +322,12 @@ const _close = (id) => {
 }
 
 const close = () => {
-    if (!kbd) {
+    if (!hidDeviceInstances) {
         return;
     }
     
-    Object.keys(kbd).forEach(id => {
+    Object.keys(hidDeviceInstances).forEach(id => {
         _close(id);
-        
-        if (receiveIntervals[id]) {
-            clearInterval(receiveIntervals[id]);
-            receiveIntervals[id] = null;
-        }
     });
 }
 
@@ -352,7 +335,7 @@ const writeCommand = async (device, command) => {
     const id = addKbd(device);
     try {
         const bytes = commandToBytes(command);
-        await kbd[id].write(bytes);    
+        await hidDeviceInstances[id].write(bytes);    
     } catch (err) {
         console.error("Error writing command:", err);
         throw err;
@@ -387,10 +370,9 @@ const startWindowMonitoring = async (ActiveWindow) => {
         const result = await ActiveWindow.default.getActiveWindow();
         if (!result) return;
         const appName = result.application;
-        
+
         if (!activeWindows.includes(appName)) {
             activeWindows.push(appName);
-
             if (activeWindows.length > 10) {
                 activeWindows.shift();
             }
@@ -412,8 +394,8 @@ const startWindowMonitoring = async (ActiveWindow) => {
 const checkAndSwitchLayer = (appName) => {
     if (!appName || !settingsStore) return;
     
-    Object.keys(connectKbd).forEach(id => {
-        const device = connectKbd[id];
+    Object.keys(deviceStatusMap).forEach(id => {
+        const device = deviceStatusMap[id];
         if (!device || !device.connected) return;
     
         const autoLayerSettings = settingsStore.get('autoLayerSettings') || {};
@@ -524,7 +506,7 @@ const updateAutoLayerSettings = (store) => {
 const getGpkRCInfo = async (device) => await writeCommand(device, { id: commandId.gpkRCInfo });
 
 // Module exports
-export const getConnectKbd = (id) => connectKbd[id]
+export const getConnectKbd = (id) => deviceStatusMap[id]
 export { getKBD, getKBDList }
 export { start, stop, close }
 export { setActiveTab, getActiveTab }

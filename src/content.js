@@ -1,16 +1,13 @@
-import React, {useEffect, useState, useRef, useCallback} from 'react'
+import React, {useEffect, useState, useRef} from 'react'
 import SettingsContainer from "./renderer/SettingsContainer.js"
 import {useStateContext} from "./context.js"
-import { useLanguage } from "./i18n/LanguageContext.js"
 
 const api = window.api;
 const hasApi = !!api;
 
 const Content = () => {
     const {state, setState} = useStateContext()
-    const [apiError, setApiError] = useState(false);
     const stateRef = useRef(state);
-    const attemptCountRef = useRef(0);
 
     useEffect(() => {
         stateRef.current = state;
@@ -58,7 +55,6 @@ const Content = () => {
             });
         };
         
-        api.startWindowMonitoring();
         api.on("activeWindow", handleActiveWindow);
         
         return () => {
