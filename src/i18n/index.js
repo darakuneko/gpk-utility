@@ -1,6 +1,6 @@
 import en from './locales/en.js';
 
-// 将来的にサポートする言語をここに追加
+// Add languages to be supported in the future here
 const translations = {
   en
 };

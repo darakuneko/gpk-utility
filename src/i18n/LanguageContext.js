@@ -9,13 +9,13 @@ export function LanguageProvider({ children }) {
   const [translations, setTranslations] = useState({});
 
   useEffect(() => {
-    // localStorage から前回選択した言語を読み込む
+    // Load previously selected language from localStorage
     const savedLocale = localStorage.getItem('locale') || defaultLocale;
     setLocale(savedLocale);
   }, []);
 
   useEffect(() => {
-    // 言語ファイルを更新
+    // Update language files
     import(`./locales/${locale}.js`)
       .then(module => {
         setTranslations(module.default);
@@ -23,17 +23,17 @@ export function LanguageProvider({ children }) {
       })
       .catch(() => {
         console.error(`Could not load locale: ${locale}`);
-        // 読み込みに失敗した場合、デフォルト言語に戻す
+        // If loading fails, revert to default language
         if (locale !== defaultLocale) {
           setLocale(defaultLocale);
         }
       });
   }, [locale]);
 
-  const t = (key) => {
+  const t = (key, ...args) => {
     if (!key) return '';
     
-    // ドット記法を使ってネストされたキーにアクセスする
+    // Use dot notation to access nested keys
     const keys = key.split('.');
     let value = translations;
     
@@ -46,6 +46,14 @@ export function LanguageProvider({ children }) {
       }
     }
     
+    // Placeholder replacement processing
+    if (typeof value === 'string' && args.length > 0 && typeof args[0] === 'object') {
+      const params = args[0];
+      return value.replace(/\{\{(\w+)\}\}/g, (match, paramKey) => {
+        return params[paramKey] !== undefined ? params[paramKey] : match;
+      });
+    }
+
     return value || key;
   };
 

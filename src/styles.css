@@ -3,24 +3,24 @@
 @tailwind utilities;
 
 /* ===============
-   デフォルトカラーパレット定義
+   Default Color Palette Definition
    =============== */
 :root {
   color-scheme: light dark;
-  /* 基本色 (ユーザー指定 + パレットの白黒) */
-  --color-background: #ffffff;       /* 背景色 (白) */
-  --color-text-primary: #1a1a1a;     /* メインのテキスト色 (ほぼ黒) */
+  /* Basic colors (User specified + palette's black and white) */
+  --color-background: #ffffff;       /* Background color (white) */
+  --color-text-primary: #1a1a1a;     /* Main text color (almost black) */
   
-  /* アクセントカラー (パレットから抽出) */
-  --color-accent-primary: #4466cc;   /* アクセント1 (青系 - 推定値) */
-  --color-accent-secondary: #c86464; /* アクセント2 (赤茶系 - 推定値) */
+  /* Accent colors (Extracted from palette) */
+  --color-accent-primary: #4466cc;   /* Accent 1 (Blue tone - estimated value) */
+  --color-accent-secondary: #c86464; /* Accent 2 (Reddish-brown - estimated value) */
   
-  /* グレー系 (パレットの濃淡を参考に) */
-  --color-text-secondary: #555555;   /* サブのテキスト色 (濃いグレー) */
-  --color-border: #cccccc;           /* 境界線など (中間グレー) */
-  --color-background-subtle: #f5f5f5; /* 薄い背景色 (ほぼ白に近いグレー) */
+  /* Gray tones (Based on palette's shades) */
+  --color-text-secondary: #555555;   /* Secondary text color (dark gray) */
+  --color-border: #cccccc;           /* Border lines etc. (medium gray) */
+  --color-background-subtle: #f5f5f5; /* Light background color (near-white gray) */
   
-  /* その他 */
+  /* Others */
   --color-white: #ffffff;
   --color-black: #000000;
   --color-primary: var(--color-accent-primary);
@@ -29,19 +29,19 @@
   --settings-container-bg: var(--color-background);
   --color-inactive-state: #9ca3af;
   
-  /* インタラクティブ要素 */
+  /* Interactive elements */
   --color-button-hover: #3355bb;
   --color-button-active: #2244aa;
   --color-input-focus: rgba(68, 102, 204, 0.2);
   
-  /* フィードバック色 */
+  /* Feedback colors */
   --color-success: #4caf50;
   --color-error: #f44336;
   --color-warning: #ff9800;
   --color-info: #2196f3;
 }
 
-/* ダークテーマ用カラー */
+/* Dark theme colors */
 .dark {
   --color-background: #121212;
   --color-text-primary: #f0f0f0;
@@ -56,19 +56,19 @@
   --settings-container-bg: var(--color-background);
   --color-inactive-state: #6b7280;
   
-  /* インタラクティブ要素 - ダークテーマ用 */
+  /* Interactive elements - Dark theme */
   --color-button-hover: #7599ff;
   --color-button-active: #5477dd;
   --color-input-focus: rgba(100, 136, 238, 0.2);
   
-  /* フィードバック色 - ダークテーマ用 */
+  /* Feedback colors - Dark theme */
   --color-success: #66bb6a;
   --color-error: #e57373;
   --color-warning: #ffb74d;
   --color-info: #64b5f6;
 }
 
-/* 高コントラストテーマ */
+/* High contrast theme */
 .high-contrast {
   --color-background: #000000;
   --color-text-primary: #ffffff;
