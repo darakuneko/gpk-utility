@@ -163,7 +163,11 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
 
     ipcRenderer.on("deviceConnectionStatePomodoroChanged", (event, { deviceId, pomodoroConfig, stateChanged }) => {     
         const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
-        if (deviceIndex === -1) return;      
+        if (deviceIndex === -1) return;
+        
+        // Save existing notification settings before updating other values
+        const notificationsEnabled = cachedDeviceRegistry[deviceIndex].config.pomodoro_notifications_enabled;
+        
         // Update cached values
         cachedDeviceRegistry[deviceIndex].config.pomodoro_work_time = pomodoroConfig.pomodoro_work_time;
         cachedDeviceRegistry[deviceIndex].config.pomodoro_break_time = pomodoroConfig.pomodoro_break_time;
@@ -174,35 +178,57 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
         cachedDeviceRegistry[deviceIndex].config.pomodoro_minutes = pomodoroConfig.pomodoro_minutes;
         cachedDeviceRegistry[deviceIndex].config.pomodoro_seconds = pomodoroConfig.pomodoro_seconds;
         cachedDeviceRegistry[deviceIndex].config.pomodoro_current_cycle = pomodoroConfig.pomodoro_current_cycle;  
+        
+        // Restore notification settings
+        if (notificationsEnabled !== undefined) {
+            cachedDeviceRegistry[deviceIndex].config.pomodoro_notifications_enabled = notificationsEnabled;
+        } else if (pomodoroConfig.pomodoro_notifications_enabled !== undefined) {
+            cachedDeviceRegistry[deviceIndex].config.pomodoro_notifications_enabled = pomodoroConfig.pomodoro_notifications_enabled;
+        }
 
         command.changeConnectDevice(cachedDeviceRegistry);
         
         // Send notification to main process when state changes and timer is active
         // Only trigger notification if stateChanged flag is true and timer is active
         if (stateChanged && pomodoroConfig.pomodoro_timer_active) {
-            // Get device name properly, fallback to product name or 'Keyboard'
-            const deviceName = cachedDeviceRegistry[deviceIndex].product || cachedDeviceRegistry[deviceIndex].name || 'Keyboard';
-            const newState = pomodoroConfig.pomodoro_state;
-            let minutes = 0;
-            
-            // Determine the phase minutes
-            switch (newState) {
-                case 1: // Work state
-                    minutes = pomodoroConfig.pomodoro_work_time;
-                    break;
-                case 2: // Break state
-                    minutes = pomodoroConfig.pomodoro_break_time;
-                    break;
-                case 3: // Long break state
-                    minutes = pomodoroConfig.pomodoro_long_break_time;
-                    break;
-            }
-            
-            ipcRenderer.send('pomodoroStateChanged', {
-                deviceName: deviceName,
-                state: newState,
-                minutes: minutes
-            });
+            // Immediately get fresh notification setting from stored config
+            (async () => {
+                try {
+                    // Get real deviceId for proper settings lookup
+                    const result = await ipcRenderer.invoke('loadPomodoroNotificationSettings', deviceId);
+                    const notificationsEnabled = result.success ? result.enabled : true;
+                    
+                    // Only send notification if notifications are enabled
+                    if (notificationsEnabled) {
+                        // Get device name properly, fallback to product name or 'Keyboard'
+                        const deviceName = cachedDeviceRegistry[deviceIndex].product || cachedDeviceRegistry[deviceIndex].name || 'Keyboard';
+                        const newState = pomodoroConfig.pomodoro_state;
+                        let minutes = 0;
+                        
+                        // Determine the phase minutes
+                        switch (newState) {
+                            case 1: // Work state
+                                minutes = pomodoroConfig.pomodoro_work_time;
+                                break;
+                            case 2: // Break state
+                                minutes = pomodoroConfig.pomodoro_break_time;
+                                break;
+                            case 3: // Long break state
+                                minutes = pomodoroConfig.pomodoro_long_break_time;
+                                break;
+                        }
+                        
+                        ipcRenderer.send('pomodoroStateChanged', {
+                            deviceName: deviceName,
+                            deviceId: deviceId, // 実際のデバイスIDも送信
+                            state: newState,
+                            minutes: minutes
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error checking notification settings:", error);
+                }
+            })();
         }
     });
 
@@ -288,6 +314,9 @@ contextBridge.exposeInMainWorld("api", {
     loadTraySettings: async () => await ipcRenderer.invoke('loadTraySettings'),
     // Set application locale
     setAppLocale: async (locale) => await ipcRenderer.invoke('setAppLocale', locale),
+    // Pomodoro notification settings
+    savePomodoroNotificationSettings: async (deviceId, enabled) => await ipcRenderer.invoke('savePomodoroNotificationSettings', deviceId, enabled),
+    loadPomodoroNotificationSettings: async (deviceId) => await ipcRenderer.invoke('loadPomodoroNotificationSettings', deviceId),
     on: (channel, func) => {
         ipcRenderer.on(channel, (event, ...args) => func(...args));
     },

@@ -1,5 +1,5 @@
-import React from "react";
-import { CustomSlider, CustomSelect } from "../../components/CustomComponents.js";
+import React, { useEffect, useState } from "react";
+import { CustomSlider, CustomSelect, CustomSwitch } from "../../components/CustomComponents.js";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
 import { useLanguage } from "../../i18n/LanguageContext.js";
 
@@ -46,12 +46,25 @@ const PomodoroActiveDisplay = ({ device, formatTime }) => {
 };
 
 // Pomodoro inactive state settings component
-const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
+const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd, notificationsEnabled }) => {
   const { t } = useLanguage();
   return (
     <div>
       <div className="mb-4">
         <h4 className="text-md font-medium mb-2 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-1">{t('timer.title')}</h4>
+        
+        {/* Notification toggle switch */}
+        <div className="flex items-center justify-between py-2 mb-2 border-b border-gray-100 dark:border-gray-700">
+          <label className="flex items-center text-gray-900 dark:text-white">
+            <span>{t('notifications.pomodoro.enabled')}</span>
+          </label>
+          <CustomSwitch
+            id="config-pomodoro_notifications_enabled"
+            onChange={handleChange("pomodoro_notifications_enabled", device.id)}
+            checked={notificationsEnabled}
+          />
+        </div>
+        
         <div className="pt-2 w-full mb-4">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
             <span>{t('timer.workTime')}</span>
@@ -167,6 +180,89 @@ const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, han
 };
 
 const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd, formatTime }) => {
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
+
+  // Load notification settings from store when component mounts or device changes
+  useEffect(() => {
+    async function loadNotificationSettings() {
+      if (device && device.id) {
+        try {
+          const result = await window.api.loadPomodoroNotificationSettings(device.id);
+          
+          if (result.success) {
+            // Update UI state
+            setNotificationsEnabled(result.enabled);
+            
+            // Always update device config to match the stored setting
+            // regardless of whether it's already defined
+            device.config.pomodoro_notifications_enabled = result.enabled ? 1 : 0;
+          }
+        } catch (error) {
+          console.error("Failed to load pomodoro notification settings:", error);
+        }
+      }
+    }
+    
+    loadNotificationSettings();
+  }, [device]);
+
+  // Listen for CustomSwitch update events
+  useEffect(() => {
+    const handleSwitchUpdate = (event) => {
+      if (event.detail && event.detail.id === "config-pomodoro_notifications_enabled") {
+        setForceUpdateCounter(prev => prev + 1);
+      }
+    };
+    
+    document.addEventListener('switch-updated', handleSwitchUpdate);
+    return () => {
+      document.removeEventListener('switch-updated', handleSwitchUpdate);
+    };
+  }, []);
+
+  // Custom change handler for notification toggle
+  const handleNotificationToggle = async (isEnabled) => {
+    try {
+      // Save to local storage only
+      await window.api.savePomodoroNotificationSettings(device.id, isEnabled);
+      
+      setNotificationsEnabled(isEnabled);
+      
+      // Update UI state only, do not send to device
+      const oldValue = device.config.pomodoro_notifications_enabled;
+      device.config.pomodoro_notifications_enabled = isEnabled ? 1 : 0;
+      
+      // Force UI update
+      setForceUpdateCounter(prev => prev + 1);
+      
+      // Dispatch update event to the switch element
+      const switchElement = document.getElementById("config-pomodoro_notifications_enabled");
+      if (switchElement) {
+        const event = new Event('update', { bubbles: true });
+        switchElement.dispatchEvent(event);
+      }
+    } catch (error) {
+      console.error("Failed to save pomodoro notification settings:", error);
+    }
+  };
+
+  // Override the original handleChange for notification settings
+  const enhancedHandleChange = (pType, deviceId) => {
+    return (value) => {
+      if (pType === "pomodoro_notifications_enabled") {
+        if (value && typeof value === 'object' && value.target) {
+          handleNotificationToggle(value.target.checked);
+        } else {
+          handleNotificationToggle(value === 1);
+        }
+        return;
+      }
+      
+      handleChange(pType, deviceId)(value);
+    };
+  };
+  
   return (
     <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
       {device.config.pomodoro_timer_active ? (
@@ -174,9 +270,10 @@ const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEn
       ) : (
         <PomodoroInactiveSettings 
           device={device} 
-          handleChange={handleChange} 
+          handleChange={enhancedHandleChange} 
           handleSliderStart={handleSliderStart} 
           handleSliderEnd={handleSliderEnd}
+          notificationsEnabled={notificationsEnabled}
         />
       )}
     </div>

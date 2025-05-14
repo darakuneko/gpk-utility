@@ -78,7 +78,21 @@ export const CustomSwitch = ({ id, checked = false, onChange, label }) => {
     return () => {
       switchEl.removeEventListener('update', handleUpdate);
     };
-  }, [safeChecked]);
+  }, [safeChecked, id]);
+  
+  const handleOnChange = (e) => {
+    if (onChange) {
+      onChange(e);
+      
+      // Force UI update immediately after the onChange event
+      setTimeout(() => {
+        if (switchRef.current) {
+          const event = new Event('update', { bubbles: true });
+          switchRef.current.dispatchEvent(event);
+        }
+      }, 0);
+    }
+  };
   
   return (
     <label className="relative inline-flex items-center cursor-pointer">
@@ -87,7 +101,7 @@ export const CustomSwitch = ({ id, checked = false, onChange, label }) => {
         type="checkbox"
         id={id}
         checked={safeChecked}
-        onChange={onChange}
+        onChange={handleOnChange}
         className="sr-only peer"
       />
       <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>

@@ -123,7 +123,8 @@ export default {
       breakTitle: 'Break Time!',
       breakBody: 'Time to relax for {{minutes}} minutes',
       longBreakTitle: 'Long Break Started!',
-      longBreakBody: 'Take it easy for {{minutes}} minutes'
+      longBreakBody: 'Take it easy for {{minutes}} minutes',
+      enabled: 'Enable Notifications'
     }
   }
 };

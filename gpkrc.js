@@ -248,7 +248,6 @@ const start = async (device) => {
                                     config: deviceStatusMap[id].config
                                 });
                             } else if (cmdId === commandId.customGetValue) {
-
                                 deviceStatusMap[id].config = receiveTrackpadConfig(buffer);
                                 
                                 // Preserve OLED settings when receiving other config data
@@ -272,6 +271,9 @@ const start = async (device) => {
                                 const oldState = deviceStatusMap[id].config.pomodoro_state;
                                 const newState = pomodoroConfig.pomodoro_state;
                                 
+                                // Preserve notification settings when receiving pomodoro data
+                                const notificationsEnabled = deviceStatusMap[id].config.pomodoro_notifications_enabled;
+                                
                                 deviceStatusMap[id].config.pomodoro_work_time = pomodoroConfig.pomodoro_work_time;
                                 deviceStatusMap[id].config.pomodoro_break_time = pomodoroConfig.pomodoro_break_time;
                                 deviceStatusMap[id].config.pomodoro_long_break_time = pomodoroConfig.pomodoro_long_break_time;
@@ -281,6 +283,11 @@ const start = async (device) => {
                                 deviceStatusMap[id].config.pomodoro_minutes = pomodoroConfig.pomodoro_minutes;
                                 deviceStatusMap[id].config.pomodoro_seconds = pomodoroConfig.pomodoro_seconds;
                                 deviceStatusMap[id].config.pomodoro_current_cycle = pomodoroConfig.pomodoro_current_cycle;
+                                
+                                // Restore notification settings
+                                if (notificationsEnabled !== undefined) {
+                                    deviceStatusMap[id].config.pomodoro_notifications_enabled = notificationsEnabled;
+                                }
                                 
                                
                                 global.mainWindow.webContents.send("deviceConnectionStatePomodoroChanged", {
