@@ -147,7 +147,7 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
         }
     });
 
-    // OLEDの設定が変更されたときのイベントリスナー
+    // Event listener for when OLED settings are changed
     ipcRenderer.on("oledSettingsChanged", (event, { deviceId, enabled }) => {
         const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
         if (deviceIndex !== -1) {
@@ -156,7 +156,7 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
             }
             cachedDeviceRegistry[deviceIndex].config.oled_enabled = enabled ? 1 : 0;
             command.changeConnectDevice(cachedDeviceRegistry);
-            // デバイス構成の更新をサーバーに送信
+            // Send device configuration update to server
             command.sendDeviceConfig(cachedDeviceRegistry[deviceIndex]);
         }
     });

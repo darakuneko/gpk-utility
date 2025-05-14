@@ -63,31 +63,17 @@ export function useStateContext() {
 export function StateProvider({children}) {
     const [state, dispatch] = useReducer(reducer, initialState);
     const stateRef = useRef(state);
-    const lastDevicesRef = useRef([]);
-    const pendingUpdatesRef = useRef(false);
     const prevStateRef = useRef({});
     
     useEffect(() => {
         stateRef.current = state;
     }, [state]);
 
-    // Create custom handler to batch process state changes
-    useEffect(() => {
-        const currentJSON = JSON.stringify(state.devices);
-        const lastJSON = JSON.stringify(lastDevicesRef.current);
-        
-        // Only set flag if state has changed and update is not from API
-        if (currentJSON !== lastJSON) {
-            pendingUpdatesRef.current = true;
-            
-            // Deep copy to save latest state
-            lastDevicesRef.current = JSON.parse(currentJSON);
-        }
-    }, [state.devices]);
-
     // Modified setState implementation
     const setState = (obj) => {
-        if (!obj) return;
+        if (!obj) {
+            return;
+        }
         
         // Only dispatch if there are changes
         if (obj.init !== undefined && obj.init !== prevStateRef.current.init) {

@@ -381,7 +381,7 @@ ipcMain.handle('saveOledSettings', async (event, deviceId, enabled) => {
         // Save settings
         store.set('oledSettings', currentSettings);
         
-        // OLEDの設定変更を通知
+        // Notify OLED settings change
         mainWindow.webContents.send("oledSettingsChanged", { deviceId, enabled });
         
         return { success: true };

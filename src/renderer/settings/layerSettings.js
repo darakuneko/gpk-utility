@@ -21,9 +21,6 @@ const LayerSettings = ({ device, handleChange }) => {
     const [trackpadLayerEnabled, setTrackpadLayerEnabled] = useState(false);
 
     useEffect(() => {
-    }, [state.activeWindow]);
-
-    useEffect(() => {
         const fetchActiveWindows = async () => {
             if (!api || !api.getActiveWindows) return;
             
