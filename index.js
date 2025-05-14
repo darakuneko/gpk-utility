@@ -302,7 +302,6 @@ ipcMain.handle('setEditingPomodoro', async (event, device, isEditing) => {
 // Window monitoring control
 ipcMain.handle('startWindowMonitoring', async (event) => {
     startWindowMonitoring(ActiveWindow);
-    return true;
 });
 
 // Active window list retrieval handler

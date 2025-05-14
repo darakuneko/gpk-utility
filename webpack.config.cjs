@@ -9,7 +9,8 @@ module.exports = [{
     },
     output: {
         filename: "[name].js",
-        path: path.resolve(__dirname, 'public/build')
+        path: path.resolve(__dirname, 'public/build'),
+        globalObject: 'this'
     },
     resolve: {
         modules: [

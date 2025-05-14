@@ -1,11 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-let connectDevices = [];
-let isPolling = false;
+let cachedDeviceRegistry = [];
 let isSliderActive = false;
 let activeSliderDeviceId = null;
 let keyboardPollingInterval = null;
-let lastPollingTime = Date.now();
 
 // Function to start keyboard polling at regular intervals
 const startKeyboardPolling = () => {
@@ -42,7 +40,7 @@ const command = {
     dateTimeOledWrite: async (device) => await ipcRenderer.invoke('dateTimeOledWrite', device),
     sendDeviceConfig: async (device) => await ipcRenderer.invoke('sendDeviceConfig', device),
     setConnectDevices: async (devices) => {
-        connectDevices = devices
+        cachedDeviceRegistry = devices
     },
     exportFile: async (data) => await ipcRenderer.invoke('exportFile', data),
     importFile: async () => await ipcRenderer.invoke('importFile'),
@@ -54,11 +52,14 @@ const command = {
 
 const keyboardSendLoop = async () => {
    try {
+
+       await command.startWindowMonitoring(); 
+
        const kbdList = await command.getKBDList();
        const connectedIds = new Set(kbdList.map(device => device.id));
        
        // Update connection status for existing devices
-       connectDevices = connectDevices.map(device => {
+       cachedDeviceRegistry = cachedDeviceRegistry.map(device => {
            const isConnected = connectedIds.has(device.id);
            if (!isConnected && device.connected) {
                ipcRenderer.send('deviceDisconnected', device.id);
@@ -73,13 +74,13 @@ const keyboardSendLoop = async () => {
        
        // Add new devices
        kbdList.forEach(device => {
-           if (!connectDevices.find(cd => cd.id === device.id)) {
-               connectDevices.push(device);
+           if (!cachedDeviceRegistry.find(cd => cd.id === device.id)) {
+               cachedDeviceRegistry.push(device);
            }
        });       
 
        // Process each device
-       await Promise.all(connectDevices.map(async (device) => {
+       await Promise.all(cachedDeviceRegistry.map(async (device) => {
            const connectKbd = await command.getConnectKbd(device.id);
            
            // Handle disconnected device
@@ -95,7 +96,10 @@ const keyboardSendLoop = async () => {
            if (!connectKbd) {
                await command.start(device);
            } else {
-               if(!device.config) {
+            const existConfingInit = device.config?.init;
+            const existConfingOledEnabled = device.config?.oled_enabled;
+
+               if(!existConfingOledEnabled && !existConfingInit) {
                    await command.getConfig(device);
                }
                // Handle connected device with configuration
@@ -116,68 +120,67 @@ const keyboardSendLoop = async () => {
    }
 }
 
-    ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gpkRCVersion, deviceType, config }) => {
-        const deviceIndex = connectDevices.findIndex(device => device.id === deviceId);
+ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gpkRCVersion, deviceType, config }) => {
+        const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
 
-            const device = connectDevices[deviceIndex];
-            // Only update if connection status changes or command version changes
-            let changed = false;
-            if (device.connected !== connected){
-                connectDevices[deviceIndex].connected = connected;
-                changed = true;
-            } 
-            if(device.gpkRCVersion !== gpkRCVersion) {
-                connectDevices[deviceIndex].gpkRCVersion = gpkRCVersion;
-                changed = true;
-            }
-            if(device.deviceType !== deviceType) {
-                connectDevices[deviceIndex].deviceType = deviceType;
-                changed = true;
-            }
-            if(device.config !== config) {
-                connectDevices[deviceIndex].config = config;
-                changed = true;
-            }
-            if(changed) {
-                command.changeConnectDevice(connectDevices);
-            }
-        
+        const device = cachedDeviceRegistry[deviceIndex];
+        // Only update if connection status changes or command version changes
+        let changed = false;
+        if (device.connected !== connected){
+            cachedDeviceRegistry[deviceIndex].connected = connected;
+            changed = true;
+        } 
+        if(device.gpkRCVersion !== gpkRCVersion) {
+            cachedDeviceRegistry[deviceIndex].gpkRCVersion = gpkRCVersion;
+            changed = true;
+        }
+        if(device.deviceType !== deviceType) {
+            cachedDeviceRegistry[deviceIndex].deviceType = deviceType;
+            changed = true;
+        }
+        if(device.config !== config) {
+            cachedDeviceRegistry[deviceIndex].config = config;
+            changed = true;
+        }
+        if(changed) {
+            command.changeConnectDevice(cachedDeviceRegistry);
+        }
     });
 
     // OLEDの設定が変更されたときのイベントリスナー
     ipcRenderer.on("oledSettingsChanged", (event, { deviceId, enabled }) => {
-        const deviceIndex = connectDevices.findIndex(device => device.id === deviceId);
+        const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
         if (deviceIndex !== -1) {
-            if (!connectDevices[deviceIndex].config) {
-                connectDevices[deviceIndex].config = {};
+            if (!cachedDeviceRegistry[deviceIndex].config) {
+                cachedDeviceRegistry[deviceIndex].config = {};
             }
-            connectDevices[deviceIndex].config.oled_enabled = enabled ? 1 : 0;
-            command.changeConnectDevice(connectDevices);
+            cachedDeviceRegistry[deviceIndex].config.oled_enabled = enabled ? 1 : 0;
+            command.changeConnectDevice(cachedDeviceRegistry);
             // デバイス構成の更新をサーバーに送信
-            command.sendDeviceConfig(connectDevices[deviceIndex]);
+            command.sendDeviceConfig(cachedDeviceRegistry[deviceIndex]);
         }
     });
 
     ipcRenderer.on("deviceConnectionStatePomodoroChanged", (event, { deviceId, pomodoroConfig }) => {     
-        const deviceIndex = connectDevices.findIndex(device => device.id === deviceId);
-        connectDevices[deviceIndex].config.pomodoro_work_time = pomodoroConfig.pomodoro_work_time;
-        connectDevices[deviceIndex].config.pomodoro_break_time = pomodoroConfig.pomodoro_break_time;
-        connectDevices[deviceIndex].config.pomodoro_long_break_time = pomodoroConfig.pomodoro_long_break_time;
-        connectDevices[deviceIndex].config.pomodoro_cycles = pomodoroConfig.pomodoro_cycles;
-        connectDevices[deviceIndex].config.pomodoro_timer_active = pomodoroConfig.pomodoro_timer_active;    
-        connectDevices[deviceIndex].config.pomodoro_state = pomodoroConfig.pomodoro_state;
-        connectDevices[deviceIndex].config.pomodoro_minutes = pomodoroConfig.pomodoro_minutes;
-        connectDevices[deviceIndex].config.pomodoro_seconds = pomodoroConfig.pomodoro_seconds;
-        connectDevices[deviceIndex].config.pomodoro_current_cycle = pomodoroConfig.pomodoro_current_cycle;  
+        const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
+        cachedDeviceRegistry[deviceIndex].config.pomodoro_work_time = pomodoroConfig.pomodoro_work_time;
+        cachedDeviceRegistry[deviceIndex].config.pomodoro_break_time = pomodoroConfig.pomodoro_break_time;
+        cachedDeviceRegistry[deviceIndex].config.pomodoro_long_break_time = pomodoroConfig.pomodoro_long_break_time;
+        cachedDeviceRegistry[deviceIndex].config.pomodoro_cycles = pomodoroConfig.pomodoro_cycles;
+        cachedDeviceRegistry[deviceIndex].config.pomodoro_timer_active = pomodoroConfig.pomodoro_timer_active;    
+        cachedDeviceRegistry[deviceIndex].config.pomodoro_state = pomodoroConfig.pomodoro_state;
+        cachedDeviceRegistry[deviceIndex].config.pomodoro_minutes = pomodoroConfig.pomodoro_minutes;
+        cachedDeviceRegistry[deviceIndex].config.pomodoro_seconds = pomodoroConfig.pomodoro_seconds;
+        cachedDeviceRegistry[deviceIndex].config.pomodoro_current_cycle = pomodoroConfig.pomodoro_current_cycle;  
 
-        command.changeConnectDevice(connectDevices);
+        command.changeConnectDevice(cachedDeviceRegistry);
     });
 
     ipcRenderer.on("configUpdated", (event, { deviceId, config, identifier }) => {
-        const deviceIndex = connectDevices.findIndex(device => device.id === deviceId);
+        const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
         if (deviceIndex !== -1) {
-            connectDevices[deviceIndex].config = { ...config };
-            command.changeConnectDevice(connectDevices);
+            cachedDeviceRegistry[deviceIndex].config = { ...config };
+            command.changeConnectDevice(cachedDeviceRegistry);
         }
     });
 
@@ -187,7 +190,7 @@ contextBridge.exposeInMainWorld("api", {
     getGpkRCInfo: async (device) => await command.getGpkRCInfo(device),
     sendDeviceConfig: async (device) => await command.sendDeviceConfig(device),
     setConnectDevices: (device) => command.setConnectDevices(device),
-    exportFile: async () => await command.exportFile(connectDevices),
+    exportFile: async () => await command.exportFile(cachedDeviceRegistry),
     importFile: async () => {
         try {
             const dat = await command.importFile();
@@ -202,7 +205,7 @@ contextBridge.exposeInMainWorld("api", {
                     return { success: false, error: "Invalid file format: JSON array expected" };
                 }
                 
-                const updatedDevices = await Promise.all(connectDevices.map(async (cd) => {
+                const updatedDevices = await Promise.all(cachedDeviceRegistry.map(async (cd) => {
                     const matchingConfig = json.find((j) =>
                         j.id === cd.id &&
                         j.manufacturer === cd.manufacturer &&
@@ -224,8 +227,8 @@ contextBridge.exposeInMainWorld("api", {
                     return cd;
                 }));
                 
-                connectDevices = updatedDevices;
-                await command.changeConnectDevice(connectDevices);
+                cachedDeviceRegistry = updatedDevices;
+                await command.changeConnectDevice(cachedDeviceRegistry);
                 
                 return { success: true, devicesUpdated: updatedDevices.length };
             } catch (parseErr) {
@@ -243,7 +246,6 @@ contextBridge.exposeInMainWorld("api", {
     },
     setActiveTab: async (device, tabName) => await command.setActiveTab(device, tabName),
     setEditingPomodoro: async (device, isEditing) => await command.setEditingPomodoro(device, isEditing),
-    startWindowMonitoring: async () => await command.startWindowMonitoring(),
     getActiveWindows: async () => await command.getActiveWindows(),
     // Save and load AutoLayer settings
     saveAutoLayerSettings: async (settings) => await ipcRenderer.invoke('saveAutoLayerSettings', settings),

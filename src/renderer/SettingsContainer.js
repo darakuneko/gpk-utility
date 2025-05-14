@@ -70,7 +70,6 @@ const SettingsContainer = (() => {
     const [menuOpen, setMenuOpen] = useState(false)
     const [languageMenuOpen, setLanguageMenuOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
-    const [retryCount, setRetryCount] = useState(0)
     const [traySettings, setTraySettings] = useState({
         minimizeToTray: true,
         backgroundStart: false
@@ -128,7 +127,7 @@ const SettingsContainer = (() => {
         };
         
         checkDevices();
-    }, [connectedDevices, activeDeviceId, state.devices, retryCount, dispatch, t]);
+    }, [connectedDevices, activeDeviceId, state.devices, dispatch, t]);
 
     // Setup listeners for configUpdated event
     useEffect(() => {

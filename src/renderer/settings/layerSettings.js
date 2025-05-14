@@ -5,11 +5,13 @@ import {
   CustomSelect
 } from "../../components/CustomComponents.js";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
+import { useLanguage } from "../../i18n/LanguageContext.js";
 
 const { api } = window;
 
 const LayerSettings = ({ device, handleChange }) => {
     const { state, setState } = useStateContext();
+    const { t } = useLanguage();
     const [layerSettings, setLayerSettings] = useState([]);
     const [isEnabled, setIsEnabled] = useState(false);
     const [localActiveWindows, setLocalActiveWindows] = useState([]);
@@ -97,10 +99,6 @@ const LayerSettings = ({ device, handleChange }) => {
                 
                 if (device.config?.can_trackpad_layer !== undefined) {
                     setTrackpadLayerEnabled(device.config?.can_trackpad_layer === 1);
-                }
-                
-                if (!state.activeWindow || state.activeWindow.length === 0) {
-                    api.startWindowMonitoring();
                 }
             } catch (error) {
                 console.error("Error initializing layer settings:", error);
@@ -296,7 +294,7 @@ const LayerSettings = ({ device, handleChange }) => {
             {device.deviceType === "trackpad" && device.product !== "NumNum Bento" && device.product !== "NumNum Bento MAX" && (
                 <div className="flex items-center mb-4">
                     <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Trackpad Layer</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.trackpadLayer')}</h3>
                     </div>
                     <div className="ml-4">
                         <CustomSwitch
@@ -313,13 +311,13 @@ const LayerSettings = ({ device, handleChange }) => {
                 <div className={`${device.deviceType === "trackpad" && device.product !== "NumNum Bento" && device.product !== "NumNum Bento MAX" ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
                     <div className="flex items-center mb-4">
                         <div className="flex-1">
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Layer Change Haptics</h3>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.changeHaptics')}</h3>
                         </div>
                     </div>
                     
                     <div className="flex flex-col gap-3 mb-4">
                         <div className="pt-2 w-full">
-                            <label className="block mb-1 text-gray-900 dark:text-white">Haptics when moving layers</label>
+                            <label className="block mb-1 text-gray-900 dark:text-white">{t('haptic.layerMoving')}</label>
                             <CustomSwitch
                                 id="config-can_hf_for_layer"
                                 onChange={handleChange("can_hf_for_layer", device.id)}
@@ -328,7 +326,7 @@ const LayerSettings = ({ device, handleChange }) => {
                         </div>
                         <div className="pt-2 w-full">
                             <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
-                                <span>Haptic Mode</span>
+                                <span>{t('haptic.mode')}</span>
                             </label>
                             <CustomSelect
                                 id="config-hf_waveform_number"
@@ -344,7 +342,7 @@ const LayerSettings = ({ device, handleChange }) => {
             <div className={`${device.deviceType === "trackpad" ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
                 <div className="flex items-center mb-4">
                     <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Auto Layer Switching</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.autoSwitching')}</h3>
                     </div>
                     <div className="ml-4">
                         <CustomSwitch
@@ -357,17 +355,17 @@ const LayerSettings = ({ device, handleChange }) => {
                 
                 {isEnabled ? (
                     <div className="mt-4">
-                        <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">Current Application Mappings</h4>
+                        <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">{t('layer.currentMappings')}</h4>
                         {layerSettings.length > 0 ? (
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                     <thead className="bg-gray-50 dark:bg-gray-700">
                                         <tr>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                Application
+                                                {t('layer.application')}
                                             </th>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                Layer
+                                                {t('layer.layer')}
                                             </th>
                                         </tr>
                                     </thead>
@@ -375,10 +373,10 @@ const LayerSettings = ({ device, handleChange }) => {
                                         {layerSettings.map((setting, index) => (
                                             <tr key={index}>
                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                                                    {setting.appName || "Not specified"}
+                                                    {setting.appName || t('layer.notSpecified')}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                                                    Layer {setting.layer}
+                                                    {t('layer.layerNumber', { number: setting.layer })}
                                                 </td>
                                             </tr>
                                         ))}
@@ -387,7 +385,7 @@ const LayerSettings = ({ device, handleChange }) => {
                             </div>
                         ) : (
                             <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                                No application mappings configured yet. Disable Auto Layer to add mappings.
+                                {t('layer.noMappingsEnabledHint')}
                             </div>
                         )}
                         
@@ -396,13 +394,13 @@ const LayerSettings = ({ device, handleChange }) => {
                     <>
                         <div className="mt-4 mb-2">
                             <div className="flex justify-between items-center">
-                                <span className="text-gray-900 dark:text-white font-medium">Application Layer Mappings</span>
+                                <span className="text-gray-900 dark:text-white font-medium">{t('layer.appLayerMappings')}</span>
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={handleAddLayerSetting}
                                         className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                     >
-                                        Add Mapping
+                                        {t('layer.addMapping')}
                                     </button>
                                 </div>
                             </div>
@@ -414,13 +412,13 @@ const LayerSettings = ({ device, handleChange }) => {
                                     <thead className="bg-gray-50 dark:bg-gray-700">
                                         <tr>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                Application
+                                                {t('layer.application')}
                                             </th>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                Layer
+                                                {t('layer.layer')}
                                             </th>
                                             <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                Actions
+                                                {t('layer.actions')}
                                             </th>
                                         </tr>
                                     </thead>
@@ -448,7 +446,7 @@ const LayerSettings = ({ device, handleChange }) => {
                                                         onClick={() => handleDeleteLayerSetting(index)}
                                                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                                     >
-                                                        Delete
+                                                        {t('common.delete')}
                                                     </button>
                                                 </td>
                                             </tr>
@@ -458,7 +456,7 @@ const LayerSettings = ({ device, handleChange }) => {
                             </div>
                         ) : (
                             <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                                No mappings found. Click "Add Mapping" to create a new mapping.
+                                {t('layer.noMappingsFound')}
                             </div>
                         )}
                     </>

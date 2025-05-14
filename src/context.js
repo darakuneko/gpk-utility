@@ -1,8 +1,7 @@
 import React from 'react'
-import {createContext, useState, useContext, useEffect, useReducer, useRef} from 'react'
+import {createContext, useContext, useEffect, useReducer, useRef} from 'react'
 
 const stateContext = createContext({})
-const api = window.api;
 
 const ACTION_TYPES = {
     SET_DEVICES: 'SET_DEVICES',
@@ -64,11 +63,8 @@ export function useStateContext() {
 export function StateProvider({children}) {
     const [state, dispatch] = useReducer(reducer, initialState);
     const stateRef = useRef(state);
-    const deviceInitAttempts = useRef(0);
-    const maxInitAttempts = 5;
     const lastDevicesRef = useRef([]);
     const pendingUpdatesRef = useRef(false);
-    const apiSyncTimeoutRef = useRef(null);
     const prevStateRef = useRef({});
     
     useEffect(() => {
