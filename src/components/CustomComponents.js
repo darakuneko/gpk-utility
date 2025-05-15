@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 
 // Custom slider component
-export const CustomSlider = ({ id, value = 0, min, max, step, marks, onChange, valueLabelFormat, onChangeStart, onChangeEnd }) => {
+export const CustomSlider = ({ id, value = 0, min, max, step, marks = [], onChange, valueLabelFormat, onChangeStart, onChangeEnd }) => {
   const sliderRef = useRef(null);
   
   // Ensure value is a valid number
@@ -45,13 +45,15 @@ export const CustomSlider = ({ id, value = 0, min, max, step, marks, onChange, v
         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
         style={{ '--thumb-position': thumbPosition }}
       />
-      <div className="absolute flex justify-between w-full px-2 mt-1 text-xs text-gray-600 dark:text-gray-300">
-        {marks.map(mark => (
-          <span key={mark.value} style={{left: `${((mark.value - safeMin) / (safeMax - safeMin)) * 100}%`}}>
-            {mark.label}
-          </span>
-        ))}
-      </div>
+      {marks && marks.length > 0 && (
+        <div className="absolute flex justify-between w-full px-2 mt-1 text-xs text-gray-600 dark:text-gray-300">
+          {marks.map(mark => (
+            <span key={mark.value} style={{left: `${((mark.value - safeMin) / (safeMax - safeMin)) * 100}%`}}>
+              {mark.label}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

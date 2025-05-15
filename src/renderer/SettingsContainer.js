@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import SettingEdit from "./settingEdit.js"
 import { useStateContext } from "../context.js"
 import { useLanguage } from "../i18n/LanguageContext.js"
+import { CustomSlider } from "../components/CustomComponents.js"
 
 // Hamburger menu icon component
 const HamburgerIcon = () => (
@@ -74,6 +75,8 @@ const SettingsContainer = (() => {
         minimizeToTray: true,
         backgroundStart: false
     })
+    const [pollingInterval, setPollingInterval] = useState(() => window.api.getStoreSetting('pollingInterval') || 1000)
+    const pollingIntervalRef = useRef(pollingInterval)
 
     // Available languages
     const availableLanguages = {
@@ -316,8 +319,8 @@ const SettingsContainer = (() => {
                             <div className="relative">
                                 <MenuItem onClick={toggleLanguageMenu}>
                                     <div className="flex justify-between items-center w-full">
-                                        <span>{t('settings.language')}</span>
-                                        <span className="text-sm text-gray-500">{availableLanguages[locale]}</span>
+                                        <span className="mr-2">{t('settings.language')}</span>
+                                        <span className="text-sm text-gray-500 ml-auto">{availableLanguages[locale]}</span>
                                     </div>
                                 </MenuItem>
                                 
@@ -345,6 +348,51 @@ const SettingsContainer = (() => {
                             
                             <MenuItem onClick={handleImport}>{t('settings.import')}</MenuItem>
                             <MenuItem onClick={handleExport}>{t('settings.export')}</MenuItem>
+                            <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                            
+                            {/* ポーリング間隔設定 */}
+                            <div className="px-4 py-3">
+                                <label className="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-300">
+                                    {t('settings.pollingInterval')}
+                                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-2 font-normal">
+                                        {pollingInterval} ms
+                                    </span>
+                                </label>
+                                <div className="mb-2">
+                                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                        <span>{t('settings.faster')}</span>
+                                        <span>{t('settings.slower')}</span>
+                                    </div>
+                                    <CustomSlider
+                                        id="settings-polling-interval"
+                                        value={pollingInterval}
+                                        min={200}
+                                        step={100}
+                                        max={2000}
+                                        onChange={(e) => {
+                                            const value = parseInt(e.target.value, 10);
+                                            // ローカルステートを直ちに更新
+                                            setPollingInterval(value);
+                                            pollingIntervalRef.current = value;
+                                            
+                                            // バックエンドに設定を保存
+                                            window.api.saveStoreSetting('pollingInterval', value);
+                                            
+                                            // スライダーUIを更新
+                                            window.requestAnimationFrame(() => {
+                                                const element = document.getElementById('settings-polling-interval');
+                                                if (element) {
+                                                    element.dispatchEvent(new Event('update'));
+                                                }
+                                            });
+                                        }}
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {t('settings.pollingIntervalDescription')}
+                                </p>
+                            </div>
+                            
                             <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                             <MenuItem 
                                 isToggle={true} 

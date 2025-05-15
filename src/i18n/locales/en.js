@@ -99,7 +99,11 @@ export default {
     importSuccess: 'Settings imported successfully',
     importError: 'Error importing settings',
     exportSuccess: 'Settings exported successfully',
-    exportError: 'Error exporting settings'
+    exportError: 'Error exporting settings',
+    pollingInterval: 'Polling Interval',
+    pollingIntervalDescription: 'Time between keyboard polling (ms)',
+    faster: 'Faster',
+    slower: 'Slower'
   },
   haptic: {
     title: 'Haptic Feedback',
