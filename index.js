@@ -32,6 +32,10 @@ import ActiveWindow from '@paymoapp/active-window'
 // Initialize ActiveWindow
 ActiveWindow.default.initialize()
 
+// Global variables
+let mainWindow;
+let tray = null;
+
 // Initialize electron-store
 const store = new Store({
     name: 'gpk-utility',
@@ -73,23 +77,23 @@ const translate = (key, params = {}) => {
 
 // Store last formatted date for each device
 const lastFormattedDateMap = new Map();
-
-let mainWindow
-let tray = null
+// Store active pomodoro devices
+const activePomodoroDevices = new Map();
 
 // Handle device disconnection - clear the lastFormattedDateMap entry
 const handleDeviceDisconnect = (deviceId) => {
     if (lastFormattedDateMap.has(deviceId)) {
         lastFormattedDateMap.delete(deviceId);
     }
+    if (activePomodoroDevices.has(deviceId)) {
+        activePomodoroDevices.delete(deviceId);
+    }
 };
 
-const createTray = () => {
-    const iconPath = path.join(__dirname, 'icons', '16x16.png');
-    const icon = nativeImage.createFromPath(iconPath);
-    tray = new Tray(icon);
-    
-    const contextMenu = Menu.buildFromTemplate([
+// Create a menu template for tray based on current pomodoro status
+const createTrayMenuTemplate = () => {
+    // Base menu items
+    const menuItems = [
         { 
             label: 'Show Window', 
             click: () => {
@@ -99,23 +103,68 @@ const createTray = () => {
                     createWindow();
                 }
             } 
-        },
-        { 
-            label: 'Quit', 
-            click: () => {
-                try {
-                    close();
-                } catch (e) {
-                    // Remove error log
-                }
-                app.quit();
-            } 
         }
-    ]);
+    ];
     
-    tray.setToolTip('GPK Utility');
+    // Add pomodoro status items if any device has active pomodoro
+    if (activePomodoroDevices.size > 0) {
+        menuItems.push({ type: 'separator' });
+        menuItems.push({ label: 'Active Pomodoro Timers', enabled: false });
+        
+        // Add an entry for each active pomodoro device
+        activePomodoroDevices.forEach((deviceInfo, deviceId) => {
+            const { name, state } = deviceInfo;
+            let stateText = '';
+            
+            switch (state) {
+                case 1:
+                    stateText = 'Working';
+                    break;
+                case 2:
+                    stateText = 'Break';
+                    break;
+                case 3:
+                    stateText = 'Long Break';
+                    break;
+            }
+            
+            // Display only the state without minutes
+            menuItems.push({
+                label: `${name}: ${stateText}`,
+                enabled: false
+            });
+        });
+    }
+    
+    // Add quit item
+    menuItems.push({ type: 'separator' });
+    menuItems.push({ 
+        label: 'Quit', 
+        click: () => {
+            try {
+                close();
+            } catch (e) {
+                // Remove error log
+            }
+            app.quit();
+        } 
+    });
+    
+    return menuItems;
+}
+
+const createTray = () => {
+    const iconPath = path.join(__dirname, 'icons', '16x16.png');
+    const icon = nativeImage.createFromPath(iconPath);
+    tray = new Tray(icon);
+    
+    // Set default context menu immediately
+    const contextMenu = Menu.buildFromTemplate(createTrayMenuTemplate());
     tray.setContextMenu(contextMenu);
     
+    tray.setToolTip('GPK Utility');
+    
+    // Set up click handler
     tray.on('click', () => {
         if (mainWindow) {
             if (mainWindow.isVisible()) {
@@ -570,7 +619,8 @@ const buildConfigByteArray = (config) => {
         lower_default_speed;
     byteArray[5] = (config.default_speed & 0b001111) << 4 |
         config.scroll_step;
-    byteArray[6] = config.can_short_scroll << 7;
+    byteArray[6] = config.can_short_scroll << 7 |
+        config.pomodoro_notify_haptic_enable << 6;
     byteArray[7] = config.pomodoro_work_time;
     byteArray[8] = config.pomodoro_break_time;
     byteArray[9] = config.pomodoro_long_break_time;
@@ -638,6 +688,44 @@ ipcMain.handle('loadPomodoroNotificationSettings', async (event, deviceId) => {
     } catch (error) {
         console.error("Error loading pomodoro notification settings:", error);
         return { success: false, error: error.message };
+    }
+});
+
+// Handle pomodoro state changes
+ipcMain.on('deviceConnectionStatePomodoroChanged', (event, { deviceId, pomodoroConfig, stateChanged }) => {
+    // Convert timer_active to boolean explicitly
+    const isTimerActive = pomodoroConfig.pomodoro_timer_active === 1;
+    
+    // Force update on timer state change (active/inactive)
+    let prevTimerState = activePomodoroDevices.has(deviceId);
+    let menuNeedsUpdate = prevTimerState !== isTimerActive;
+    
+    if (isTimerActive) {
+        // Get device name
+        const devices = getKBDList();
+        const device = devices.find(d => d.id === deviceId);
+        const deviceName = device?.product || device?.name || 'Device';
+        
+        // Add to active devices
+        activePomodoroDevices.set(deviceId, {
+            name: deviceName,
+            state: pomodoroConfig.pomodoro_state
+        });
+    } else {
+        // Remove from active devices if timer is not active
+        if (activePomodoroDevices.has(deviceId)) {
+            activePomodoroDevices.delete(deviceId);
+        }
+    }
+    
+    // Always update tray menu when needed
+    if (menuNeedsUpdate && tray) {
+        try {
+            const contextMenu = Menu.buildFromTemplate(createTrayMenuTemplate());
+            tray.setContextMenu(contextMenu);
+        } catch (error) {
+            console.error(`Error updating tray menu:`, error);
+        }
     }
 });
 

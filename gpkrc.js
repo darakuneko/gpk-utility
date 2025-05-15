@@ -126,6 +126,7 @@ function receiveTrackpadConfig(buffer) {
         default_speed: joinDefaultSpeed(buffer[6], buffer[7]),
         scroll_step: buffer[7] & 0b00001111,
         can_short_scroll: (buffer[8] & 0b10000000) >> 7,
+        pomodoro_notify_haptic_enable: (buffer[8] & 0b01000000) >> 6,
         pomodoro_work_time: buffer[9],
         pomodoro_break_time: buffer[10],
         pomodoro_long_break_time: buffer[11],
@@ -136,7 +137,7 @@ function receiveTrackpadConfig(buffer) {
         pomodoro_state: buffer[15] & 0b00000011,
         pomodoro_minutes: buffer[16],
         pomodoro_seconds: buffer[17],
-        pomodoro_current_cycle: buffer[17],
+        pomodoro_current_cycle: buffer[18],
         auto_layer_enabled: 0,
         auto_layer_settings: []
     }
@@ -239,7 +240,7 @@ const start = async (device) => {
                                         deviceStatusMap[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
                                     }
                                 }
-                                
+
                                 global.mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
                                     connected: deviceStatusMap[id].connected,
@@ -248,7 +249,14 @@ const start = async (device) => {
                                     config: deviceStatusMap[id].config
                                 });
                             } else if (cmdId === commandId.customGetValue) {
+                                // Save old timer state before updating
+                                const oldTimerActive = deviceStatusMap[id]?.config?.pomodoro_timer_active;
+                                
+                                // Update with new config
                                 deviceStatusMap[id].config = receiveTrackpadConfig(buffer);
+                                
+                                // Get new timer state
+                                const newTimerActive = deviceStatusMap[id].config.pomodoro_timer_active;
                                 
                                 // Preserve OLED settings when receiving other config data
                                 if (settingsStore) {
@@ -257,6 +265,8 @@ const start = async (device) => {
                                         deviceStatusMap[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
                                     }
                                 }
+                                
+                                // Send general device state update
                                 global.mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
                                     connected: deviceStatusMap[id].connected,
@@ -264,6 +274,15 @@ const start = async (device) => {
                                     deviceType: deviceStatusMap[id].deviceType,
                                     config: deviceStatusMap[id].config
                                 });
+                                
+                                // Also send pomodoro state update if timer active state changed
+                                if (oldTimerActive !== undefined && oldTimerActive !== newTimerActive) {
+                                    global.mainWindow.webContents.send("deviceConnectionStatePomodoroChanged", {
+                                        deviceId: id,
+                                        pomodoroConfig: deviceStatusMap[id].config,
+                                        stateChanged: true
+                                    });
+                                }
                             } else if (cmdId === commandId.pomodoroGetValue) {
                                 const pomodoroConfig = receivePomodoroConfig(buffer);
                                 
@@ -271,6 +290,10 @@ const start = async (device) => {
                                 const oldState = deviceStatusMap[id].config.pomodoro_state;
                                 const newState = pomodoroConfig.pomodoro_state;
                                 
+                                // Check if timer active state changed
+                                const oldTimerActive = deviceStatusMap[id].config.pomodoro_timer_active;
+                                const newTimerActive = pomodoroConfig.pomodoro_timer_active;
+
                                 // Preserve notification settings when receiving pomodoro data
                                 const notificationsEnabled = deviceStatusMap[id].config.pomodoro_notifications_enabled;
                                 
@@ -289,11 +312,13 @@ const start = async (device) => {
                                     deviceStatusMap[id].config.pomodoro_notifications_enabled = notificationsEnabled;
                                 }
                                 
+                                // Detect both state changes and timer active changes
+                                const stateChanged = oldState !== newState || oldTimerActive !== newTimerActive;
                                
                                 global.mainWindow.webContents.send("deviceConnectionStatePomodoroChanged", {
                                     deviceId: id,
                                     pomodoroConfig: deviceStatusMap[id].config,
-                                    stateChanged: oldState !== newState,
+                                    stateChanged: stateChanged,
                                 });
                             } 
                         }

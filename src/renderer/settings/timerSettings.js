@@ -46,7 +46,7 @@ const PomodoroActiveDisplay = ({ device, formatTime }) => {
 };
 
 // Pomodoro inactive state settings component
-const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd, notificationsEnabled }) => {
+const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd, notificationsEnabled, hapticNotificationsEnabled }) => {
   const { t } = useLanguage();
   return (
     <div>
@@ -62,6 +62,18 @@ const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, han
             id="config-pomodoro_notifications_enabled"
             onChange={handleChange("pomodoro_notifications_enabled", device.id)}
             checked={notificationsEnabled}
+          />
+        </div>
+        
+        {/* Haptic feedback notification toggle switch */}
+        <div className="flex items-center justify-between py-2 mb-2 border-b border-gray-100 dark:border-gray-700">
+          <label className="flex items-center text-gray-900 dark:text-white">
+            <span>{t('notifications.pomodoro.hapticEnabled')}</span>
+          </label>
+          <CustomSwitch
+            id="config-pomodoro_notify_haptic_enable"
+            onChange={handleChange("pomodoro_notify_haptic_enable", device.id)}
+            checked={hapticNotificationsEnabled}
           />
         </div>
         
@@ -181,7 +193,7 @@ const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, han
 
 const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd, formatTime }) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
+  const [hapticNotificationsEnabled, setHapticNotificationsEnabled] = useState(!!device?.config?.pomodoro_notify_haptic_enable);
 
   // Load notification settings from store when component mounts or device changes
   useEffect(() => {
@@ -205,13 +217,22 @@ const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEn
     }
     
     loadNotificationSettings();
+    
+    // Update haptic notification state from device config
+    if (device?.config) {
+      setHapticNotificationsEnabled(!!device.config.pomodoro_notify_haptic_enable);
+    }
   }, [device]);
 
   // Listen for CustomSwitch update events
   useEffect(() => {
     const handleSwitchUpdate = (event) => {
       if (event.detail && event.detail.id === "config-pomodoro_notifications_enabled") {
-        setForceUpdateCounter(prev => prev + 1);
+        setNotificationsEnabled(event.detail.value);
+      }
+      
+      if (event.detail && event.detail.id === "config-pomodoro_notify_haptic_enable") {
+        setHapticNotificationsEnabled(!!event.detail.value);
       }
     };
     
@@ -233,9 +254,6 @@ const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEn
       const oldValue = device.config.pomodoro_notifications_enabled;
       device.config.pomodoro_notifications_enabled = isEnabled ? 1 : 0;
       
-      // Force UI update
-      setForceUpdateCounter(prev => prev + 1);
-      
       // Dispatch update event to the switch element
       const switchElement = document.getElementById("config-pomodoro_notifications_enabled");
       if (switchElement) {
@@ -247,6 +265,30 @@ const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEn
     }
   };
 
+  // Custom change handler for haptic notification toggle
+  const handleHapticNotificationToggle = (isEnabled) => {
+    setHapticNotificationsEnabled(isEnabled);
+    
+    // Update device config
+    device.config.pomodoro_notify_haptic_enable = isEnabled ? 1 : 0;
+    
+    // Send the updated config to device
+    window.api.sendDeviceConfig(device);
+    
+    // Dispatch update event to the switch element
+    const switchElement = document.getElementById("config-pomodoro_notify_haptic_enable");
+    if (switchElement) {
+      const customEvent = new CustomEvent('switch-updated', { 
+        detail: { 
+          id: "config-pomodoro_notify_haptic_enable",
+          value: isEnabled
+        },
+        bubbles: true 
+      });
+      switchElement.dispatchEvent(customEvent);
+    }
+  };
+
   // Override the original handleChange for notification settings
   const enhancedHandleChange = (pType, deviceId) => {
     return (value) => {
@@ -255,6 +297,15 @@ const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEn
           handleNotificationToggle(value.target.checked);
         } else {
           handleNotificationToggle(value === 1);
+        }
+        return;
+      }
+      
+      if (pType === "pomodoro_notify_haptic_enable") {
+        if (value && typeof value === 'object' && value.target) {
+          handleHapticNotificationToggle(value.target.checked);
+        } else {
+          handleHapticNotificationToggle(value === 1);
         }
         return;
       }
@@ -274,6 +325,7 @@ const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEn
           handleSliderStart={handleSliderStart} 
           handleSliderEnd={handleSliderEnd}
           notificationsEnabled={notificationsEnabled}
+          hapticNotificationsEnabled={hapticNotificationsEnabled}
         />
       )}
     </div>
