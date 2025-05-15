@@ -124,7 +124,8 @@ export default {
       breakBody: 'Time to relax for {{minutes}} minutes',
       longBreakTitle: 'Long Break Started!',
       longBreakBody: 'Take it easy for {{minutes}} minutes',
-      enabled: 'Enable Notifications'
+      enabled: 'Enable Notifications',
+      hapticEnabled: 'Enable Haptic Feedback Notifications'
     }
   }
 };

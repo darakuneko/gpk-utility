@@ -168,6 +168,9 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
         // Save existing notification settings before updating other values
         const notificationsEnabled = cachedDeviceRegistry[deviceIndex].config.pomodoro_notifications_enabled;
         
+        // Check old timer active state
+        const oldTimerActive = cachedDeviceRegistry[deviceIndex].config.pomodoro_timer_active;
+
         // Update cached values
         cachedDeviceRegistry[deviceIndex].config.pomodoro_work_time = pomodoroConfig.pomodoro_work_time;
         cachedDeviceRegistry[deviceIndex].config.pomodoro_break_time = pomodoroConfig.pomodoro_break_time;
@@ -188,9 +191,13 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
 
         command.changeConnectDevice(cachedDeviceRegistry);
         
+        // Check if timer active state changed
+        const newTimerActive = pomodoroConfig.pomodoro_timer_active === 1;
+        const timerActiveStateChanged = (oldTimerActive === 1) !== newTimerActive;
+
         // Send notification to main process when state changes and timer is active
         // Only trigger notification if stateChanged flag is true and timer is active
-        if (stateChanged && pomodoroConfig.pomodoro_timer_active) {
+        if (stateChanged && pomodoroConfig.pomodoro_timer_active === 1) {
             // Immediately get fresh notification setting from stored config
             (async () => {
                 try {
@@ -220,7 +227,7 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
                         
                         ipcRenderer.send('pomodoroStateChanged', {
                             deviceName: deviceName,
-                            deviceId: deviceId, // 実際のデバイスIDも送信
+                            deviceId: deviceId,
                             state: newState,
                             minutes: minutes
                         });
@@ -230,6 +237,14 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
                 }
             })();
         }
+        
+        // Forward the pomodoro state change to main process for tray updates
+        // Make sure to use stateChanged here to match the parameter name in index.js
+        ipcRenderer.send('deviceConnectionStatePomodoroChanged', {
+            deviceId: deviceId,
+            pomodoroConfig: pomodoroConfig,
+            stateChanged: stateChanged || timerActiveStateChanged  // Include timer active state changes
+        });
     });
 
     ipcRenderer.on("configUpdated", (event, { deviceId, config, identifier }) => {
