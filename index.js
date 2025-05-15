@@ -381,10 +381,13 @@ ipcMain.handle('start', async (event, device) => {
 ipcMain.handle('stop', async (event, device) => {
     await stop(device)
 })
+ipcMain.handle('close', async (event) => {
+    await close()
+})
 ipcMain.handle('encodeDeviceId', async (event, device) => await encodeDeviceId(device))
 ipcMain.handle('getKBDList', async (event) => await getKBDList())
 ipcMain.handle('getConnectKbd', async (event, id) => await getConnectKbd(id))
-ipcMain.handle('getConfig', async (event, device) => await getDeviceConfig(device))
+ipcMain.handle('getDeviceConfig', async (event, device) => await getDeviceConfig(device))
 ipcMain.handle('getPomodoroConfig', async (event, device) => await getPomodoroConfig(device))
 
 ipcMain.on("changeConnectDevice", (e, data) => {
@@ -638,7 +641,7 @@ const buildConfigByteArray = (config) => {
     return byteArray;
 }
 
-// Handle language change
+// Set application locale
 ipcMain.handle('setAppLocale', async (event, locale) => {
     try {
         // Save locale to electron-store
@@ -646,6 +649,16 @@ ipcMain.handle('setAppLocale', async (event, locale) => {
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
+    }
+});
+
+// Get application locale
+ipcMain.handle('getAppLocale', async (event) => {
+    try {
+        // Return current locale from electron-store
+        return store.get('locale') || 'en';
+    } catch (error) {
+        return 'en'; // Default to English on error
     }
 });
 
@@ -687,6 +700,60 @@ ipcMain.handle('loadPomodoroNotificationSettings', async (event, deviceId) => {
         };
     } catch (error) {
         console.error("Error loading pomodoro notification settings:", error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Get all store settings at once
+ipcMain.handle('getAllStoreSettings', async (event) => {
+    try {
+        // Get all relevant settings from store
+        const settings = {
+            autoLayerSettings: store.get('autoLayerSettings') || {},
+            oledSettings: store.get('oledSettings') || {},
+            pomodoroNotificationsSettings: store.get('pomodoroNotificationsSettings') || {},
+            traySettings: {
+                minimizeToTray: store.get('minimizeToTray'),
+                backgroundStart: store.get('backgroundStart')
+            },
+            locale: store.get('locale') || 'en'
+        };
+        
+        return { success: true, settings };
+    } catch (error) {
+        console.error("Error getting all store settings:", error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Save a specific setting by key
+ipcMain.handle('saveStoreSetting', async (event, { key, value }) => {
+    try {
+        if (!key) {
+            throw new Error("Setting key is required");
+        }
+        
+        store.set(key, value);
+        
+        // Special handling for certain settings
+        if (key === 'autoLayerSettings') {
+            updateAutoLayerSettings(store);
+        } else if (key === 'oledSettings') {
+            // Find the changed device ID and enabled status
+            const previousSettings = store.get('oledSettings') || {};
+            for (const deviceId in value) {
+                if (previousSettings[deviceId]?.enabled !== value[deviceId]?.enabled) {
+                    mainWindow.webContents.send("oledSettingsChanged", { 
+                        deviceId, 
+                        enabled: value[deviceId]?.enabled 
+                    });
+                }
+            }
+        }
+        
+        return { success: true };
+    } catch (error) {
+        console.error(`Error saving store setting ${key}:`, error);
         return { success: false, error: error.message };
     }
 });

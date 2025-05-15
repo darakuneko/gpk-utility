@@ -4,6 +4,17 @@ let cachedDeviceRegistry = [];
 let isSliderActive = false;
 let activeSliderDeviceId = null;
 let keyboardPollingInterval = null;
+// Store settings cache
+let cachedStoreSettings = {
+    autoLayerSettings: {},
+    oledSettings: {},
+    pomodoroNotificationsSettings: {},
+    traySettings: {
+        minimizeToTray: true,
+        backgroundStart: false
+    },
+    locale: 'en'
+};
 
 // Function to start keyboard polling at regular intervals
 const startKeyboardPolling = () => {
@@ -11,17 +22,42 @@ const startKeyboardPolling = () => {
         clearInterval(keyboardPollingInterval);
     }
     
-    // Initial execution
-    keyboardSendLoop();
-    
     // Set up interval for regular execution (1 second)
     keyboardPollingInterval = setInterval(async () => {
         await keyboardSendLoop();
     }, 1000);
 };
 
-// Initialize polling when the window is loaded
-document.addEventListener('DOMContentLoaded', () => {
+// Load store settings from main process
+const loadStoreSettings = async () => {
+    try {
+        const result = await ipcRenderer.invoke('getAllStoreSettings');
+        if (result.success) {
+            cachedStoreSettings = result.settings;
+        }
+    } catch (err) {
+        console.error("Error loading store settings:", err);
+    }
+};
+
+// Save store setting and update cache
+const saveStoreSetting = async (key, value) => {
+    try {
+        const result = await ipcRenderer.invoke('saveStoreSetting', { key, value });
+        if (result.success) {
+            // Update local cache
+            cachedStoreSettings[key] = value;
+        }
+        return result;
+    } catch (err) {
+        console.error(`Error saving store setting ${key}:`, err);
+        return { success: false, error: err.message };
+    }
+};
+
+// Initialize polling and settings when the window is loaded
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadStoreSettings();
     startKeyboardPolling();
 });
 
@@ -34,20 +70,23 @@ const command = {
     getKBDList: async () => await ipcRenderer.invoke('getKBDList'),
     changeConnectDevice: (dat) => ipcRenderer.send("changeConnectDevice", dat),
     getConnectKbd: async (id) => await ipcRenderer.invoke('getConnectKbd', id),
-    getConfig: async (device) => await ipcRenderer.invoke('getConfig', device),
+    getDeviceConfig: async (device) => await ipcRenderer.invoke('getDeviceConfig', device),
     getPomodoroConfig: async (device) => await ipcRenderer.invoke('getPomodoroConfig', device),
-    getGpkRCInfo: async (device) => await ipcRenderer.invoke('getGpkRCInfo', device),
-    dateTimeOledWrite: async (device) => await ipcRenderer.invoke('dateTimeOledWrite', device),
-    sendDeviceConfig: async (device) => await ipcRenderer.invoke('sendDeviceConfig', device),
-    setConnectDevices: async (devices) => {
-        cachedDeviceRegistry = devices
-    },
-    exportFile: async (data) => await ipcRenderer.invoke('exportFile', data),
-    importFile: async () => await ipcRenderer.invoke('importFile'),
     setActiveTab: async (device, tabName) => await ipcRenderer.invoke('setActiveTab', device, tabName),
     setEditingPomodoro: async (device, isEditing) => await ipcRenderer.invoke('setEditingPomodoro', device, isEditing),
     startWindowMonitoring: async () => await ipcRenderer.invoke('startWindowMonitoring'),
     getActiveWindows: async () => await ipcRenderer.invoke('getActiveWindows'),
+    dateTimeOledWrite: async (device) => await ipcRenderer.invoke('dateTimeOledWrite', device),
+    getGpkRCInfo: async (device) => await ipcRenderer.invoke('getGpkRCInfo', device),
+    sendDeviceConfig: async (device) => await ipcRenderer.invoke('sendDeviceConfig', device),
+    setSliderActive: (active) => {
+        isSliderActive = active;
+        if (active) {
+            activeSliderDeviceId = null;
+        }
+    },
+    exportFile: async (data) => await ipcRenderer.invoke('exportFile', data),
+    importFile: async (filename) => await ipcRenderer.invoke('importFile', filename),
 }
 
 const keyboardSendLoop = async () => {
@@ -100,7 +139,7 @@ const keyboardSendLoop = async () => {
             const existConfingOledEnabled = device.config?.oled_enabled;
 
                if(!existConfingOledEnabled && !existConfingInit) {
-                   await command.getConfig(device);
+                   await command.getDeviceConfig(device);
                }
                // Handle connected device with configuration
                if (device.config) {
@@ -256,12 +295,67 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
     });
 
 contextBridge.exposeInMainWorld("api", {
+    // Core device functions
     start: async (device) => await command.start(device),
     stop: async (device) => await command.stop(device),
     getGpkRCInfo: async (device) => await command.getGpkRCInfo(device),
     sendDeviceConfig: async (device) => await command.sendDeviceConfig(device),
-    setConnectDevices: (device) => command.setConnectDevices(device),
-    exportFile: async () => await command.exportFile(cachedDeviceRegistry),
+    getDeviceConfig: async (device) => await ipcRenderer.invoke('getDeviceConfig', device),
+    getPomodoroConfig: async (device) => await ipcRenderer.invoke('getPomodoroConfig', device),
+    sleep: async (msec) => await ipcRenderer.invoke('sleep', msec),
+    setActiveTab: async (device, tabName) => await ipcRenderer.invoke('setActiveTab', device, tabName),
+    setEditingPomodoro: async (device, isEditing) => await ipcRenderer.invoke('setEditingPomodoro', device, isEditing),
+    getActiveWindows: async () => await command.getActiveWindows(),
+    setSliderActive: (active) => command.setSliderActive(active),
+    
+    // Import/Export
+    exportFile: async () => {
+        try {
+            // Create a copy of the device registry to modify
+            const devicesToExport = JSON.parse(JSON.stringify(cachedDeviceRegistry));
+            
+            // Apply store settings to each device
+            await Promise.all(devicesToExport.map(async (device) => {
+                if (!device.config) {
+                    device.config = {};
+                }
+                
+                // Apply auto layer settings if they exist for this device
+                const autoLayerSettings = cachedStoreSettings.autoLayerSettings || {};
+                if (autoLayerSettings[device.id]) {
+                    device.config.auto_layer_enabled = autoLayerSettings[device.id].enabled ? 1 : 0;
+                    device.config.auto_layer_settings = autoLayerSettings[device.id].layerSettings || [];
+                }
+                
+                // Apply OLED settings
+                const oledSettings = cachedStoreSettings.oledSettings || {};
+                if (oledSettings[device.id]) {
+                    device.config.oled_enabled = oledSettings[device.id].enabled ? 1 : 0;
+                }
+                
+                // Apply pomodoro notification settings
+                const pomodoroNotifSettings = cachedStoreSettings.pomodoroNotificationsSettings || {};
+                if (pomodoroNotifSettings[device.id] !== undefined) {
+                    device.config.pomodoro_notifications_enabled = pomodoroNotifSettings[device.id];
+                }
+            }));
+            
+            // Create a complete export object with all settings
+            const exportData = {
+                devices: devicesToExport,
+                appSettings: {
+                    traySettings: cachedStoreSettings.traySettings || {},
+                    locale: cachedStoreSettings.locale || 'en'
+                }
+            };
+            
+            // Export the enhanced data
+            return await command.exportFile(exportData);
+        } catch (err) {
+            console.error("Error in exportFile:", err);
+            return { success: false, error: err.message };
+        }
+    },
     importFile: async () => {
         try {
             const dat = await command.importFile();
@@ -270,14 +364,42 @@ contextBridge.exposeInMainWorld("api", {
             }
             
             try {
-                const json = JSON.parse(dat);
+                let json = JSON.parse(dat);
                 
-                if (!Array.isArray(json)) {
-                    return { success: false, error: "Invalid file format: JSON array expected" };
+                // Handle new format (object with devices and appSettings) or legacy format (array of devices)
+                const isNewFormat = json.devices && Array.isArray(json.devices);
+                const devices = isNewFormat ? json.devices : json;
+                const appSettings = isNewFormat ? json.appSettings : null;
+                
+                if (!Array.isArray(devices)) {
+                    return { success: false, error: "Invalid file format: devices data must be an array" };
                 }
                 
+                // Process application settings if available
+                if (appSettings) {
+                    try {
+                        // Import tray settings
+                        if (appSettings.traySettings) {
+                            await saveStoreSetting('traySettings', appSettings.traySettings);
+                        }
+                        
+                        // Import locale
+                        if (appSettings.locale) {
+                            await saveStoreSetting('locale', appSettings.locale);
+                        }
+                    } catch (appSettingsErr) {
+                        console.error("Error importing application settings:", appSettingsErr);
+                    }
+                }
+                
+                // Extract store settings from imported devices
+                let autoLayerSettings = { ...cachedStoreSettings.autoLayerSettings } || {};
+                let oledSettings = { ...cachedStoreSettings.oledSettings } || {};
+                let pomodoroNotifSettings = { ...cachedStoreSettings.pomodoroNotificationsSettings } || {};
+                
+                // Process each device
                 const updatedDevices = await Promise.all(cachedDeviceRegistry.map(async (cd) => {
-                    const matchingConfig = json.find((j) =>
+                    const matchingConfig = devices.find((j) =>
                         j.id === cd.id &&
                         j.manufacturer === cd.manufacturer &&
                         j.product === cd.product &&
@@ -287,7 +409,50 @@ contextBridge.exposeInMainWorld("api", {
                     
                     if (matchingConfig) {
                         try {
+                            // Extract settings before sending to device
+                            if (matchingConfig.config) {
+                                // Process auto layer settings
+                                if (matchingConfig.config.auto_layer_enabled !== undefined ||
+                                    matchingConfig.config.auto_layer_settings) {
+                                    
+                                    // Initialize settings object for this device if needed
+                                    if (!autoLayerSettings[cd.id]) {
+                                        autoLayerSettings[cd.id] = {
+                                            enabled: false,
+                                            layerSettings: []
+                                        };
+                                    }
+                                    
+                                    // Update settings if they exist in the imported file
+                                    if (matchingConfig.config.auto_layer_enabled !== undefined) {
+                                        autoLayerSettings[cd.id].enabled = 
+                                            matchingConfig.config.auto_layer_enabled === 1;
+                                    }
+                                    
+                                    if (matchingConfig.config.auto_layer_settings) {
+                                        autoLayerSettings[cd.id].layerSettings = 
+                                            matchingConfig.config.auto_layer_settings;
+                                    }
+                                }
+                                
+                                // Process OLED settings
+                                if (matchingConfig.config.oled_enabled !== undefined) {
+                                    if (!oledSettings[cd.id]) {
+                                        oledSettings[cd.id] = {};
+                                    }
+                                    oledSettings[cd.id].enabled = matchingConfig.config.oled_enabled === 1;
+                                }
+                                
+                                // Process pomodoro notification settings
+                                if (matchingConfig.config.pomodoro_notifications_enabled !== undefined) {
+                                    pomodoroNotifSettings[cd.id] = matchingConfig.config.pomodoro_notifications_enabled;
+                                }
+                            }
+                            
+                            // Send device config (device hardware settings only)
                             await command.sendDeviceConfig(matchingConfig);
+                            
+                            // Return the updated device config
                             return matchingConfig;
                         } catch (err) {
                             console.error(`Error applying config to device ${cd.id}:`, err);
@@ -298,8 +463,14 @@ contextBridge.exposeInMainWorld("api", {
                     return cd;
                 }));
                 
+                // Save all updated settings at once
+                await saveStoreSetting('autoLayerSettings', autoLayerSettings);
+                await saveStoreSetting('oledSettings', oledSettings);
+                await saveStoreSetting('pomodoroNotificationsSettings', pomodoroNotifSettings);
+                
+                // Update cached device registry
                 cachedDeviceRegistry = updatedDevices;
-                await command.changeConnectDevice(cachedDeviceRegistry);
+                command.changeConnectDevice(cachedDeviceRegistry);
                 
                 return { success: true, devicesUpdated: updatedDevices.length };
             } catch (parseErr) {
@@ -311,27 +482,59 @@ contextBridge.exposeInMainWorld("api", {
             return { success: false, error: err.message || "Unknown error during import" };
         }
     },
-    setSliderActive: (active, deviceId = null) => {
-        isSliderActive = active;
-        activeSliderDeviceId = active ? deviceId : null;
+    
+    // Unified store settings API
+    getStoreSetting: (key) => {
+        return cachedStoreSettings[key];
     },
-    setActiveTab: async (device, tabName) => await command.setActiveTab(device, tabName),
-    setEditingPomodoro: async (device, isEditing) => await command.setEditingPomodoro(device, isEditing),
-    getActiveWindows: async () => await command.getActiveWindows(),
-    // Save and load AutoLayer settings
-    saveAutoLayerSettings: async (settings) => await ipcRenderer.invoke('saveAutoLayerSettings', settings),
-    loadAutoLayerSettings: async () => await ipcRenderer.invoke('loadAutoLayerSettings'),
-    // Save and load OLED settings
-    saveOledSettings: async (deviceId, enabled) => await ipcRenderer.invoke('saveOledSettings', deviceId, enabled),
-    loadOledSettings: async (deviceId) => await ipcRenderer.invoke('loadOledSettings', deviceId),
-    // Save and load tray settings
-    saveTraySettings: async (settings) => await ipcRenderer.invoke('saveTraySettings', settings),
-    loadTraySettings: async () => await ipcRenderer.invoke('loadTraySettings'),
-    // Set application locale
-    setAppLocale: async (locale) => await ipcRenderer.invoke('setAppLocale', locale),
-    // Pomodoro notification settings
-    savePomodoroNotificationSettings: async (deviceId, enabled) => await ipcRenderer.invoke('savePomodoroNotificationSettings', deviceId, enabled),
-    loadPomodoroNotificationSettings: async (deviceId) => await ipcRenderer.invoke('loadPomodoroNotificationSettings', deviceId),
+    saveStoreSetting: async (key, value) => {
+        return await saveStoreSetting(key, value);
+    },
+    getAllStoreSettings: () => {
+        return cachedStoreSettings;
+    },
+    
+    // Legacy API for backward compatibility
+    saveAutoLayerSettings: async (settings) => {
+        return await saveStoreSetting('autoLayerSettings', settings);
+    },
+    loadAutoLayerSettings: async () => {
+        return { success: true, settings: cachedStoreSettings.autoLayerSettings || {} };
+    },
+    saveOledSettings: async (deviceId, enabled) => {
+        const current = cachedStoreSettings.oledSettings || {};
+        current[deviceId] = { enabled };
+        return await saveStoreSetting('oledSettings', current);
+    },
+    loadOledSettings: async (deviceId) => {
+        const settings = cachedStoreSettings.oledSettings || {};
+        return { success: true, enabled: settings[deviceId]?.enabled };
+    },
+    saveTraySettings: async (settings) => {
+        return await saveStoreSetting('traySettings', settings);
+    },
+    loadTraySettings: async () => {
+        return { 
+            success: true, 
+            minimizeToTray: cachedStoreSettings.traySettings?.minimizeToTray,
+            backgroundStart: cachedStoreSettings.traySettings?.backgroundStart
+        };
+    },
+    setAppLocale: async (locale) => {
+        return await saveStoreSetting('locale', locale);
+    },
+    savePomodoroNotificationSettings: async (deviceId, enabled) => {
+        const current = cachedStoreSettings.pomodoroNotificationsSettings || {};
+        current[deviceId] = enabled;
+        return await saveStoreSetting('pomodoroNotificationsSettings', current);
+    },
+    loadPomodoroNotificationSettings: async (deviceId) => {
+        const settings = cachedStoreSettings.pomodoroNotificationsSettings || {};
+        return { 
+            success: true, 
+            enabled: settings[deviceId] !== undefined ? settings[deviceId] : true
+        };
+    },
     on: (channel, func) => {
         ipcRenderer.on(channel, (event, ...args) => func(...args));
     },
