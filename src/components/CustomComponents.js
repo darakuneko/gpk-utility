@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 
 // Custom slider component
-export const CustomSlider = ({ id, value = 0, min, max, step, marks = [], onChange, valueLabelFormat, onChangeStart, onChangeEnd }) => {
+export const CustomSlider = ({ id, value = 0, min, max, step, marks = [], onChange, onChangeStart, onChangeEnd }) => {
   const sliderRef = useRef(null);
   
   // Ensure value is a valid number

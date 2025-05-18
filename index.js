@@ -17,15 +17,17 @@ import {
     encodeDeviceId, 
     setMainWindow, 
     setActiveTab,
-    setEditingPomodoro,
     startWindowMonitoring,
     getActiveWindows,
     updateAutoLayerSettings,
-    getGpkRCInfo,
+    getDeviceInitConfig,
     getDeviceConfig,
-    saveDeviceConfig,
     getPomodoroConfig,
-    writeTimeToOled
+    writeTimeToOled,
+    saveTrackpadConfig,
+    savePomodoroConfigData,
+    getPomodoroActiveConfig,
+    getTrackpadConfigData
 } from './gpkrc.js'
 import ActiveWindow from '@paymoapp/active-window'
 
@@ -113,24 +115,24 @@ const createTrayMenuTemplate = () => {
         
         // Add an entry for each active pomodoro device
         activePomodoroDevices.forEach((deviceInfo, deviceId) => {
-            const { name, state } = deviceInfo;
-            let stateText = '';
+            const { name, phase } = deviceInfo;
+            let phaseText = '';
             
-            switch (state) {
+            switch (phase) {
                 case 1:
-                    stateText = 'Working';
+                    phaseText = 'Working';
                     break;
                 case 2:
-                    stateText = 'Break';
+                    phaseText = 'Break';
                     break;
                 case 3:
-                    stateText = 'Long Break';
+                    phaseText = 'Long Break';
                     break;
             }
             
-            // Display only the state without minutes
+            // Display only the phase without minutes
             menuItems.push({
-                label: `${name}: ${stateText}`,
+                label: `${name}: ${phaseText}`,
                 enabled: false
             });
         });
@@ -144,7 +146,7 @@ const createTrayMenuTemplate = () => {
             try {
                 close();
             } catch (e) {
-                // Remove error log
+                // Ignored
             }
             app.quit();
         } 
@@ -227,7 +229,7 @@ const createWindow = () => {
         try{
             close()
         } catch (e) {
-            // Remove error log
+            // Ignored
         }
         app.quit()
     })
@@ -254,7 +256,7 @@ app.on('window-all-closed', () => {
         try{
             close()
         } catch (e) {
-            // Remove error log
+            // Ignored
         }
         app.quit()
     }
@@ -268,37 +270,37 @@ app.on('ready', () => {
     }
 })
 
-// Handle pomodoro state notifications
-ipcMain.on('pomodoroStateChanged', (event, { deviceName, deviceId, state, minutes }) => {
+// Handle pomodoro phase notifications
+ipcMain.on('pomodoroActiveChanged', (event, { deviceName, deviceId, phase, minutes }) => {
     // Do not show notifications if the app is focused
     if (mainWindow && mainWindow.isFocused()) {
         return;
     }
     
     // Check if notifications are enabled for this device
-    const pomodoroNotificationsSettings = store.get('pomodoroNotificationsSettings') || {};
+    const pomodoroDesktopNotificationsSettings = store.get('pomodoroDesktopNotificationsSettings') || {};
     
     // Use provided deviceId directly if available, otherwise generate it from device name
     const idToUse = deviceId || encodeDeviceId({ id: deviceName });
     
     // Skip notification if disabled for this device
-    if (pomodoroNotificationsSettings[idToUse] === false) {
+    if (pomodoroDesktopNotificationsSettings[idToUse] === false) {
         return;
     }
     
     let titleKey = '';
     let bodyKey = '';
     
-    switch (state) {
-        case 1: // Work state
+    switch (phase) {
+        case 1: // Work phase
             titleKey = 'notifications.pomodoro.workTitle';
             bodyKey = 'notifications.pomodoro.workBody';
             break;
-        case 2: // Break state
+        case 2: // Break phase
             titleKey = 'notifications.pomodoro.breakTitle';
             bodyKey = 'notifications.pomodoro.breakBody';
             break;
-        case 3: // Long break state
+        case 3: // Long break phase
             titleKey = 'notifications.pomodoro.longBreakTitle';
             bodyKey = 'notifications.pomodoro.longBreakBody';
             break;
@@ -341,7 +343,7 @@ const exportFile = (data) => {
             await fs.writeFile(result.filePath, JSON.stringify(data, null, 2))
         }
     }).catch(err => {
-        // Remove error log
+        // Ignore errors
     });
 }
 
@@ -387,33 +389,93 @@ ipcMain.handle('close', async (event) => {
 ipcMain.handle('encodeDeviceId', async (event, device) => await encodeDeviceId(device))
 ipcMain.handle('getKBDList', async (event) => await getKBDList())
 ipcMain.handle('getConnectKbd', async (event, id) => await getConnectKbd(id))
-ipcMain.handle('getDeviceConfig', async (event, device) => await getDeviceConfig(device))
-ipcMain.handle('getPomodoroConfig', async (event, device) => await getPomodoroConfig(device))
-
 ipcMain.on("changeConnectDevice", (e, data) => {
     mainWindow.webContents.send("changeConnectDevice", data)
 })
-
-ipcMain.handle('sleep', async (event, msec) => {
-    await sleep(msec)
-})
-
-ipcMain.handle("sendDeviceConfig", async (e, device) => {
+ipcMain.handle('getDeviceConfig', async (event, device) => await getDeviceConfig(device))
+ipcMain.handle('getPomodoroConfig', async (event, device) => await getPomodoroConfig(device))
+// Add handlers for new specific config functions
+ipcMain.handle('getPomodoroActiveConfig', async (event, device) => await getPomodoroActiveConfig(device));
+ipcMain.handle('getTrackpadConfigData', async (event, device) => await getTrackpadConfigData(device));
+ipcMain.handle('saveTrackpadConfig', async (event, device) => {
     try {
-        if (!device || !device.config) {
-            throw new Error("Invalid device format: missing config");
+        // Get trackpad settings from device object
+        if (!device || !device.config || !device.config.trackpad) {
+            return { success: false, error: "Invalid device or missing trackpad configuration" };
         }
-        await saveDeviceConfig(device, buildConfigByteArray(device.config));    
-        mainWindow.webContents.send("configUpdated", {
-            deviceId: device.id,
-            config: device.config
-        });    
-        return { success: true, config: device.config };
+        
+        // Generate byte array in the main process
+        const trackpadBytes = buildTrackpadConfigByteArray(device.config.trackpad, device.config.init || 0);
+        
+        // Call GPKRC to send settings to the device
+        await saveTrackpadConfig(device, trackpadBytes);
+        return { success: true };
     } catch (error) {
-        console.error("Error in sendDeviceConfig:", error);
+        console.error("Error in saveTrackpadConfig:", error);
         return { success: false, error: error.message };
     }
-})
+});
+ipcMain.handle('savePomodoroConfigData', async (event, device, pomodoroDataBytes) => {
+    try {
+        await savePomodoroConfigData(device, pomodoroDataBytes);
+        return { success: true };
+    } catch (error) {
+        console.error("Error in savePomodoroConfigData:", error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Replace the old sendDeviceConfig handler with dispatchSaveDeviceConfig
+ipcMain.handle('dispatchSaveDeviceConfig', async (event, deviceWithConfig, configTypes) => {
+    try {
+        if (!deviceWithConfig || !deviceWithConfig.config) {
+            throw new Error("Invalid device format: missing config");
+        }
+
+        // Convert configTypes to array if it's a string
+        const typesToUpdate = Array.isArray(configTypes) ? configTypes : [configTypes];
+        const updateAll = typesToUpdate.includes('all');
+        
+        let trackpadSaved = false;
+        let pomodoroSaved = false;
+        // Handle trackpad config
+        if ((updateAll || typesToUpdate.includes('trackpad')) && deviceWithConfig.config.trackpad) {
+            // Use the existing local function
+            const trackpadBytes = buildTrackpadConfigByteArray(deviceWithConfig.config.trackpad);
+            saveTrackpadConfig(deviceWithConfig, trackpadBytes); // Deliberately not awaiting to prevent UI sluggishness
+            trackpadSaved = true;
+        }
+
+        // Handle pomodoro config
+        if ((updateAll || typesToUpdate.includes('pomodoro')) && deviceWithConfig.config.pomodoro) {
+            const pomodoroBytes = buildPomodoroConfigByteArray(deviceWithConfig.config.pomodoro);
+            savePomodoroConfigData(deviceWithConfig, pomodoroBytes); // Deliberately not awaiting to prevent UI sluggishness
+            pomodoroSaved = true;
+        }
+
+        if (trackpadSaved || pomodoroSaved) {
+            // Send configUpdated event to UI for immediate feedback before device state updates
+            mainWindow.webContents.send("configUpdated", {
+                deviceId: deviceWithConfig.id,
+                config: deviceWithConfig.config // Send the config that was intended to be saved
+            });
+            return { 
+                success: true, 
+                message: "Device config dispatched for saving.",
+                updates: {
+                    trackpad: trackpadSaved,
+                    pomodoro: pomodoroSaved
+                }
+            };
+        } else {
+            return { success: false, message: "No config found to save for the specified types." };
+        }
+
+    } catch (error) {
+        console.error("Error in dispatchSaveDeviceConfig:", error);
+        return { success: false, error: error.message };
+    }
+});
 
 ipcMain.handle('exportFile', async (event, data) => await exportFile(data))
 ipcMain.handle('importFile', async (event, fn) => await importFile(fn))
@@ -421,11 +483,6 @@ ipcMain.handle('importFile', async (event, fn) => await importFile(fn))
 // Tab switch handler
 ipcMain.handle('setActiveTab', async (event, device, tabName) => {
     setActiveTab(device, tabName)
-})
-
-// Pomodoro editing flag handler
-ipcMain.handle('setEditingPomodoro', async (event, device, isEditing) => {
-    setEditingPomodoro(device, isEditing)
 })
 
 // Window monitoring control
@@ -446,6 +503,16 @@ ipcMain.handle('saveAutoLayerSettings', async (event, settings) => {
         
         // Pass store to gpkrc.js
         updateAutoLayerSettings(store);
+        
+        // Send save completion notification to devices with changed settings
+        for (const deviceId in settings) {
+            mainWindow.webContents.send("configSaveComplete", {
+                deviceId,
+                success: true,
+                timestamp: Date.now(),
+                settingType: 'autoLayer'
+            });
+        }
         
         return { success: true };
     } catch (error) {
@@ -490,9 +557,9 @@ ipcMain.handle('dateTimeOledWrite', async (event, device) => {
     }
 });
 
-ipcMain.handle('getGpkRCInfo', async (event, device) => {
+ipcMain.handle('getDeviceInitConfig', async (event, device) => {
     try {
-        return await getGpkRCInfo(device);
+        return await getDeviceInitConfig(device);
     } catch (error) {
         return { success: false, error: error.message };
     }
@@ -600,46 +667,67 @@ ipcMain.on('deviceDisconnected', (event, deviceId) => {
     handleDeviceDisconnect(deviceId);
 });
 
-// Convert config object to byte array for device communication
-const buildConfigByteArray = (config) => {
-    if(config.init === undefined) { return }
-    
-    const byteArray = new Array(13);
-    const upper_scroll_term = (config.scroll_term & 0b1111110000) >> 4;
-    const lower_drag_term = (config.drag_term & 0b1111000000) >> 6;
-    const lower_default_speed = (config.default_speed & 0b110000) >> 4;
-
-    byteArray[0] = config.init | config.hf_waveform_number << 1;
-    byteArray[1] = config.can_hf_for_layer << 7 |
-        config.can_drag << 6 |
+// Convert trackpad config object to byte array for device communication
+const buildTrackpadConfigByteArray = (trackpadConfig) => {
+    const byteArray = new Array(19); // 19 bytes for updated trackpad config
+    const upper_scroll_term = (trackpadConfig.scroll_term & 0b1111110000) >> 4;
+    const lower_drag_term = (trackpadConfig.drag_term & 0b1111000000) >> 6;
+    const lower_default_speed = (trackpadConfig.default_speed & 0b110000) >> 4;
+    byteArray[0] = trackpadConfig.hf_waveform_number;
+    byteArray[1] = trackpadConfig.can_hf_for_layer << 7 |
+        trackpadConfig.can_drag << 6 |
         upper_scroll_term;
-    byteArray[2] = (config.scroll_term & 0b0000001111) << 4 | lower_drag_term;
-    byteArray[3] = (config.drag_term & 0b0000111111) << 2 |
-        config.can_trackpad_layer << 1 |
-        config.can_reverse_scrolling_direction;
-    byteArray[4] = config.drag_strength_mode << 7 |
-        config.drag_strength << 2 |
+    byteArray[2] = (trackpadConfig.scroll_term & 0b0000001111) << 4 | lower_drag_term;
+    byteArray[3] = (trackpadConfig.drag_term & 0b0000111111) << 2 |
+        trackpadConfig.can_trackpad_layer << 1 |
+        trackpadConfig.can_reverse_scrolling_direction;
+    byteArray[4] = trackpadConfig.drag_strength_mode << 7 |
+        trackpadConfig.drag_strength << 2 |
         lower_default_speed;
-    byteArray[5] = (config.default_speed & 0b001111) << 4 |
-        config.scroll_step;
-    byteArray[6] = config.can_short_scroll << 7 |
-        config.pomodoro_notify_haptic_enable << 6;
-    byteArray[7] = config.pomodoro_work_time;
-    byteArray[8] = config.pomodoro_break_time;
-    byteArray[9] = config.pomodoro_long_break_time;
-    byteArray[10] = config.pomodoro_cycles;
-    byteArray[11] = config.pomodoro_work_hf_pattern;
-    byteArray[12] = config.pomodoro_break_hf_pattern;
+    byteArray[5] = (trackpadConfig.default_speed & 0b001111) << 4 |
+        trackpadConfig.scroll_step;
+    byteArray[6] = trackpadConfig.can_short_scroll << 7;
     
-    // Validate byte array
-    for (let i = 0; i < byteArray.length; i++) {
-        if (byteArray[i] === undefined) {
-            throw new Error(`Byte array index ${i} is undefined. Please check the value of the corresponding property.`);
-        }
-    }
+    // Updated for 2-byte values - high byte, low byte for each value
+    byteArray[7] = (trackpadConfig.tap_term || 0) >> 8;     
+    byteArray[8] = (trackpadConfig.tap_term || 0) & 0xFF;   
+    
+    byteArray[9] = (trackpadConfig.swipe_term || 0) >> 8;    
+    byteArray[10] = (trackpadConfig.swipe_term || 0) & 0xFF; 
+    
+    byteArray[11] = (trackpadConfig.pinch_term || 0) >> 8;    
+    byteArray[12] = (trackpadConfig.pinch_term || 0) & 0xFF;  
+    
+    byteArray[13] = (trackpadConfig.gesture_term || 0) >> 8;    
+    byteArray[14] = (trackpadConfig.gesture_term || 0) & 0xFF;  
+    
+    byteArray[15] = (trackpadConfig.short_scroll_term || 0) >> 8;        
+    byteArray[16] = (trackpadConfig.short_scroll_term || 0) & 0xFF;  
+    
+    byteArray[17] = (trackpadConfig.pinch_distance || 0) >> 8;        
+    byteArray[18] = (trackpadConfig.pinch_distance || 0) & 0xFF;  
     
     return byteArray;
-}
+};
+
+// Convert pomodoro config object to byte array for device communication
+const buildPomodoroConfigByteArray = (pomodoroConfig) => {
+    const byteArray = new Array(8); // 8 bytes for pomodoro config
+    byteArray[0] = pomodoroConfig.work_time;
+    byteArray[1] = pomodoroConfig.break_time;
+    byteArray[2] = pomodoroConfig.long_break_time;
+    byteArray[3] = pomodoroConfig.work_interval;
+    byteArray[4] = pomodoroConfig.work_hf_pattern;
+    byteArray[5] = pomodoroConfig.break_hf_pattern;    
+    // Combine timer_active (bit 7), notify_haptic_enable (bit 6), continuous_mode (bit 5), and state (bits 0-1)
+    byteArray[6] = ((pomodoroConfig.timer_active || 0) << 7) | 
+                   ((pomodoroConfig.notify_haptic_enable || 0) << 6) | 
+                   ((pomodoroConfig.continuous_mode || 0) << 5) | 
+                   ((pomodoroConfig.phase || 0) & 0b00000011);
+    byteArray[7] = pomodoroConfig.pomodoro_cycle || 1; // Default to 1 if not defined
+
+    return byteArray;
+};
 
 // Set application locale
 ipcMain.handle('setAppLocale', async (event, locale) => {
@@ -663,16 +751,16 @@ ipcMain.handle('getAppLocale', async (event) => {
 });
 
 // Save pomodoro notification settings
-ipcMain.handle('savePomodoroNotificationSettings', async (event, deviceId, enabled) => {
+ipcMain.handle('savePomodoroDesktopNotificationSettings', async (event, deviceId, enabled) => {
     try {
         // Get current settings
-        const currentSettings = store.get('pomodoroNotificationsSettings') || {};
+        const currentSettings = store.get('pomodoroDesktopNotificationsSettings') || {};
         
         // Update settings for this device
         currentSettings[deviceId] = enabled;
         
         // Save settings
-        store.set('pomodoroNotificationsSettings', currentSettings);
+        store.set('pomodoroDesktopNotificationsSettings', currentSettings);
         
         return { success: true };
     } catch (error) {
@@ -682,10 +770,10 @@ ipcMain.handle('savePomodoroNotificationSettings', async (event, deviceId, enabl
 });
 
 // Load pomodoro notification settings
-ipcMain.handle('loadPomodoroNotificationSettings', async (event, deviceId) => {
+ipcMain.handle('loadPomodoroDesktopNotificationSettings', async (event, deviceId) => {
     try {
         // Load settings from electron-store
-        const settings = store.get('pomodoroNotificationsSettings') || {};
+        const settings = store.get('pomodoroDesktopNotificationsSettings') || {};
         
         // Return settings for this device, use stored value if exists, default to true only if completely undefined
         let enabled = true; // Default value is true
@@ -711,7 +799,7 @@ ipcMain.handle('getAllStoreSettings', async (event) => {
         const settings = {
             autoLayerSettings: store.get('autoLayerSettings') || {},
             oledSettings: store.get('oledSettings') || {},
-            pomodoroNotificationsSettings: store.get('pomodoroNotificationsSettings') || {},
+            pomodoroDesktopNotificationsSettings: store.get('pomodoroDesktopNotificationsSettings') || {},
             traySettings: {
                 minimizeToTray: store.get('minimizeToTray'),
                 backgroundStart: store.get('backgroundStart')
@@ -738,6 +826,16 @@ ipcMain.handle('saveStoreSetting', async (event, { key, value }) => {
         // Special handling for certain settings
         if (key === 'autoLayerSettings') {
             updateAutoLayerSettings(store);
+            
+            // Notify when Auto Layer settings are updated
+            for (const deviceId in value) {
+                mainWindow.webContents.send("configSaveComplete", {
+                    deviceId,
+                    success: true,
+                    timestamp: Date.now(),
+                    settingType: 'autoLayer'
+                });
+            }
         } else if (key === 'oledSettings') {
             // Find the changed device ID and enabled status
             const previousSettings = store.get('oledSettings') || {};
@@ -747,7 +845,25 @@ ipcMain.handle('saveStoreSetting', async (event, { key, value }) => {
                         deviceId, 
                         enabled: value[deviceId]?.enabled 
                     });
+                    
+                    // Notify that the settings have been saved
+                    mainWindow.webContents.send("configSaveComplete", {
+                        deviceId,
+                        success: true,
+                        timestamp: Date.now(),
+                        settingType: 'oled'
+                    });
                 }
+            }
+        } else if (key === 'pomodoroDesktopNotificationsSettings') {
+            // Notify when pomodoro notification settings are updated
+            for (const deviceId in value) {
+                mainWindow.webContents.send("configSaveComplete", {
+                    deviceId,
+                    success: true,
+                    timestamp: Date.now(),
+                    settingType: 'pomodoroNotifications'
+                });
             }
         }
         
@@ -758,10 +874,10 @@ ipcMain.handle('saveStoreSetting', async (event, { key, value }) => {
     }
 });
 
-// Handle pomodoro state changes
-ipcMain.on('deviceConnectionStatePomodoroChanged', (event, { deviceId, pomodoroConfig, stateChanged }) => {
+// Handle pomodoro phase changes
+ipcMain.on('deviceConnectionPomodoroPhaseChanged', (event, { deviceId, pomodoroConfig, phaseChanged }) => {
     // Convert timer_active to boolean explicitly
-    const isTimerActive = pomodoroConfig.pomodoro_timer_active === 1;
+    const isTimerActive = pomodoroConfig.timer_active === 1;
     
     // Force update on timer state change (active/inactive)
     let prevTimerState = activePomodoroDevices.has(deviceId);
@@ -776,11 +892,33 @@ ipcMain.on('deviceConnectionStatePomodoroChanged', (event, { deviceId, pomodoroC
         // Add to active devices
         activePomodoroDevices.set(deviceId, {
             name: deviceName,
-            state: pomodoroConfig.pomodoro_state
+            phase: pomodoroConfig.phase
         });
     } else {
         // Remove from active devices if timer is not active
         if (activePomodoroDevices.has(deviceId)) {
+            // Send notification when timer is stopped - only if phaseChanged flag is true
+            if (prevTimerState === true && phaseChanged) {
+                // Check if notifications are enabled for this device
+                const pomodoroDesktopNotificationsSettings = store.get('pomodoroDesktopNotificationsSettings') || {};
+                
+                // Skip notification if disabled for this device or if app is focused
+                if (pomodoroDesktopNotificationsSettings[deviceId] !== false && 
+                    !(mainWindow && mainWindow.isFocused())) {
+                    
+                    const title = translate('notifications.pomodoro.stopTitle');
+                    const body = translate('notifications.pomodoro.stopBody');
+                    
+                    if (title && Notification.isSupported()) {
+                        new Notification({ 
+                            title, 
+                            body,
+                            icon: path.join(__dirname, 'icons', '256x256.png')
+                        }).show();
+                    }
+                }
+            }
+            
             activePomodoroDevices.delete(deviceId);
         }
     }

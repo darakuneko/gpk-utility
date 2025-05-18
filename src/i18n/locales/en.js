@@ -13,15 +13,15 @@ export default {
     settings: 'Settings',
     mode: 'Mode',
     default: 'Default',
-    delete: 'Delete'
+    delete: 'Delete',
+    unlimited: 'Unlimited',
+    saveComplete: 'Settings saved successfully',
+    saveError: 'Error saving settings'
   },
   header: {
     title: 'GPK Utility',
     noDevices: 'No devices connected',
     connecting: 'Connecting...',
-  },
-  warnings: {
-    vialConflict: 'Do not connect while using VIAL'
   },
   tabs: {
     mouse: 'Mouse',
@@ -31,7 +31,8 @@ export default {
     layer: 'Layer',
     timer: 'Timer',
     oled: 'OLED',
-    settings: 'Settings'
+    settings: 'Settings',
+    gesture: 'Gesture'
   },
   mouse: {
     speed: 'Speed',
@@ -41,6 +42,14 @@ export default {
     shortScroll: 'Short Scroll',
     term: 'Term',
     scrollStep: 'Scroll Step',
+    shortScrollTerm: 'Short Scroll Term'
+  },
+  gesture: {
+    tapTerm: 'Tap Term',
+    swipeTerm: 'Swipe Term',
+    pinchTerm: 'Pinch Term',
+    gestureTerm: 'Gesture Term',
+    pinchDistance: 'Pinch Distance'
   },
   dragDrop: {
     title: 'Drag & Drop',
@@ -52,7 +61,7 @@ export default {
     trackpadLayer: 'Trackpad Layer',
     changeHaptics: 'Layer Change Haptics',
     autoSwitching: 'Auto Layer Switching',
-    currentMappings: 'Current Application Mappings',
+    currentMappings: 'Application Mappings',
     notSpecified: 'Not specified',
     layerNumber: 'Layer {{number}}',
     noMappingsEnabledHint: 'No application mappings configured yet. Disable Auto Layer to add mappings.',
@@ -65,22 +74,24 @@ export default {
   },
   timer: {
     title: 'Pomodoro Timer',
-    activeState: 'Pomodoro timer is currently active',
+    activePhase: 'Pomodoro timer is currently active',
     pressToggleToStop: 'Press Pomodoro Toggle key to stop it',
-    progress: 'Progress',
-    sets: 'sets',
-    state: 'State',
+    workInterval	: 'Work Interval',
+    phase: 'CurrentPhase',
     longBreak: 'Long Break',
     work: 'WORK',
     break: 'Break',
     workTime: 'Work Time',
     breakTime: 'Break Time',
     longBreakTime: 'Long Break Time',
-    cyclesBeforeLongBreak: 'Cycles Before Long Break',
+    workIntervalBeforeLongBreak: 'Work Interval',
+    pomodoroCycle: 'Pomodoro Cycle',
+    continuousMode: 'Continuous Mode',
     workPhasePattern: 'Work Phase Pattern',
     breakPhasePattern: 'Break Phase Pattern',
     timeRemaining: 'Time Remaining',
-    cycleCount: 'Cycle'
+    workIntervalCount: 'WorkInterval',
+    settings: 'Timer Settings'
   },
   oled: {
     title: 'Time Display',
@@ -128,8 +139,10 @@ export default {
       breakBody: 'Time to relax for {{minutes}} minutes',
       longBreakTitle: 'Long Break Started!',
       longBreakBody: 'Take it easy for {{minutes}} minutes',
-      enabled: 'Enable Notifications',
-      hapticEnabled: 'Enable Haptic Feedback Notifications'
+      stopTitle: 'Pomodoro Timer Stopped',
+      stopBody: 'Your pomodoro session has ended',
+      enableDesktopNotifications: 'Desktop Notifications',
+      enableHapticNotifications: 'Haptic Feedback Notifications'
     }
   }
 };

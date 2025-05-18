@@ -20,6 +20,9 @@ const LayerSettings = ({ device, handleChange }) => {
     const [missingApps, setMissingApps] = useState([]);
     const [trackpadLayerEnabled, setTrackpadLayerEnabled] = useState(false);
 
+    // Get trackpad configuration or empty object if not defined
+    const trackpadConfig = device.config?.trackpad || {};
+
     useEffect(() => {
         const fetchActiveWindows = async () => {
             if (!api || !api.getActiveWindows) return;
@@ -43,13 +46,11 @@ const LayerSettings = ({ device, handleChange }) => {
     useEffect(() => {
         const loadSettingsFromStore = async () => {
             try {
-                if (api && api.loadAutoLayerSettings && device && device.id) {
-                    const result = await api.loadAutoLayerSettings();
-                    
-                    if (result.success && result.settings) {
-                        const storedSettings = result.settings[device.id];
+                if (api && api.getStoreSetting && api.getAllStoreSettings && device && device.id) { 
+                    const allSettings = await api.getAllStoreSettings(); 
+                    const storedSettings = allSettings && allSettings.autoLayerSettings ? allSettings.autoLayerSettings[device.id] : undefined;
                         
-                        if (storedSettings) {
+                    if (storedSettings) {
                             if (storedSettings.layerSettings) {
                                 setLayerSettings(storedSettings.layerSettings);
                             }
@@ -59,8 +60,9 @@ const LayerSettings = ({ device, handleChange }) => {
                             }
                             
                             if (!device.config) device.config = {};
-                            device.config.auto_layer_enabled = storedSettings.enabled ? 1 : 0;
-                            device.config.auto_layer_settings = storedSettings.layerSettings || [];
+                            if (!device.config.trackpad) device.config.trackpad = {};
+                            device.config.trackpad.auto_layer_enabled = storedSettings.enabled ? 1 : 0;
+                            device.config.trackpad.auto_layer_settings = storedSettings.layerSettings || [];
                             device.config.changed = true;
                             
                             const newState = {
@@ -70,7 +72,6 @@ const LayerSettings = ({ device, handleChange }) => {
                             
                             await setState(newState);
                         }
-                    }
                 }
             } catch (error) {
                 console.error("Error loading layer settings:", error);
@@ -85,17 +86,17 @@ const LayerSettings = ({ device, handleChange }) => {
             try {
                 setDeviceId(device.id);
                 
-                const settings = device.config?.auto_layer_settings || [];
+                const settings = trackpadConfig?.auto_layer_settings || [];
                 if (settings.length > 0 && layerSettings.length === 0) {
                     setLayerSettings(settings);
                 }
                 
-                if (device.config?.auto_layer_enabled !== undefined) {
-                    setIsEnabled(device.config?.auto_layer_enabled === 1);
+                if (trackpadConfig?.auto_layer_enabled !== undefined) {
+                    setIsEnabled(trackpadConfig?.auto_layer_enabled === 1);
                 }
                 
-                if (device.config?.can_trackpad_layer !== undefined) {
-                    setTrackpadLayerEnabled(device.config?.can_trackpad_layer === 1);
+                if (trackpadConfig?.can_trackpad_layer !== undefined) {
+                    setTrackpadLayerEnabled(trackpadConfig?.can_trackpad_layer === 1);
                 }
             } catch (error) {
                 console.error("Error initializing layer settings:", error);
@@ -103,7 +104,7 @@ const LayerSettings = ({ device, handleChange }) => {
         };
         
         init();
-    }, [device.id]);
+    }, [device.id, trackpadConfig]);
     
     const handleToggleEnabled = async (e) => {
         const enabled = e.target.checked ? 1 : 0;
@@ -111,17 +112,15 @@ const LayerSettings = ({ device, handleChange }) => {
         
         const updatedDevice = {...device};
         if (!updatedDevice.config) updatedDevice.config = {};
-        updatedDevice.config.auto_layer_enabled = enabled;
-        updatedDevice.config.changed = true;
-        
+        if (!updatedDevice.config.trackpad) updatedDevice.config.trackpad = {};
+        updatedDevice.config.trackpad.auto_layer_enabled = enabled; 
+
         const newState = {
             ...state,
             devices: state.devices.map(d => d.id === device.id ? updatedDevice : d)
         };
         
         await setState(newState);
-        await api.sendDeviceConfig(updatedDevice);
-        
         await saveSettingsToStore(enabled === 1, layerSettings);
     };
     
@@ -131,16 +130,23 @@ const LayerSettings = ({ device, handleChange }) => {
         
         const updatedDevice = {...device};
         if (!updatedDevice.config) updatedDevice.config = {};
-        updatedDevice.config.can_trackpad_layer = enabled;
-        updatedDevice.config.changed = true;
-        
+        if (!updatedDevice.config.trackpad) updatedDevice.config.trackpad = {};
+        updatedDevice.config.trackpad.can_trackpad_layer = enabled;
+
         const newState = {
             ...state,
             devices: state.devices.map(d => d.id === device.id ? updatedDevice : d)
         };
         
         await setState(newState);
-        await api.sendDeviceConfig(updatedDevice);
+        
+        if (updatedDevice.config.trackpad) {
+            try {
+                await api.saveTrackpadConfig(updatedDevice);
+            } catch (error) {
+                console.error("Error saving trackpad config:", error);
+            }
+        }
     };
     
     const handleAddLayerSetting = async () => {
@@ -172,9 +178,9 @@ const LayerSettings = ({ device, handleChange }) => {
     
     const saveSettingsToStore = async (enabled, settings) => {
         try {
-            if (api && api.saveAutoLayerSettings && deviceId) {
-                const result = await api.loadAutoLayerSettings();
-                const currentSettings = result.success ? (result.settings || {}) : {};
+            if (api && api.getStoreSetting && api.saveStoreSetting && deviceId) { // Changed
+                const allSettings = await api.getAllStoreSettings();
+                const currentSettings = allSettings.autoLayerSettings || {};
                 
                 const updatedSettings = {
                     ...currentSettings,
@@ -184,7 +190,7 @@ const LayerSettings = ({ device, handleChange }) => {
                     }
                 };
                 
-                await api.saveAutoLayerSettings(updatedSettings);
+                await api.saveStoreSetting('autoLayerSettings', updatedSettings); // Use unified API
             }
         } catch (error) {
             console.error("Error saving layer settings:", error);
@@ -196,16 +202,19 @@ const LayerSettings = ({ device, handleChange }) => {
         
         const updatedDevice = {...device};
         if (!updatedDevice.config) updatedDevice.config = {};
-        updatedDevice.config.auto_layer_settings = settings;
-        updatedDevice.config.changed = true;
-        
+        if (!updatedDevice.config.trackpad) updatedDevice.config.trackpad = {};
+        updatedDevice.config.trackpad.auto_layer_settings = settings; // App-level setting
+        // updatedDevice.config.changed = true;
+
         const newState = {
             ...state,
             devices: state.devices.map(d => d.id === device.id ? updatedDevice : d)
         };
         
         await setState(newState);
-        await api.sendDeviceConfig(updatedDevice);
+        // auto_layer_settings is an application-side setting.
+        // No direct firmware call here unless C side handles it.
+        // For now, we only save it to the store.
         
         await saveSettingsToStore(isEnabled, settings);
     };
@@ -318,7 +327,7 @@ const LayerSettings = ({ device, handleChange }) => {
                             <CustomSwitch
                                 id="config-can_hf_for_layer"
                                 onChange={handleChange("can_hf_for_layer", device.id)}
-                                checked={device.config.can_hf_for_layer === 1}
+                                checked={trackpadConfig.can_hf_for_layer === 1}
                             />
                         </div>
                         <div className="pt-2 w-full">
@@ -327,7 +336,7 @@ const LayerSettings = ({ device, handleChange }) => {
                             </label>
                             <CustomSelect
                                 id="config-hf_waveform_number"
-                                value={device.config.hf_waveform_number && device.config.hf_waveform_number !== 0 ? device.config.hf_waveform_number : ''}
+                                value={trackpadConfig.hf_waveform_number && trackpadConfig.hf_waveform_number !== 0 ? trackpadConfig.hf_waveform_number : ''}
                                 onChange={handleChange("hf_waveform_number", device.id)}
                                 options={fullHapticOptions}
                             />

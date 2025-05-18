@@ -5,6 +5,9 @@ import { useLanguage } from "../../i18n/LanguageContext.js";
 const DragDropSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
   const { t } = useLanguage();
   
+  // Ensure that the device's trackpad settings exist
+  const trackpadConfig = device.config?.trackpad || {};
+  
   return (
     <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
       <div className="flex flex-wrap items-center gap-6 mb-3">
@@ -13,7 +16,7 @@ const DragDropSettings = ({ device, handleChange, handleSliderStart, handleSlide
           <CustomSwitch
             id="config-can_drag"
             onChange={handleChange("can_drag", device.id)}
-            checked={device.config.can_drag === 1}
+            checked={trackpadConfig.can_drag === 1}
           />
         </div>
         <div className="pt-2 w-[200px]">
@@ -22,7 +25,7 @@ const DragDropSettings = ({ device, handleChange, handleSliderStart, handleSlide
           </label>
           <CustomSelect
             id="config-drag_strength_mode"
-            value={device.config.drag_strength_mode !== undefined ? device.config.drag_strength_mode : ''}
+            value={trackpadConfig.drag_strength_mode !== undefined ? trackpadConfig.drag_strength_mode : ''}
             onChange={handleChange("drag_strength_mode", device.id)}
             options={[
               { value: "0", label: t('dragDrop.term') },
@@ -35,11 +38,11 @@ const DragDropSettings = ({ device, handleChange, handleSliderStart, handleSlide
         <div className="pt-2 w-[45%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
             <span>{t('dragDrop.term')}</span>
-            <span className="text-sm font-bold ml-2 mr-2">{device.config.drag_term ? device.config.drag_term : "0"} ms</span>
+            <span className="text-sm font-bold ml-2 mr-2">{trackpadConfig.drag_term ? trackpadConfig.drag_term : "0"} ms</span>
           </label>
           <CustomSlider
             id="config-drag_term"
-            value={device.config.drag_term ? device.config.drag_term : 0}
+            value={trackpadConfig.drag_term ? trackpadConfig.drag_term : 0}
             min={0}
             step={10}
             max={1000}
@@ -55,11 +58,11 @@ const DragDropSettings = ({ device, handleChange, handleSliderStart, handleSlide
         <div className="pt-2 w-[45%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
             <span>{t('dragDrop.strength')}</span>
-            <span className="text-sm font-bold ml-2 mr-2">{device.config.drag_strength ? device.config.drag_strength : "1"}</span>
+            <span className="text-sm font-bold ml-2 mr-2">{trackpadConfig.drag_strength ? trackpadConfig.drag_strength : "1"}</span>
           </label>
           <CustomSlider
             id="config-drag_strength"
-            value={device.config.drag_strength ? device.config.drag_strength : 0}
+            value={trackpadConfig.drag_strength ? trackpadConfig.drag_strength : 0}
             min={1}
             step={1}
             max={12}

@@ -49,7 +49,7 @@ Configure time management features like Pomodoro Timer.<br>Adjust work and break
 - **Work Time**: Set Pomodoro work time (1-60 minutes)
 - **Break Time**: Set short break time (1-30 minutes)
 - **Long Break Time**: Set long break time (1-60 minutes)
-- **Cycles Until Long Break**: Set the number of work/break cycles before a long break (1-10)
+- **workInterval Until Long Break**: Set the number of work/break workInterval before a long break (1-10)
 - **Haptic Feedback**: Configure haptic feedback patterns for work start, break start, and long break start
 
 ### Keyboard Features

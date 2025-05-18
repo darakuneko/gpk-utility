@@ -8,6 +8,7 @@ import DragDropSettings from "./settings/dragDropSettings.js";
 import TimerSettings from "./settings/timerSettings.js";
 import LayerSettings from "./settings/layerSettings.js";
 import OLEDSettings from "./settings/OLEDSettings.js";
+import GestureSettings from "./settings/gestureSettings.js";
 
 const { api } = window;
 
@@ -22,7 +23,10 @@ const SettingEdit = ((props) => {
 
     const sendConfigToDevice = async (updatedDevice) => {
         try {
-            const updatedConfig = await api.sendDeviceConfig(updatedDevice);
+            // Determine which configuration type to update based on the active tab
+            // Update only pomodoro settings for "timer" tab, otherwise update only trackpad settings
+            const configType = activeTab === "timer" ? 'pomodoro' : 'trackpad';
+            const updatedConfig = await api.dispatchSaveDeviceConfig(updatedDevice, configType);
             
             if (updatedConfig && updatedConfig.success) {
                 const newState = {
@@ -57,10 +61,6 @@ const SettingEdit = ((props) => {
     };
 
     const handleChange = (pType, id) => async (event) => {
-        if (activeTab === "timer" && pType.startsWith("pomodoro_")) {
-            api.setEditingPomodoro(device, true);
-        }
-
         // Create a new array to ensure immutability
         const updatedDevices = await Promise.all(state.devices.map(async (d) => {
             if(d.id === id) {
@@ -102,8 +102,26 @@ const SettingEdit = ((props) => {
                     }
                     // Additional range checks can be added here
                     
-                    // Update value
-                    updatedDevice.config[pType] = newValue;
+                    // Update value based on property type
+                    if (pType.startsWith('pomodoro_')) {
+                        // Pomodoro related settings - remove the pomodoro_ prefix to get the actual property name
+                        const actualProp = pType.replace('pomodoro_', '');
+                        updatedDevice.config.pomodoro[actualProp] = newValue;
+                    } else if (pType === "can_hf_for_layer" || pType === "can_drag" || 
+                              pType === "can_trackpad_layer" || pType === "can_reverse_scrolling_direction" || 
+                              pType === "can_short_scroll" || pType === "default_speed" || 
+                              pType === "drag_strength" || pType === "drag_strength_mode" ||
+                              pType === "scroll_term" || pType === "drag_term" || 
+                              pType === "tap_term" || pType === "swipe_term" || 
+                              pType === "pinch_term" || pType === "pinch_distance" || pType === "gesture_term" || 
+                              pType === "short_scroll_term" || pType === "scroll_step" ||
+                              pType === "hf_waveform_number") {
+                        // Trackpad related settings
+                        updatedDevice.config.trackpad[pType] = newValue;
+                    } else {
+                        // Other settings (top-level properties like init)
+                        updatedDevice.config[pType] = newValue;
+                    }
                     
                     // Set changed flag
                     updatedDevice.config.changed = true;
@@ -146,10 +164,6 @@ const SettingEdit = ((props) => {
     const handleSliderStart = () => {
         setIsSliderActive(true);
         api.setSliderActive(true);
-        
-        if (activeTab === "timer") {
-            api.setEditingPomodoro(device, true);
-        }
     };
 
     const handleSliderEnd = () => {
@@ -159,10 +173,6 @@ const SettingEdit = ((props) => {
         if (pendingChanges.device) {
             sendConfigToDevice(pendingChanges.device);
             setPendingChanges({});
-            
-            if (activeTab === "timer") {
-                api.setEditingPomodoro(device, false);
-            }
         }
     };
 
@@ -232,6 +242,16 @@ const SettingEdit = ((props) => {
                         {/* OLED Settings */}
                         {activeTab === "oled" && (
                             <OLEDSettings
+                                device={device}
+                                handleChange={handleChange}
+                                handleSliderStart={handleSliderStart}
+                                handleSliderEnd={handleSliderEnd}
+                            />
+                        )}
+
+                        {/* Gesture Settings */}
+                        {activeTab === "gesture" && (
+                            <GestureSettings
                                 device={device}
                                 handleChange={handleChange}
                                 handleSliderStart={handleSliderStart}

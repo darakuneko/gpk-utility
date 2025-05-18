@@ -52,6 +52,7 @@ const getSupportedSettingTabs = (device, t) => {
             { id: "mouse", label: t('tabs.mouse') },
             { id: "scroll", label: t('tabs.scroll') },
             ...(device.product !== "NumNum Bento MAX" ? [{ id: "dragdrop", label: t('tabs.dragDrop') }] : []),
+            { id: "gesture", label: t('tabs.gesture') },
             { id: "layer", label: t('tabs.layer') },
             { id: "timer", label: t('tabs.timer') }
         ];
@@ -70,7 +71,6 @@ const SettingsContainer = (() => {
     const [activeSettingTab, setActiveSettingTab] = useState("mouse")
     const [menuOpen, setMenuOpen] = useState(false)
     const [languageMenuOpen, setLanguageMenuOpen] = useState(false)
-    const [isLoading, setIsLoading] = useState(true)
     const [traySettings, setTraySettings] = useState({
         minimizeToTray: true,
         backgroundStart: false
@@ -84,14 +84,8 @@ const SettingsContainer = (() => {
     };
 
     // Filter connected devices only
-    const connectedDevices = state.devices ? state.devices.filter(d => d.connected && d.gpkRCVersion === 1) : []
-    
-    // Loading state management
-    useEffect(() => {
-        if (state.devices) {
-            setIsLoading(false);
-        }
-    }, [state.devices]);
+    const allDevices = state.devices || [];
+    const connectedDevices = allDevices.filter(d => d.connected);
     
     // Load tray settings on component mount
     useEffect(() => {
@@ -136,13 +130,6 @@ const SettingsContainer = (() => {
     useEffect(() => {
         
         window.api.on("configUpdated", ({ deviceId, config }) => {
-            dispatch({
-                type: "UPDATE_DEVICE_CONFIG",
-                payload: { deviceId, config }
-            });
-        });
-        
-        window.api.on("pomodoroStateUpdated", ({ deviceId, config }) => {
             dispatch({
                 type: "UPDATE_DEVICE_CONFIG",
                 payload: { deviceId, config }
@@ -241,10 +228,6 @@ const SettingsContainer = (() => {
         const device = getActiveDevice();
         if (device) {
             window.api.setActiveTab(device, tabId);
-            
-            if (activeSettingTab === "timer" && tabId !== "timer") {
-                window.api.setEditingPomodoro(device, false);
-            }
         }
     }
 
@@ -350,7 +333,7 @@ const SettingsContainer = (() => {
                             <MenuItem onClick={handleExport}>{t('settings.export')}</MenuItem>
                             <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                             
-                            {/* ポーリング間隔設定 */}
+                            {/* Polling interval settings */}
                             <div className="px-4 py-3">
                                 <label className="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-300">
                                     {t('settings.pollingInterval')}
@@ -371,14 +354,14 @@ const SettingsContainer = (() => {
                                         max={2000}
                                         onChange={(e) => {
                                             const value = parseInt(e.target.value, 10);
-                                            // ローカルステートを直ちに更新
+                                            // Immediately update local state
                                             setPollingInterval(value);
                                             pollingIntervalRef.current = value;
                                             
-                                            // バックエンドに設定を保存
+                                            // Save settings to backend
                                             window.api.saveStoreSetting('pollingInterval', value);
                                             
-                                            // スライダーUIを更新
+                                            // Update slider UI
                                             window.requestAnimationFrame(() => {
                                                 const element = document.getElementById('settings-polling-interval');
                                                 if (element) {
@@ -414,21 +397,20 @@ const SettingsContainer = (() => {
             </div>
             
             {/* Two-column layout */}
-            <div className="flex">
-                {/* Left navigation menu */}
-                <div className="w-64 p-4 border-r border-gray-200 dark:border-gray-700">
-                    <div className="space-y-1">
-                        {getSettingTabs().map((tab) => (
-                            <LeftMenuItem 
-                                key={tab.id}
-                                active={activeSettingTab === tab.id}
-                                onClick={() => handleSettingTabChange(tab.id)}
-                            >
-                                {tab.label}
-                            </LeftMenuItem>
-                        ))}
-                    </div>
+            <div className="flex">            {/* Left navigation menu */}
+            <div className="w-64 p-4 border-r border-gray-200 dark:border-gray-700">
+                <div className="space-y-1">
+                    {getSettingTabs().map((tab) => (
+                        <LeftMenuItem 
+                            key={tab.id}
+                            active={activeSettingTab === tab.id}
+                            onClick={() => handleSettingTabChange(tab.id)}
+                        >
+                            {tab.label}
+                        </LeftMenuItem>
+                    ))}
                 </div>
+            </div>
                 
                 {/* Right settings content area */}
                 <div className="flex-1 p-4">

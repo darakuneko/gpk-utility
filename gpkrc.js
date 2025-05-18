@@ -15,13 +15,28 @@ let currentLayers = {} // Track current layer for each device
 // Command ID definitions
 const commandId = {
     gpkRCPrefix: 0xFA,
-    gpkRCInfo: 0x01,
-    customSetValue: 0x02,
-    customGetValue: 0x03,
-    layerMove: 0x04,
-    oledWrite: 0x05,
-    pomodoroGetValue: 0x06,
-}
+    customSetValue: 0x01,  // Corresponds to C side: id_gpk_rc_set_value (for setting values)
+    customGetValue: 0x02,  // Corresponds to C side: id_gpk_rc_get_value (for getting values)
+    gpkRCOperation: 0x03,  // Corresponds to C side: id_gpk_rc_operation (for general operations like layer move, oled write)
+};
+
+// Action IDs
+const actionId = {
+    // Actions for customSetValue (commandId: 0x02)
+    setValueComplete: 0x01,
+    trackpadSetValue: 0x02,
+    pomodoroSetValue: 0x03,
+
+    // Actions for customGetValue (commandId: 0x03)
+    deviceGetValue: 0x01,
+    trackpadGetValue: 0x02,
+    pomodoroGetValue: 0x03,
+    pomodoroActiveGetValue: 0x04,
+
+    // Actions for gpkRCOperation (commandId: 0x04)
+    layerMove: 0x01,
+    oledWrite: 0x02,    
+};
 
 const PACKET_PADDING = 64
 const DEVICE_ID_SEPARATOR = '::'
@@ -53,7 +68,13 @@ const DEFAULT_USAGE = {
     usagePage: 0xFF60
 }
 
-const encodeDeviceId = (device) => `${device.manufacturer}${DEVICE_ID_SEPARATOR}${device.product}${DEVICE_ID_SEPARATOR}${device.vendorId}${DEVICE_ID_SEPARATOR}${device.productId}`
+const encodeDeviceId = (device) => {
+    if (!device || !device.manufacturer || !device.product || !device.vendorId || !device.productId) {
+        console.error("Invalid device object for ID encoding:", device);
+        return "unknown-device";
+    }
+    return `${device.manufacturer}${DEVICE_ID_SEPARATOR}${device.product}${DEVICE_ID_SEPARATOR}${device.vendorId}${DEVICE_ID_SEPARATOR}${device.productId}`;
+}
 
 const parseDeviceId = (id) => {
     const deviceKeys = id.split(DEVICE_ID_SEPARATOR)
@@ -111,57 +132,57 @@ function joinDefaultSpeed(a, b) {
     return (lower2Bits << 4) | upper4Bits
 }
 
-function receiveTrackpadConfig(buffer) {
+
+function receiveTrackpadSpecificConfig(buffer) { // buffer here is actualData
     return {
-        init: 1, // Always set to 1 to ensure settings items are displayed
-        hf_waveform_number: (buffer[2] & 0b11111110) >> 1,
-        can_hf_for_layer: (buffer[3] & 0b10000000) >> 7,
-        can_drag: (buffer[3] & 0b01000000) >> 6,
-        scroll_term: joinScrollTerm(buffer[3], buffer[4]),
-        drag_term: joinDragTerm(buffer[4], buffer[5]),
-        can_trackpad_layer: (buffer[5] & 0b00000010) >> 1,
-        can_reverse_scrolling_direction: buffer[5] & 0b00000001,
-        drag_strength_mode: (buffer[6] & 0b10000000) >> 7,
-        drag_strength: (buffer[6] & 0b01111100) >> 2,
-        default_speed: joinDefaultSpeed(buffer[6], buffer[7]),
-        scroll_step: buffer[7] & 0b00001111,
-        can_short_scroll: (buffer[8] & 0b10000000) >> 7,
-        pomodoro_notify_haptic_enable: (buffer[8] & 0b01000000) >> 6,
-        pomodoro_work_time: buffer[9],
-        pomodoro_break_time: buffer[10],
-        pomodoro_long_break_time: buffer[11],
-        pomodoro_cycles: buffer[12],
-        pomodoro_work_hf_pattern: buffer[13],
-        pomodoro_break_hf_pattern: buffer[14],
-        pomodoro_timer_active: (buffer[15] & 0b10000000) >> 7,
-        pomodoro_state: buffer[15] & 0b00000011,
-        pomodoro_minutes: buffer[16],
-        pomodoro_seconds: buffer[17],
-        pomodoro_current_cycle: buffer[18],
-        auto_layer_enabled: 0,
-        auto_layer_settings: []
-    }
+        hf_waveform_number: buffer[0],
+        can_hf_for_layer: (buffer[1] & 0b10000000) >> 7,
+        can_drag: (buffer[1] & 0b01000000) >> 6,
+        scroll_term: joinScrollTerm(buffer[1], buffer[2]),
+        drag_term: joinDragTerm(buffer[2], buffer[3]),
+        can_trackpad_layer: (buffer[3] & 0b00000010) >> 1,
+        can_reverse_scrolling_direction: buffer[3] & 0b00000001,
+        drag_strength_mode: (buffer[4] & 0b10000000) >> 7,
+        drag_strength: (buffer[4] & 0b01111100) >> 2,
+        default_speed: joinDefaultSpeed(buffer[4], buffer[5]),
+        scroll_step: buffer[5] & 0b00001111,
+        can_short_scroll: (buffer[6] & 0b10000000) >> 7,
+        tap_term: (buffer[7] << 8) | buffer[8],
+        swipe_term: (buffer[9] << 8) | buffer[10],
+        pinch_term: (buffer[11] << 8) | buffer[12],
+        gesture_term: (buffer[13] << 8) | buffer[14],
+        short_scroll_term: (buffer[15] << 8) | buffer[16],
+        pinch_distance: (buffer[17] << 8) | buffer[18]
+    };
 }
 
 function receivePomodoroConfig(buffer) {
     return {
-        pomodoro_work_time: buffer[2],
-        pomodoro_break_time: buffer[3],
-        pomodoro_long_break_time: buffer[4],
-        pomodoro_cycles: buffer[5],
-        pomodoro_timer_active: (buffer[6] & 0b10000000) >> 7,
-        pomodoro_state: buffer[6] & 0b00000011,
-        pomodoro_minutes: buffer[7],
-        pomodoro_seconds: buffer[8],
-        pomodoro_current_cycle: buffer[9]
+        pomodoro: {
+            work_time: buffer[0],
+            break_time: buffer[1],
+            long_break_time: buffer[2],
+            work_interval: buffer[3],
+            work_hf_pattern: buffer[4],
+            break_hf_pattern: buffer[5],
+            timer_active: (buffer[6] & 0b10000000) >> 7,
+            notify_haptic_enable: (buffer[6] & 0b01000000) >> 6,
+            continuous_mode: (buffer[6] & 0b00100000) >> 5,
+            phase: buffer[6] & 0b00000011,
+            pomodoro_cycle: buffer[7]
+        }
     }
 }
 
-
-// Function to set the pomodoro editing state
-const setEditingPomodoro = (device, isEditing) => {
-    const id = encodeDeviceId(device)
-    isEditingPomodoroPerDevice[id] = isEditing
+function receivePomodoroActiveStatus(buffer) {
+    return {
+        timer_active: (buffer[0] & 0b10000000) >> 7,
+        phase: buffer[0] & 0b00000011,
+        minutes: buffer[1],
+        seconds: buffer[2],
+        current_work_Interval: buffer[3],
+        current_pomodoro_cycle: buffer[4]
+    };
 }
 
 // Function to set the active tab
@@ -186,13 +207,23 @@ const setMainWindow = (window) => {
 const addKbd = (device) => { 
     const d = getKBD(device);
     const id = encodeDeviceId(device);
-    if (!d || !d.path) return;
+    
+    if (!d || !d.path) {
+        console.error(`Device not found or path not available for device: ${id}`);
+        return id; // Still return id even if device is not connected
+    }
     if(!hidDeviceInstances[id]){ 
-        hidDeviceInstances[id] = new HID.HID(d.path);
-        hidDeviceInstances[id].write(commandToBytes({id: commandId.gpkRCInfo}));
+        try {
+            hidDeviceInstances[id] = new HID.HID(d.path);
+            // Fetch device info using customGetValue and deviceGetValue action
+            hidDeviceInstances[id].write(commandToBytes({id: commandId.customGetValue, data: [actionId.deviceGetValue]}));
+        } catch (error) {
+            console.error(`Failed to initialize HID device ${id}:`, error);
+            return id;
+        }
     }
     return id;
-}
+};
 
 const start = async (device) => {
     if (!device) {
@@ -220,107 +251,112 @@ const start = async (device) => {
                 hidDeviceInstances[id].on('data', buffer => {
                     try {
                         if (buffer[0] === commandId.gpkRCPrefix) {
-                            const cmdId = buffer[1];
-                            deviceStatusMap[id].connected = true;
-                            if (cmdId === commandId.gpkRCInfo) {
-                                const dataOffset = 2;
-                                const version = buffer[dataOffset];
-                                const deviceType = buffer.slice(dataOffset + 1, dataOffset + 13).toString().replace(/\0/g, '');
-                                deviceStatusMap[id].gpkRCVersion = version;
-                                deviceStatusMap[id].deviceType = deviceType;
-                                
-                                // Load OLED settings from store for this device
-                                if (settingsStore) {
-                                    const oledSettings = settingsStore.get('oledSettings') || {};
-                                    if (oledSettings[id] !== undefined) {
-                                        // Add oled_enabled to the config
-                                        if (!deviceStatusMap[id].config) {
-                                            deviceStatusMap[id].config = {};
-                                        }
-                                        deviceStatusMap[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
-                                    }
-                                }
+                            const receivedCmdId = buffer[1];
+                            const receivedActionId = buffer[2];
+                            const actualData = buffer.slice(3);
 
-                                global.mainWindow.webContents.send("deviceConnectionStateChanged", {
-                                    deviceId: id,
-                                    connected: deviceStatusMap[id].connected,
-                                    gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
-                                    deviceType: deviceStatusMap[id].deviceType,
-                                    config: deviceStatusMap[id].config
-                                });
-                            } else if (cmdId === commandId.customGetValue) {
-                                // Save old timer state before updating
-                                const oldTimerActive = deviceStatusMap[id]?.config?.pomodoro_timer_active;
-                                
-                                // Update with new config
-                                deviceStatusMap[id].config = receiveTrackpadConfig(buffer);
-                                
-                                // Get new timer state
-                                const newTimerActive = deviceStatusMap[id].config.pomodoro_timer_active;
-                                
-                                // Preserve OLED settings when receiving other config data
-                                if (settingsStore) {
-                                    const oledSettings = settingsStore.get('oledSettings') || {};
-                                    if (oledSettings[id] !== undefined) {
-                                        deviceStatusMap[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
-                                    }
-                                }
-                                
-                                // Send general device state update
-                                global.mainWindow.webContents.send("deviceConnectionStateChanged", {
-                                    deviceId: id,
-                                    connected: deviceStatusMap[id].connected,
-                                    gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
-                                    deviceType: deviceStatusMap[id].deviceType,
-                                    config: deviceStatusMap[id].config
-                                });
-                                
-                                // Also send pomodoro state update if timer active state changed
-                                if (oldTimerActive !== undefined && oldTimerActive !== newTimerActive) {
-                                    global.mainWindow.webContents.send("deviceConnectionStatePomodoroChanged", {
+                            deviceStatusMap[id].connected = true;
+                            if (receivedCmdId === commandId.customSetValue) {
+                                if(receivedActionId === actionId.setValueComplete) {
+                                    // Notify UI that data saving is complete
+                                    global.mainWindow.webContents.send("configSaveComplete", {
                                         deviceId: id,
-                                        pomodoroConfig: deviceStatusMap[id].config,
-                                        stateChanged: true
+                                        success: true,
+                                        timestamp: Date.now()
                                     });
                                 }
-                            } else if (cmdId === commandId.pomodoroGetValue) {
-                                const pomodoroConfig = receivePomodoroConfig(buffer);
-                                
-                                // Check if state actually changed before updating
-                                const oldState = deviceStatusMap[id].config.pomodoro_state;
-                                const newState = pomodoroConfig.pomodoro_state;
-                                
-                                // Check if timer active state changed
-                                const oldTimerActive = deviceStatusMap[id].config.pomodoro_timer_active;
-                                const newTimerActive = pomodoroConfig.pomodoro_timer_active;
+                            }
+                            if (receivedCmdId === commandId.customGetValue) {
+                                if (receivedActionId === actionId.deviceGetValue) {
+                                    // initialize config with default values
+                                    deviceStatusMap[id].config = { 
+                                        init: undefined,
+                                        pomodoro: {
+                                            phase: undefined
+                                        }, 
+                                        trackpad: {}, 
+                                        oled_enabled: undefined 
+                                    };
+                                    
+                                    deviceStatusMap[id].gpkRCVersion = actualData[0];
+                                    deviceStatusMap[id].init = actualData[1];
+                                    deviceStatusMap[id].deviceType = actualData.toString('utf8', 2, 16).replace(/\0/g, '');
+                                    deviceStatusMap[id].disableCanTrackpadLayer = actualData[16];
 
-                                // Preserve notification settings when receiving pomodoro data
-                                const notificationsEnabled = deviceStatusMap[id].config.pomodoro_notifications_enabled;
+                                    if (settingsStore) {
+                                        const oledSettings = settingsStore.get('oledSettings');
+                                        if (oledSettings && oledSettings[id] !== undefined) {
+                                            deviceStatusMap[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
+                                        }
+                                    }
+
+                                    global.mainWindow.webContents.send("deviceConnectionStateChanged", {
+                                        deviceId: id,
+                                        connected: deviceStatusMap[id].connected,
+                                        gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
+                                        deviceType: deviceStatusMap[id].deviceType,
+                                        config: deviceStatusMap[id].config 
+                                    });
+                                } else if (receivedActionId === actionId.trackpadGetValue) {
+                                    deviceStatusMap[id].config.trackpad = receiveTrackpadSpecificConfig(actualData);
+
+                                    global.mainWindow.webContents.send("deviceConnectionStateChanged", {
+                                        deviceId: id,
+                                        connected: deviceStatusMap[id].connected,
+                                        gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
+                                        deviceType: deviceStatusMap[id].deviceType,
+                                        config: deviceStatusMap[id].config
+                                    });
+                                } else if (receivedActionId === actionId.pomodoroGetValue) {
+                                    const receivedPomoConfig = receivePomodoroConfig(actualData); // Parses only pomodoro settings
                                 
-                                deviceStatusMap[id].config.pomodoro_work_time = pomodoroConfig.pomodoro_work_time;
-                                deviceStatusMap[id].config.pomodoro_break_time = pomodoroConfig.pomodoro_break_time;
-                                deviceStatusMap[id].config.pomodoro_long_break_time = pomodoroConfig.pomodoro_long_break_time;
-                                deviceStatusMap[id].config.pomodoro_cycles = pomodoroConfig.pomodoro_cycles;
-                                deviceStatusMap[id].config.pomodoro_timer_active = pomodoroConfig.pomodoro_timer_active;    
-                                deviceStatusMap[id].config.pomodoro_state = pomodoroConfig.pomodoro_state;
-                                deviceStatusMap[id].config.pomodoro_minutes = pomodoroConfig.pomodoro_minutes;
-                                deviceStatusMap[id].config.pomodoro_seconds = pomodoroConfig.pomodoro_seconds;
-                                deviceStatusMap[id].config.pomodoro_current_cycle = pomodoroConfig.pomodoro_current_cycle;
-                                
-                                // Restore notification settings
-                                if (notificationsEnabled !== undefined) {
-                                    deviceStatusMap[id].config.pomodoro_notifications_enabled = notificationsEnabled;
+                                    const oldPhase = deviceStatusMap[id].config.pomodoro.phase;
+                                    const newPhase = receivedPomoConfig.pomodoro.phase;
+                                    const oldTimerActive = deviceStatusMap[id].config.pomodoro.timer_active;
+                                    const newTimerActive = receivedPomoConfig.pomodoro.timer_active;
+                                    const notificationsEnabled = deviceStatusMap[id].config.pomodoro.notifications_enabled; // Preserve existing UI-side setting
+                                    
+                                    // Update the pomodoro part of the config
+                                    deviceStatusMap[id].config.pomodoro = {
+                                        ...deviceStatusMap[id].config.pomodoro, // Preserve other pomodoro settings not in receivedPomoConfig
+                                        ...receivedPomoConfig.pomodoro
+                                    };
+                                    
+                                    if (notificationsEnabled !== undefined) {
+                                        deviceStatusMap[id].config.pomodoro.notifications_enabled = notificationsEnabled;
+                                    }
+                                    
+                                    const phaseChanged = oldPhase !== newPhase || oldTimerActive !== newTimerActive;
+                                    global.mainWindow.webContents.send("deviceConnectionPomodoroPhaseChanged", {
+                                        deviceId: id,
+                                        pomodoroConfig: deviceStatusMap[id].config.pomodoro,
+                                        phaseChanged: phaseChanged,
+                                    });
+                                } else if (receivedActionId === actionId.pomodoroActiveGetValue) {
+                                    const pomodoroActiveUpdate = receivePomodoroActiveStatus(actualData);
+                                    const oldPhase = deviceStatusMap[id].config.pomodoro.phase;
+                                    const oldTimerActive = deviceStatusMap[id].config.pomodoro.timer_active;
+                                    
+                                    const preservedPomodoroConfig = { ...deviceStatusMap[id].config.pomodoro };
+
+                                    preservedPomodoroConfig.timer_active = pomodoroActiveUpdate.timer_active;
+                                    preservedPomodoroConfig.phase = pomodoroActiveUpdate.phase;
+                                    preservedPomodoroConfig.minutes = pomodoroActiveUpdate.minutes;
+                                    preservedPomodoroConfig.seconds = pomodoroActiveUpdate.seconds;
+                                    preservedPomodoroConfig.current_work_Interval = pomodoroActiveUpdate.current_work_Interval;
+                                    preservedPomodoroConfig.current_pomodoro_cycle = pomodoroActiveUpdate.current_pomodoro_cycle;
+
+                                    deviceStatusMap[id].config.pomodoro = preservedPomodoroConfig;
+
+                                    const phaseChanged = oldPhase !== pomodoroActiveUpdate.phase || oldTimerActive !== pomodoroActiveUpdate.timer_active;
+
+                                    global.mainWindow.webContents.send("deviceConnectionPomodoroPhaseChanged", {
+                                        deviceId: id,
+                                        pomodoroConfig: deviceStatusMap[id].config.pomodoro,
+                                        phaseChanged: phaseChanged,
+                                    });
                                 }
-                                
-                                // Detect both state changes and timer active changes
-                                const stateChanged = oldState !== newState || oldTimerActive !== newTimerActive;
-                               
-                                global.mainWindow.webContents.send("deviceConnectionStatePomodoroChanged", {
-                                    deviceId: id,
-                                    pomodoroConfig: deviceStatusMap[id].config,
-                                    stateChanged: stateChanged,
-                                });
-                            } 
+                            }
                         }
                     } catch (err) {
                         console.error(`Error processing device data: ${id}`, err);
@@ -373,8 +409,14 @@ const close = () => {
 const writeCommand = async (device, command) => {
     const id = addKbd(device);
     try {
+        if (!hidDeviceInstances[id]) {
+            console.error(`Device ${id} is not connected or properly initialized`);
+            return { success: false, message: "Device not connected" };
+        }
+        
         const bytes = commandToBytes(command);
         await hidDeviceInstances[id].write(bytes);    
+        return { success: true };
     } catch (err) {
         console.error("Error writing command:", err);
         throw err;
@@ -382,26 +424,48 @@ const writeCommand = async (device, command) => {
 }
 
 // Device config functions
-const getDeviceConfig = async (device) => await writeCommand(device, { id: commandId.customGetValue });
-
-const saveDeviceConfig = async (device, data) => {
+const getDeviceConfig = async (device) => {
+    await writeCommand(device, { id: commandId.customGetValue, data: [actionId.trackpadGetValue] });
+    await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroGetValue] });
+}
+// Note: The following function to save device config is commented out.
+const saveTrackpadConfig = async (device, trackpadDataBytes) => {
     try {
-        return await writeCommand(device, { id: commandId.customSetValue, data });
+        const result = await writeCommand(device, { id: commandId.customSetValue, data: [actionId.trackpadSetValue, ...trackpadDataBytes] });
+        await new Promise(resolve => setTimeout(resolve, 500)); // Add 500ms delay
+        return result;
     } catch (error) {
         throw error;
+    }
+};
+
+const savePomodoroConfigData = async (device, pomodoroDataBytes) => {
+    try {
+        const result = await writeCommand(device, { id: commandId.customSetValue, data: [actionId.pomodoroSetValue, ...pomodoroDataBytes] });
+        await new Promise(resolve => setTimeout(resolve, 500)); // Add 500ms delay
+        return result;
+    } catch (error) {
+        console.error("Error saving pomodoro config data:", error);
+        return { success: false, error: error.message };
     }
 };
 
 // OLED functions
 const writeTimeToOled = async (device, formattedDate) => {
     try {
-        return await writeCommand(device, { id: commandId.oledWrite, data: formattedDate });
+        const dataBytes = dataToBytes(formattedDate);
+        return await writeCommand(device, { id: commandId.gpkRCOperation, data: [actionId.oledWrite, ...dataBytes] });
     } catch (error) {
         throw error;
     }
 };
 
-const getPomodoroConfig = async (device) => await writeCommand(device, { id: commandId.pomodoroGetValue });
+const getPomodoroConfig = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroGetValue] });
+
+const getPomodoroActiveConfig = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroActiveGetValue] });
+
+const getTrackpadConfigData = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.trackpadGetValue] });
+
 
 // Function for monitoring active windows and switching layers
 const startWindowMonitoring = async (ActiveWindow) => {    
@@ -462,8 +526,8 @@ const checkAndSwitchLayer = (appName) => {
         if (currentLayers[id] !== targetLayer) {
             try {
                 writeCommand(deviceInfo, {
-                    id: commandId.layerMove,
-                    data: [targetLayer] 
+                    id: commandId.gpkRCOperation,
+                    data: [actionId.layerMove, targetLayer]
                 }).then(() => {
                     // Update current layer after successful switch
                     currentLayers[id] = targetLayer;
@@ -541,17 +605,19 @@ const updateAutoLayerSettings = (store) => {
     return true;
 }
 
-// Function to get GPK RC info/version
-const getGpkRCInfo = async (device) => await writeCommand(device, { id: commandId.gpkRCInfo });
+// Function to get GPK RC info/version (now uses customGetValue with deviceGetValue action)
+const getDeviceInitConfig = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.deviceGetValue] });
 
 // Module exports
 export const getConnectKbd = (id) => deviceStatusMap[id]
 export { getKBD, getKBDList }
 export { start, stop, close }
 export { setActiveTab, getActiveTab }
-export { setEditingPomodoro, setMainWindow }
+export { setMainWindow }
 export { startWindowMonitoring, getActiveWindows }
 export { updateAutoLayerSettings }
 export { getSelectedAppSettings, addNewAppToAutoLayerSettings }
 export { encodeDeviceId, parseDeviceId }
-export { getGpkRCInfo, getDeviceConfig, saveDeviceConfig, writeTimeToOled, getPomodoroConfig }
+export { getDeviceInitConfig, getDeviceConfig, writeTimeToOled, getPomodoroConfig } // Commented out saveDeviceConfig
+// Add new exports
+export { saveTrackpadConfig, savePomodoroConfigData, getPomodoroActiveConfig, getTrackpadConfigData }
