@@ -218,7 +218,7 @@ const SettingEdit = ((props) => {
                         )}
 
                         {/* Drag & Drop Settings */}
-                        {activeTab === "dragdrop" && device.product !== "NumNum Bento MAX" && (
+                        {activeTab === "dragdrop" && (
                             <DragDropSettings
                                 device={device}
                                 handleChange={handleChange}

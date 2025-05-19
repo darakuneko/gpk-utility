@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
 import SettingEdit from "./settingEdit.js"
-import { useStateContext } from "../context.js"
+import { useStateContext, useDeviceType } from "../context.js"
 import { useLanguage } from "../i18n/LanguageContext.js"
 import { CustomSlider } from "../components/CustomComponents.js"
 
@@ -42,31 +42,39 @@ const LeftMenuItem = ({ active, onClick, children }) => (
   </button>
 )
 
-const getSupportedSettingTabs = (device, t) => {
-    if (!device) return [];   
-    
-    const isTrackpad = device.deviceType === "trackpad"
-    if (isTrackpad) {
-        const eixst_pomodoro_work_time = device.config?.pomodoro_work_time 
-        return [
-            { id: "mouse", label: t('tabs.mouse') },
-            { id: "scroll", label: t('tabs.scroll') },
-            ...(device.product !== "NumNum Bento MAX" ? [{ id: "dragdrop", label: t('tabs.dragDrop') }] : []),
-            { id: "gesture", label: t('tabs.gesture') },
-            { id: "layer", label: t('tabs.layer') },
-            { id: "timer", label: t('tabs.timer') }
-        ];
-    } else {
-        return [
-            { id: "layer", label: t('tabs.layer') },
-            { id: "oled", label: t('tabs.oled') }
-        ];
-    }
+const getSupportedSettingTabs = (device, t, DeviceType) => {
+    if (!device || !DeviceType) return [];
+
+    const tabs = {
+        layer: { id: "layer", label: t('tabs.layer') },
+        oled: { id: "oled", label: t('tabs.oled') },
+        mouse: { id: "mouse", label: t('tabs.mouse') },
+        scroll: { id: "scroll", label: t('tabs.scroll') },
+        dragdrop: { id: "dragdrop", label: t('tabs.dragDrop') },
+        gesture: { id: "gesture", label: t('tabs.gesture') },
+        timer: { id: "timer", label: t('tabs.timer') }
+    };
+
+    // 共通セット
+    const tpTabs = [
+        tabs.mouse, tabs.scroll, tabs.dragdrop, tabs.gesture, tabs.layer, tabs.timer
+    ];
+
+    const tabDefinitions = {
+        [DeviceType.MACROPAD_TP]: tpTabs,
+        [DeviceType.MACROPAD_TP_BTNS]: [...tpTabs.slice(0, 2), tabs.dragdrop, ...tpTabs.slice(2)],
+        [DeviceType.KEYBOARD_TP]: tpTabs,
+        [DeviceType.KEYBOARD_OLED]: [tabs.layer, tabs.oled]
+    };
+    console.log("tabDefinitions", tabDefinitions)
+    return tabDefinitions[device.deviceType] || [tabs.layer];
 };
 
 const SettingsContainer = (() => {
-    const {state, dispatch} = useStateContext()
+    const {state, dispatch} = useStateContext();
+    const DeviceType = useDeviceType();
     const { t, locale, changeLocale } = useLanguage();
+    
     const [activeDeviceId, setActiveDeviceId] = useState(null)
     const [activeSettingTab, setActiveSettingTab] = useState("mouse")
     const [menuOpen, setMenuOpen] = useState(false)
@@ -204,7 +212,7 @@ const SettingsContainer = (() => {
     // Get setting tabs for current device
     const getSettingTabs = () => {
         const device = getActiveDevice();
-        return getSupportedSettingTabs(device, t);
+        return getSupportedSettingTabs(device, t, DeviceType);
     }
 
     // Handler to close menu when clicking outside

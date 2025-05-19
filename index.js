@@ -3,7 +3,6 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Store from 'electron-store';
-import dayjs from 'dayjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // Import translation utilities
@@ -19,6 +18,7 @@ import {
     setActiveTab,
     startWindowMonitoring,
     getActiveWindows,
+    getDeviceType,
     updateAutoLayerSettings,
     getDeviceInitConfig,
     getDeviceConfig,
@@ -26,7 +26,7 @@ import {
     writeTimeToOled,
     saveTrackpadConfig,
     savePomodoroConfigData,
-    getPomodoroActiveConfig,
+    getPomodoroActiveStatus,
     getTrackpadConfigData
 } from './gpkrc.js'
 import ActiveWindow from '@paymoapp/active-window'
@@ -76,17 +76,10 @@ const translate = (key, params = {}) => {
     // Replace parameters
     return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? params[param] : match);
 };
-
-// Store last formatted date for each device
-const lastFormattedDateMap = new Map();
 // Store active pomodoro devices
 const activePomodoroDevices = new Map();
 
-// Handle device disconnection - clear the lastFormattedDateMap entry
 const handleDeviceDisconnect = (deviceId) => {
-    if (lastFormattedDateMap.has(deviceId)) {
-        lastFormattedDateMap.delete(deviceId);
-    }
     if (activePomodoroDevices.has(deviceId)) {
         activePomodoroDevices.delete(deviceId);
     }
@@ -388,6 +381,7 @@ ipcMain.handle('close', async (event) => {
 })
 ipcMain.handle('encodeDeviceId', async (event, device) => await encodeDeviceId(device))
 ipcMain.handle('getKBDList', async (event) => await getKBDList())
+ipcMain.handle('getDeviceType', (event) => getDeviceType())
 ipcMain.handle('getConnectKbd', async (event, id) => await getConnectKbd(id))
 ipcMain.on("changeConnectDevice", (e, data) => {
     mainWindow.webContents.send("changeConnectDevice", data)
@@ -395,7 +389,7 @@ ipcMain.on("changeConnectDevice", (e, data) => {
 ipcMain.handle('getDeviceConfig', async (event, device) => await getDeviceConfig(device))
 ipcMain.handle('getPomodoroConfig', async (event, device) => await getPomodoroConfig(device))
 // Add handlers for new specific config functions
-ipcMain.handle('getPomodoroActiveConfig', async (event, device) => await getPomodoroActiveConfig(device));
+ipcMain.handle('getPomodoroActiveStatus', async (event, device) => await getPomodoroActiveStatus(device));
 ipcMain.handle('getTrackpadConfigData', async (event, device) => await getTrackpadConfigData(device));
 ipcMain.handle('saveTrackpadConfig', async (event, device) => {
     try {
@@ -536,21 +530,9 @@ ipcMain.handle('loadAutoLayerSettings', async (event) => {
 });
 
 // Write to OLED
-ipcMain.handle('dateTimeOledWrite', async (event, device) => {
+ipcMain.handle('dateTimeOledWrite', async (event, device, forceWrite) => {
     try {
-        // Format date using dayjs
-        const formattedDate = dayjs().format('YYYY/MM/DD ddd HH:mm ');
-        const deviceId = encodeDeviceId(device);
-        // Check if the formatted date is the same as the last one for this device
-        if (lastFormattedDateMap.get(deviceId) === formattedDate) {
-            // Same date, skip writing to OLED
-            return { success: true, skipped: true };
-        }
-        
-        // Write to OLED and store the new formatted date
-        await writeTimeToOled(device, formattedDate);
-        lastFormattedDateMap.set(deviceId, formattedDate);
-        
+        await writeTimeToOled(device, forceWrite);        
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };

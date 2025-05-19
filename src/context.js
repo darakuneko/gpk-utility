@@ -1,7 +1,8 @@
 import React from 'react'
-import {createContext, useContext, useEffect, useReducer, useRef} from 'react'
+import {createContext, useContext, useEffect, useReducer, useRef, useState} from 'react'
 
 const stateContext = createContext({})
+const deviceTypeContext = createContext(null)
 
 const ACTION_TYPES = {
     SET_DEVICES: 'SET_DEVICES',
@@ -60,6 +61,10 @@ export function useStateContext() {
     return useContext(stateContext)
 }
 
+export function useDeviceType() {
+    return useContext(deviceTypeContext)
+}
+
 export function StateProvider({children}) {
     const [state, dispatch] = useReducer(reducer, initialState);
     const stateRef = useRef(state);
@@ -115,5 +120,42 @@ export function StateProvider({children}) {
 
     return (
         <stateContext.Provider value={value}>{children}</stateContext.Provider>
+    );
+}
+
+// DeviceType Provider to cache device types
+export function DeviceTypeProvider({ children }) {
+    const [deviceType, setDeviceType] = useState(null);
+    
+    useEffect(() => {
+        const initDeviceType = async () => {
+            try {
+                if (window.api && window.api.getDeviceType) {
+                    const types = await window.api.getDeviceType();
+                    setDeviceType(types);
+                }
+            } catch (error) {
+                console.error("Failed to initialize DeviceType:", error);
+            }
+        };
+        
+        initDeviceType();
+    }, []);
+    
+    return (
+        <deviceTypeContext.Provider value={deviceType}>
+            {children}
+        </deviceTypeContext.Provider>
+    );
+}
+
+// Combined provider that includes both state and device type contexts
+export function AppProvider({ children }) {
+    return (
+        <DeviceTypeProvider>
+            <StateProvider>
+                {children}
+            </StateProvider>
+        </DeviceTypeProvider>
     );
 }

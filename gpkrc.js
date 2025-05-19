@@ -1,5 +1,44 @@
-import { config } from 'dotenv'
 import HID from 'node-hid'
+import dayjs from 'dayjs';
+
+// Device type enum definition
+const DeviceType = {
+    KEYBOARD: "keyboard",
+    KEYBOARD_OLED: "keyboard_oled",
+    KEYBOARD_TP: "keyboard_tp",
+    MACROPAD: "macropad",
+    MACROPAD_TP: "macropad_tp",
+    MACROPAD_TP_BTNS: "macropad_tp_btns", 
+    UNKNOWN: "unknown"
+}
+
+const getDeviceType = () => DeviceType
+
+// Convert DeviceType enum to string for external interfaces
+const deviceTypeToString = (type) => {
+    return type;
+}
+
+// Convert string to DeviceType enum for incoming data
+const stringToDeviceType = (typeStr) => {
+    const normalizedStr = typeStr.toLowerCase();
+    switch (normalizedStr) {
+        case "keyboard":
+            return DeviceType.KEYBOARD;
+        case "keyboard_oled":
+            return DeviceType.KEYBOARD_OLED;
+        case "keyboard_tp":
+            return DeviceType.KEYBOARD_TP;
+        case "macropad":
+            return DeviceType.MACROPAD;
+        case "macropad_tp":
+            return DeviceType.MACROPAD_TP;
+        case "macropad_tp_btns":
+            return DeviceType.MACROPAD_TP_BTNS;
+            default:
+            return DeviceType.UNKNOWN; // Default to unknown for unknown values
+    }
+}
 
 let deviceStatusMap = {}
 let hidDeviceInstances = {}
@@ -11,6 +50,8 @@ let isEditingPomodoroPerDevice = {}
 let activeWindows = []
 let settingsStore = null
 let currentLayers = {} // Track current layer for each device
+// Store last formatted date for each device
+const lastFormattedDateMap = new Map();
 
 // Command ID definitions
 const commandId = {
@@ -108,7 +149,7 @@ const getKBDList = () => HID.devices().filter(d =>
     .map(device => {
         const id = encodeDeviceId(device)        
         if (deviceStatusMap[id]) {
-            return {...device, id: id, deviceType: deviceStatusMap[id].deviceType, gpkRCVersion: deviceStatusMap[id].gpkRCVersion}
+            return {...device, id: id, deviceType: deviceTypeToString(deviceStatusMap[id].deviceType), gpkRCVersion: deviceStatusMap[id].gpkRCVersion}
         } else {
             return {...device, id: id}
         }
@@ -235,7 +276,7 @@ const start = async (device) => {
         if (!deviceStatusMap[id]) {
             deviceStatusMap[id] = {
                 config: {},
-                deviceType: "keyboard",
+                deviceType: DeviceType.KEYBOARD,
                 gpkRCVersion: 0,
                 connected: true,
             };
@@ -268,7 +309,6 @@ const start = async (device) => {
                             }
                             if (receivedCmdId === commandId.customGetValue) {
                                 if (receivedActionId === actionId.deviceGetValue) {
-                                    // initialize config with default values
                                     deviceStatusMap[id].config = { 
                                         init: undefined,
                                         pomodoro: {
@@ -280,12 +320,15 @@ const start = async (device) => {
                                     
                                     deviceStatusMap[id].gpkRCVersion = actualData[0];
                                     deviceStatusMap[id].init = actualData[1];
-                                    deviceStatusMap[id].deviceType = actualData.toString('utf8', 2, 16).replace(/\0/g, '');
-                                    deviceStatusMap[id].disableCanTrackpadLayer = actualData[16];
-
+                                    const deviceTypeStr = actualData.toString('utf8', 2).split('\0')[0];
+                                    deviceStatusMap[id].deviceType = stringToDeviceType(deviceTypeStr);
+ 
                                     if (settingsStore) {
                                         const oledSettings = settingsStore.get('oledSettings');
                                         if (oledSettings && oledSettings[id] !== undefined) {
+                                            if(oledSettings[id].enabled) {
+                                                writeTimeToOled(device); 
+                                            }
                                             deviceStatusMap[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
                                         }
                                     }
@@ -294,7 +337,7 @@ const start = async (device) => {
                                         deviceId: id,
                                         connected: deviceStatusMap[id].connected,
                                         gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
-                                        deviceType: deviceStatusMap[id].deviceType,
+                                        deviceType: deviceTypeToString(deviceStatusMap[id].deviceType),
                                         config: deviceStatusMap[id].config 
                                     });
                                 } else if (receivedActionId === actionId.trackpadGetValue) {
@@ -304,7 +347,7 @@ const start = async (device) => {
                                         deviceId: id,
                                         connected: deviceStatusMap[id].connected,
                                         gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
-                                        deviceType: deviceStatusMap[id].deviceType,
+                                        deviceType: deviceTypeToString(deviceStatusMap[id].deviceType),
                                         config: deviceStatusMap[id].config
                                     });
                                 } else if (receivedActionId === actionId.pomodoroGetValue) {
@@ -451,18 +494,27 @@ const savePomodoroConfigData = async (device, pomodoroDataBytes) => {
 };
 
 // OLED functions
-const writeTimeToOled = async (device, formattedDate) => {
+const writeTimeToOled = async (device, forceWrite = false) => {
     try {
-        const dataBytes = dataToBytes(formattedDate);
-        return await writeCommand(device, { id: commandId.gpkRCOperation, data: [actionId.oledWrite, ...dataBytes] });
-    } catch (error) {
+        // Format date using dayjs
+        const formattedDate = dayjs().format('YYYY/MM/DD ddd HH:mm ');
+        const deviceId = encodeDeviceId(device);
+        
+        if (forceWrite || lastFormattedDateMap.get(deviceId) !== formattedDate) {
+            lastFormattedDateMap.set(deviceId, formattedDate);
+            const dataBytes = dataToBytes(formattedDate);
+            return await writeCommand(device, { id: commandId.gpkRCOperation, data: [actionId.oledWrite, ...dataBytes] });
+        } else {
+            return { success: true, skipped: true };
+        }
+   } catch (error) {
         throw error;
     }
 };
 
 const getPomodoroConfig = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroGetValue] });
 
-const getPomodoroActiveConfig = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroActiveGetValue] });
+const getPomodoroActiveStatus = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroActiveGetValue] });
 
 const getTrackpadConfigData = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.trackpadGetValue] });
 
@@ -618,6 +670,6 @@ export { startWindowMonitoring, getActiveWindows }
 export { updateAutoLayerSettings }
 export { getSelectedAppSettings, addNewAppToAutoLayerSettings }
 export { encodeDeviceId, parseDeviceId }
-export { getDeviceInitConfig, getDeviceConfig, writeTimeToOled, getPomodoroConfig } // Commented out saveDeviceConfig
-// Add new exports
-export { saveTrackpadConfig, savePomodoroConfigData, getPomodoroActiveConfig, getTrackpadConfigData }
+export { getDeviceInitConfig, getDeviceConfig, writeTimeToOled, getPomodoroConfig } 
+export { getDeviceType }
+export { saveTrackpadConfig, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData }

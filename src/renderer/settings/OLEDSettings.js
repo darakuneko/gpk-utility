@@ -21,7 +21,7 @@ const OLEDSettings = memo(({ device, handleChange }) => {
     // Update device configuration
     if (handleChange) {
       await handleChange("oled_enabled", device.id)({
-        target: { checked: enabled }
+          target: { value: enabled ? 1 : 0 }
       });
     }
     

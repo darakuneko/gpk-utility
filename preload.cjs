@@ -107,9 +107,13 @@ const saveStoreSetting = async (key, value, deviceId = null) => {
 
 // Initialize polling and settings when the window is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    await loadStoreSettings();
-    startKeyboardPolling();
-    startWindowMonitoring();
+    try {
+        await loadStoreSettings();
+        startKeyboardPolling();
+        startWindowMonitoring();
+    } catch (error) {
+        console.error("Error during initialization:", error);
+    }
 });
 
 const command = {
@@ -138,8 +142,8 @@ const command = {
     getPomodoroConfig: async (device) => {
         return await ipcRenderer.invoke('getPomodoroConfig', device);
     },
-    getPomodoroActiveConfig: async (device) => {
-        return await ipcRenderer.invoke('getPomodoroActiveConfig', device);
+    getPomodoroActiveStatus: async (device) => {
+        return await ipcRenderer.invoke('getPomodoroActiveStatus', device);
     },
     getTrackpadConfigData: async (device) => {
         return await ipcRenderer.invoke('getTrackpadConfigData', device);
@@ -148,7 +152,7 @@ const command = {
     setActiveTab: async (device, tabName) => await ipcRenderer.invoke('setActiveTab', device, tabName),
     startWindowMonitoring: async () => await ipcRenderer.invoke('startWindowMonitoring'),
     getActiveWindows: async () => await ipcRenderer.invoke('getActiveWindows'),
-    dateTimeOledWrite: async (device) => await ipcRenderer.invoke('dateTimeOledWrite', device),
+    dateTimeOledWrite: async (device, forceWrite) => await ipcRenderer.invoke('dateTimeOledWrite', device, forceWrite),
     getDeviceInitConfig: async (device) => await ipcRenderer.invoke('getDeviceInitConfig', device),
     dispatchSaveDeviceConfig: async (deviceWithConfig, configTypes) => await ipcRenderer.invoke('dispatchSaveDeviceConfig', deviceWithConfig, configTypes),
     saveTrackpadConfig: async (device) => {
@@ -226,7 +230,7 @@ const keyboardSendLoop = async () => {
                         await command.dateTimeOledWrite(device);
                     }
                     if (pomodoro_timer_active) {
-                        await command.getPomodoroActiveConfig(device);
+                        await command.getPomodoroActiveStatus(device);
                     }
                 }
             }
@@ -262,7 +266,7 @@ ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gp
             changed = true;
         }
         
-        if (device.config !== deviceType) {
+        if (device.config !== config) {
             cachedDeviceRegistry[deviceIndex].config = config;
             changed = true;
         }
@@ -386,15 +390,14 @@ contextBridge.exposeInMainWorld("api", {
     start: async (device) => await command.start(device),
     stop: async (device) => await command.stop(device),
     getDeviceInitConfig: async (device) => await command.getDeviceInitConfig(device),
+    getDeviceType: () => ipcRenderer.invoke('getDeviceType'),
     dispatchSaveDeviceConfig: async (deviceWithConfig, configTypes) => await command.dispatchSaveDeviceConfig(deviceWithConfig, configTypes),
     getDeviceConfig: async (device) => await ipcRenderer.invoke('getDeviceConfig', device),
     getPomodoroConfig: async (device) => await ipcRenderer.invoke('getPomodoroConfig', device),
-
-    getPomodoroActiveConfig: async (device) => await command.getPomodoroActiveConfig(device),
+    getPomodoroActiveStatus: async (device) => await command.getPomodoroActiveStatus(device),
     getTrackpadConfigData: async (device) => await command.getTrackpadConfigData(device),
     saveTrackpadConfig: async (device) => await command.saveTrackpadConfig(device),
     savePomodoroConfigData: async (device, pomodoroDataBytes) => await command.savePomodoroConfigData(device, pomodoroDataBytes),
-
     sleep: async (msec) => await ipcRenderer.invoke('sleep', msec),
     setActiveTab: async (device, tabName) => await ipcRenderer.invoke('setActiveTab', device, tabName),
     getActiveWindows: async () => await command.getActiveWindows(),
@@ -625,6 +628,9 @@ contextBridge.exposeInMainWorld("api", {
     },
     saveOledSettings: async (deviceId, enabled) => {
         const current = cachedStoreSettings.oledSettings || {};
+        if(!current[deviceId].enabled && enabled) {
+            await command.dateTimeOledWrite(cachedDeviceRegistry.find(d => d.id === deviceId), forceWrite = true);
+        }
         current[deviceId] = { enabled };
         return await saveStoreSetting('oledSettings', current, deviceId);
     },
