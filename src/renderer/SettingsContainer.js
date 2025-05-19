@@ -66,7 +66,6 @@ const getSupportedSettingTabs = (device, t, DeviceType) => {
         [DeviceType.KEYBOARD_TP]: tpTabs,
         [DeviceType.KEYBOARD_OLED]: [tabs.layer, tabs.oled]
     };
-    console.log("tabDefinitions", tabDefinitions)
     return tabDefinitions[device.deviceType] || [tabs.layer];
 };
 

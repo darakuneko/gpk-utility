@@ -18,8 +18,8 @@ const LayerSettings = ({ device, handleChange }) => {
     const [localActiveWindows, setLocalActiveWindows] = useState([]);
     const [deviceId, setDeviceId] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [missingApps, setMissingApps] = useState([]);
     const [trackpadLayerEnabled, setTrackpadLayerEnabled] = useState(false);
+    const [userChangedTrackpadLayer, setUserChangedTrackpadLayer] = useState(false);
 
     // Get trackpad configuration or empty object if not defined
     const trackpadConfig = device.config?.trackpad || {};
@@ -40,7 +40,7 @@ const LayerSettings = ({ device, handleChange }) => {
         
         fetchActiveWindows();
         
-        const intervalId = setInterval(fetchActiveWindows, 5000);
+        const intervalId = setInterval(fetchActiveWindows, 1000);
         return () => clearInterval(intervalId);
     }, []);
 
@@ -95,17 +95,20 @@ const LayerSettings = ({ device, handleChange }) => {
                 if (trackpadConfig?.auto_layer_enabled !== undefined) {
                     setIsEnabled(trackpadConfig?.auto_layer_enabled === 1);
                 }
-                
-                if (trackpadConfig?.can_trackpad_layer !== undefined) {
-                    setTrackpadLayerEnabled(trackpadConfig?.can_trackpad_layer === 1);
-                }
-            } catch (error) {
+            } catch (error) { 
                 console.error("Error initializing layer settings:", error);
             }
         };
         
         init();
-    }, [device.id, trackpadConfig]);
+    }, [device.id]);
+    
+    useEffect(() => {
+        if (trackpadConfig?.can_trackpad_layer !== undefined && !userChangedTrackpadLayer) {
+            const newValue = trackpadConfig.can_trackpad_layer === 1;
+            setTrackpadLayerEnabled(newValue);
+        }
+    }, [trackpadConfig?.can_trackpad_layer, userChangedTrackpadLayer]);
     
     const handleToggleEnabled = async (e) => {
         const enabled = e.target.checked ? 1 : 0;
@@ -128,7 +131,8 @@ const LayerSettings = ({ device, handleChange }) => {
     const handleToggleTrackpadLayer = async (e) => {
         const enabled = e.target.checked ? 1 : 0;
         setTrackpadLayerEnabled(enabled === 1);
-        
+        setUserChangedTrackpadLayer(true);
+                
         const updatedDevice = {...device};
         if (!updatedDevice.config) updatedDevice.config = {};
         if (!updatedDevice.config.trackpad) updatedDevice.config.trackpad = {};
@@ -140,7 +144,6 @@ const LayerSettings = ({ device, handleChange }) => {
         };
         
         await setState(newState);
-        
         if (updatedDevice.config.trackpad) {
             try {
                 await api.saveTrackpadConfig(updatedDevice);
@@ -289,11 +292,6 @@ const LayerSettings = ({ device, handleChange }) => {
             }
         });
         
-        setMissingApps(missing);
-        
-        if (missing.length > 0 && !isEditing) {
-            setIsEditing(true);
-        }
     }, [layerSettings, localActiveWindows, state.activeWindow]);
     
     return (
