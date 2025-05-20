@@ -72,7 +72,7 @@ const getSupportedSettingTabs = (device, t, DeviceType) => {
 const SettingsContainer = (() => {
     const {state, dispatch} = useStateContext();
     const DeviceType = useDeviceType();
-    const { t, locale, changeLocale } = useLanguage();
+    const { t, locale, changeLocale, isLoading } = useLanguage();
     
     const [activeDeviceId, setActiveDeviceId] = useState(null)
     const [activeSettingTab, setActiveSettingTab] = useState("mouse")
@@ -237,12 +237,17 @@ const SettingsContainer = (() => {
             window.api.setActiveTab(device, tabId);
         }
     }
-
+    console.log(state)
     if (!state.devices || state.devices.length === 0) {
         return (
             <div className="bg-card-bg dark:bg-card-bg rounded-lg shadow-sm p-8">
                 <div className="text-center text-gray-600 dark:text-gray-400">
-                    <p className="text-lg mb-2">{t('header.noDevices')}</p>
+                    <p className="text-lg mb-2">
+                        {isLoading 
+                            ? "No devices connected" 
+                            : t('header.noDevices', "No devices connected")
+                        }
+                    </p>
                     <p className="text-sm">
                         Please connect a compatible device and ensure it is recognized by your system.
                     </p>
