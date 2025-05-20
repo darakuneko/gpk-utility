@@ -111,6 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadStoreSettings();
         startKeyboardPolling();
         startWindowMonitoring();
+        const notifications = await command.getNotifications();
     } catch (error) {
         console.error("Error during initialization:", error);
     }
@@ -179,6 +180,7 @@ const command = {
     },
     exportFile: async (data) => await ipcRenderer.invoke('exportFile', data),
     importFile: async (filename) => await ipcRenderer.invoke('importFile', filename),
+    getNotifications: () => ipcRenderer.invoke('getNotifications')
 }
 
 const keyboardSendLoop = async () => {
@@ -668,7 +670,7 @@ contextBridge.exposeInMainWorld("api", {
     },
     off: (channel, func) => {
         ipcRenderer.removeListener(channel, func);
-    }
+    },
 });
 
 // Cleanup handlers

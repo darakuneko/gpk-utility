@@ -237,7 +237,7 @@ const SettingsContainer = (() => {
             window.api.setActiveTab(device, tabId);
         }
     }
-    console.log(state)
+
     if (!state.devices || state.devices.length === 0) {
         return (
             <div className="bg-card-bg dark:bg-card-bg rounded-lg shadow-sm p-8">

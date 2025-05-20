@@ -3,6 +3,13 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Store from 'electron-store';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { firebaseConfig } from './firebase_config.js';
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // Import translation utilities
@@ -916,3 +923,21 @@ ipcMain.on('deviceConnectionPomodoroPhaseChanged', (event, { deviceId, pomodoroC
     }
 });
 
+ipcMain.handle('getNotifications', async () => {
+  try {
+    const now = new Date();
+    const q = query(
+      collection(db, 'notification'),
+      where('publishedAt', '<=', now),
+      orderBy('publishedAt', 'desc'),
+      limit(1)
+    );
+    const snapshot = await getDocs(q);
+    const result = snapshot.docs.map(doc => doc.data());
+console.log(result);
+    return result
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+});
