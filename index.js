@@ -146,7 +146,7 @@ const createTrayMenuTemplate = () => {
             } catch (e) {
                 // Ignored
             }
-            app.quit();
+            app.exit(0);
         } 
     });
     
@@ -224,12 +224,11 @@ const createWindow = () => {
             return;
         }
         
-        try{
+        try {
             close()
         } catch (e) {
             // Ignored
         }
-        app.quit()
     })
     
     mainWindow.on('minimize', (event) => {
