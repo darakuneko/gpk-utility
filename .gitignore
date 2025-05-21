@@ -5,3 +5,4 @@ node_modules
 yarn.lock
 /public/build/
 .github
+package-lock.json

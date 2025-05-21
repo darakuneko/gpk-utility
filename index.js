@@ -3,12 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Store from 'electron-store';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
-import { firebaseConfig } from './firebase_config.js';
-
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
+import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,7 +51,8 @@ const store = new Store({
         minimizeToTray: true,
         backgroundStart: false,
         windowBounds: { width: 1280, height: 800, x: undefined, y: undefined },
-        locale: 'en'
+        locale: 'en',
+        notificationApiEndpoint: 'https://getnotifications-svtx62766a-uc.a.run.app'
     }
 });
 
@@ -928,18 +924,23 @@ ipcMain.on('deviceConnectionPomodoroPhaseChanged', (event, { deviceId, pomodoroC
 
 ipcMain.handle('getNotifications', async () => {
   try {
-    const now = new Date();
-    const q = query(
-      collection(db, 'notification'),
-      where('publishedAt', '<=', now),
-      orderBy('publishedAt', 'desc'),
-      limit(10)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-        id: doc.id, 
-        ...doc.data()
-    }));
+    const now = Date.now();
+    const queryPayload = {
+        collection: 'notification',
+        filters: [
+            { field: "publishedAt", op: "<=", value: now }
+        ],
+        orderBy: { field: "publishedAt", direction: "desc" },
+        limit: 10,
+    };
+
+    const endpoint = store.get('notificationApiEndpoint')
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(queryPayload)
+    });
+    return await response.json();
   } catch (error) {
     console.error(error);
     return [];
