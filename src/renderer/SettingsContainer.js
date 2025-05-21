@@ -3,6 +3,7 @@ import SettingEdit from "./settingEdit.js"
 import { useStateContext, useDeviceType } from "../context.js"
 import { useLanguage } from "../i18n/LanguageContext.js"
 import { CustomSlider } from "../components/CustomComponents.js"
+import NotificationModal from "../components/NotificationModal.js"
 
 // Hamburger menu icon component
 const HamburgerIcon = () => (
@@ -84,6 +85,8 @@ const SettingsContainer = (() => {
     })
     const [pollingInterval, setPollingInterval] = useState(() => window.api.getStoreSetting('pollingInterval') || 1000)
     const pollingIntervalRef = useRef(pollingInterval)
+    const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false)
+    const [notifications, setNotifications] = useState([])
 
     // Available languages
     const availableLanguages = {
@@ -150,7 +153,17 @@ const SettingsContainer = (() => {
             });
         });
         
-        return () => {};
+        // Listen for showNotificationModal event
+        const handleNotificationModalEvent = (event) => {
+            setNotifications(event.detail.notifications);
+            setIsNotificationModalOpen(true);
+        };
+
+        window.addEventListener('showNotificationModal', handleNotificationModalEvent);
+        
+        return () => {
+            window.removeEventListener('showNotificationModal', handleNotificationModalEvent);
+        };
     }, [dispatch]);
 
     // Toggle menu open/close
@@ -228,6 +241,24 @@ const SettingsContainer = (() => {
             document.removeEventListener('mousedown', handleClickOutside)
         }
     }, [menuOpen]);
+
+    // Show notifications modal
+    const handleShowNotifications = async () => {
+        try {
+            const result = await window.api.getCachedNotifications();
+            if (result && result.length > 0) {
+                setNotifications(result);
+                setIsNotificationModalOpen(true);
+                setMenuOpen(false);
+            } else {
+                // No notifications to show
+                alert(t('notification.noNotifications'));
+                setMenuOpen(false);
+            }
+        } catch (error) {
+            console.error("Failed to load notifications:", error);
+        }
+    };
 
     // Set active setting tab and notify API
     const handleSettingTabChange = (tabId) => {
@@ -343,6 +374,7 @@ const SettingsContainer = (() => {
                             
                             <MenuItem onClick={handleImport}>{t('settings.import')}</MenuItem>
                             <MenuItem onClick={handleExport}>{t('settings.export')}</MenuItem>
+                            <MenuItem onClick={handleShowNotifications}>{t('notification.title')}</MenuItem>
                             <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                             
                             {/* Polling interval settings */}
@@ -440,6 +472,13 @@ const SettingsContainer = (() => {
                     ))}
                 </div>
             </div>
+            
+            {/* Notification Modal */}
+            <NotificationModal 
+                isOpen={isNotificationModalOpen}
+                onClose={() => setIsNotificationModalOpen(false)}
+                notifications={notifications}
+            />
         </div>
     )
 })

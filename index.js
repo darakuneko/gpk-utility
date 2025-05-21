@@ -51,6 +51,8 @@ const store = new Store({
     defaults: {
         autoLayerSettings: {},
         oledSettings: {},
+        pomodoroDesktopNotificationsSettings: {},
+        savedNotifications: [],
         minimizeToTray: true,
         backgroundStart: false,
         windowBounds: { width: 1280, height: 800, x: undefined, y: undefined },
@@ -789,6 +791,7 @@ ipcMain.handle('getAllStoreSettings', async (event) => {
             autoLayerSettings: store.get('autoLayerSettings') || {},
             oledSettings: store.get('oledSettings') || {},
             pomodoroDesktopNotificationsSettings: store.get('pomodoroDesktopNotificationsSettings') || {},
+            savedNotifications: store.get('savedNotifications') || [],
             traySettings: {
                 minimizeToTray: store.get('minimizeToTray'),
                 backgroundStart: store.get('backgroundStart')
@@ -930,12 +933,13 @@ ipcMain.handle('getNotifications', async () => {
       collection(db, 'notification'),
       where('publishedAt', '<=', now),
       orderBy('publishedAt', 'desc'),
-      limit(1)
+      limit(10)
     );
     const snapshot = await getDocs(q);
-    const result = snapshot.docs.map(doc => doc.data());
-console.log(result);
-    return result
+    return snapshot.docs.map(doc => ({
+        id: doc.id, 
+        ...doc.data()
+    }));
   } catch (error) {
     console.error(error);
     return [];

@@ -8,6 +8,7 @@ let cachedStoreSettings = {
     autoLayerSettings: {},
     oledSettings: {},
     pomodoroDesktopNotificationsSettings: {},
+    savedNotifications: [],
     traySettings: {
         minimizeToTray: true,
         backgroundStart: false
@@ -111,7 +112,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadStoreSettings();
         startKeyboardPolling();
         startWindowMonitoring();
+        
         const notifications = await command.getNotifications();
+        const latestNotification = notifications[0] || [];
+
+        const savedNotifications = cachedStoreSettings?.savedNotifications || [];
+        if (notifications && notifications.length > 0) {
+            const isDifferent = !savedNotifications.length || !savedNotifications.some(n => n.id === latestNotification.id);
+            if (isDifferent) {       
+                await saveStoreSetting('savedNotifications', notifications);
+                
+                window.dispatchEvent(new CustomEvent('showNotificationModal', {
+                    detail: {
+                        notifications: [latestNotification]
+                    }
+                }));
+            }
+        }
     } catch (error) {
         console.error("Error during initialization:", error);
     }
@@ -671,6 +688,7 @@ contextBridge.exposeInMainWorld("api", {
     off: (channel, func) => {
         ipcRenderer.removeListener(channel, func);
     },
+    getCachedNotifications: async() => cachedStoreSettings.savedNotifications || [],
 });
 
 // Cleanup handlers

@@ -16,7 +16,12 @@ export default {
     delete: 'Delete',
     unlimited: 'Unlimited',
     saveComplete: 'Settings saved successfully',
-    saveError: 'Error saving settings'
+    saveError: 'Error saving settings',
+    ok: 'OK'
+  },
+  notification: {
+    title: 'Notifications',
+    noNotification: 'No notifications'
   },
   header: {
     title: 'GPK Utility',

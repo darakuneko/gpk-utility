@@ -1,8 +1,9 @@
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { createRoot } from 'react-dom/client'
 import Content from "./content.js"
 import { AppProvider } from "./context.js"
 import { LanguageProvider } from "./i18n/LanguageContext.js"
+import NotificationModal from "./components/NotificationModal.js"
 import "./styles.css"
 
 // Set initial background color immediately
@@ -16,7 +17,10 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
 const {api} = window
 
 const App = () => {
-    React.useEffect(() => {
+    const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false)
+    const [notifications, setNotifications] = useState([])
+
+    useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
         const handleChange = (e) => {
             document.documentElement.style.backgroundColor = e.matches ? '#1a1a1a' : '#f0f0f0'
@@ -26,12 +30,35 @@ const App = () => {
         return () => mediaQuery.removeEventListener('change', handleChange)
     }, [])
 
+    // Listen for showNotificationModal event
+    useEffect(() => {
+        const handleNotificationModalEvent = (event) => {
+            setNotifications(event.detail.notifications)
+            setIsNotificationModalOpen(true)
+        }
+
+        window.addEventListener('showNotificationModal', handleNotificationModalEvent)
+        
+        return () => {
+            window.removeEventListener('showNotificationModal', handleNotificationModalEvent)
+        }
+    }, [])
+
+    const handleCloseNotificationModal = () => {
+        setIsNotificationModalOpen(false)
+    }
+
     return (
         <React.StrictMode>
             <AppProvider>
                 <LanguageProvider>
                     <div className="min-h-screen">
                         <Content />
+                        <NotificationModal 
+                            isOpen={isNotificationModalOpen} 
+                            onClose={handleCloseNotificationModal} 
+                            notifications={notifications} 
+                        />
                     </div>
                 </LanguageProvider>
             </AppProvider>
