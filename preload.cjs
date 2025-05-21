@@ -689,6 +689,27 @@ contextBridge.exposeInMainWorld("api", {
         ipcRenderer.removeListener(channel, func);
     },
     getCachedNotifications: async() => cachedStoreSettings.savedNotifications || [],
+    
+    // Get application info from package.json
+    getAppInfo: async() => {
+        try {
+            const packageInfo = await ipcRenderer.invoke('getAppInfo');
+            return packageInfo;
+        } catch (error) {
+            console.error("Error getting app info:", error);
+            return { 
+                name: "GPK Utility", 
+                version: "unknown", 
+                description: "", 
+                author: {} 
+            };
+        }
+    },
+    
+    // Open external links (for version modal)
+    openExternalLink: async (url) => {
+        return await ipcRenderer.invoke('openExternalLink', url);
+    }
 });
 
 // Cleanup handlers

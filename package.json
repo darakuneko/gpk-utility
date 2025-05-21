@@ -12,9 +12,9 @@
   "name": "gpk_utility",
   "version": "1.0.0",
   "description": "GPK Utility",
-  "homepage": "https://github.com/darakuneko",
+  "homepage": "https://github.com/darakuneko/gpk-utility",
   "author": {
-    "name": "darakuneko",
+    "name": "daraku-neko",
     "email": "tvkids@gmail.com"
   },
   "type": "module",

@@ -945,3 +945,39 @@ ipcMain.handle('getNotifications', async () => {
     return [];
   }
 });
+
+// Get application info from package.json
+ipcMain.handle('getAppInfo', async () => {
+  try {
+    // Import package.json using dynamic import
+    const packageJsonPath = path.join(__dirname, 'package.json');
+    const packageData = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
+    return {
+      name: packageData.description,
+      version: packageData.version,
+      author: packageData.author,
+      homepage: packageData.homepage
+    };
+  } catch (error) {
+    console.error('Error reading package.json:', error);
+    return {
+      name: 'GPK Utility',
+      version: 'unknown',
+      description: '',
+      author: {},
+      homepage: ''
+    };
+  }
+});
+
+// Open external links
+ipcMain.handle('openExternalLink', async (event, url) => {
+  const { shell } = await import('electron');
+  try {
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    console.error('Error opening external link:', error);
+    return { success: false, error: error.message };
+  }
+});

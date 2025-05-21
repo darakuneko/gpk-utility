@@ -19,9 +19,16 @@ export default {
     saveError: 'Error saving settings',
     ok: 'OK'
   },
-  notification: {
-    title: 'Notifications',
-    noNotification: 'No notifications'
+  about: {
+    title: 'About',
+    version: 'Version',
+    description: 'Description',
+    author: 'Author',
+    homepage: 'Homepage'
+  },
+  updatesNotification: {
+    title: 'Updates',
+    noNotification: 'No updates available'
   },
   header: {
     title: 'GPK Utility',
@@ -116,8 +123,7 @@ export default {
     importError: 'Error importing settings',
     exportSuccess: 'Settings exported successfully',
     exportError: 'Error exporting settings',
-    pollingInterval: 'Polling Interval',
-    pollingIntervalDescription: 'Time between keyboard polling (ms)',
+    pollingInterval: 'Device Polling Interval',
     faster: 'Faster',
     slower: 'Slower'
   },

@@ -4,6 +4,7 @@ import { useStateContext, useDeviceType } from "../context.js"
 import { useLanguage } from "../i18n/LanguageContext.js"
 import { CustomSlider } from "../components/CustomComponents.js"
 import NotificationModal from "../components/NotificationModal.js"
+import VersionModal from "../components/VersionModal.js"
 
 // Hamburger menu icon component
 const HamburgerIcon = () => (
@@ -86,6 +87,7 @@ const SettingsContainer = (() => {
     const [pollingInterval, setPollingInterval] = useState(() => window.api.getStoreSetting('pollingInterval') || 1000)
     const pollingIntervalRef = useRef(pollingInterval)
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false)
+    const [isVersionModalOpen, setIsVersionModalOpen] = useState(false)
     const [notifications, setNotifications] = useState([])
 
     // Available languages
@@ -260,6 +262,12 @@ const SettingsContainer = (() => {
         }
     };
 
+    // Show version modal
+    const handleShowVersion = () => {
+        setIsVersionModalOpen(true);
+        setMenuOpen(false);
+    };
+
     // Set active setting tab and notify API
     const handleSettingTabChange = (tabId) => {
         setActiveSettingTab(tabId);
@@ -374,7 +382,6 @@ const SettingsContainer = (() => {
                             
                             <MenuItem onClick={handleImport}>{t('settings.import')}</MenuItem>
                             <MenuItem onClick={handleExport}>{t('settings.export')}</MenuItem>
-                            <MenuItem onClick={handleShowNotifications}>{t('notification.title')}</MenuItem>
                             <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                             
                             {/* Polling interval settings */}
@@ -415,9 +422,6 @@ const SettingsContainer = (() => {
                                         }}
                                     />
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    {t('settings.pollingIntervalDescription')}
-                                </p>
                             </div>
                             
                             <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
@@ -435,6 +439,9 @@ const SettingsContainer = (() => {
                             >
                                 {t('settings.startInTray')}
                             </MenuItem>
+                            <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                            <MenuItem onClick={handleShowNotifications}>{t('notification.title')}</MenuItem>
+                            <MenuItem onClick={handleShowVersion}>{t('about.title')}</MenuItem>
                         </div>
                     )}
                 </div>
@@ -478,6 +485,12 @@ const SettingsContainer = (() => {
                 isOpen={isNotificationModalOpen}
                 onClose={() => setIsNotificationModalOpen(false)}
                 notifications={notifications}
+            />
+            
+            {/* Version Modal */}
+            <VersionModal
+                isOpen={isVersionModalOpen}
+                onClose={() => setIsVersionModalOpen(false)}
             />
         </div>
     )
