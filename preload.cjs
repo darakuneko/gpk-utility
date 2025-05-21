@@ -113,15 +113,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         startKeyboardPolling();
         startWindowMonitoring();
         
-        const notifications = await command.getNotifications();
-        const latestNotification = notifications[0] || [];
-
+        const result = await command.getNotifications();
+        const latestNotification = result?.notifications[0] || [];
         const savedNotifications = cachedStoreSettings?.savedNotifications || [];
-        if (notifications && notifications.length > 0) {
+
+        if (latestNotification?.id) {
             const isDifferent = !savedNotifications.length || !savedNotifications.some(n => n.id === latestNotification.id);
             if (isDifferent) {       
-                await saveStoreSetting('savedNotifications', notifications);
-                
+                await saveStoreSetting('savedNotifications', result.notifications);
                 window.dispatchEvent(new CustomEvent('showUpdatesNotificationModal', {
                     detail: {
                         notifications: [latestNotification]
