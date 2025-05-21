@@ -71,13 +71,13 @@ const PomodoroActiveDisplay = ({ device, formatTime, desktopNotificationsEnabled
             {/* Haptic feedback notification display */}
             <div className="flex items-center">
               <div className={`w-3 h-3 rounded-full mr-2 ${pomodoroConfig.notify_haptic_enable ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-              <span className="text-sm">{t('notifications.pomodoro.enableHapticNotifications')}</span>
+              <span className="text-sm">{t('pomodoroNotification.enableHapticNotifications')}</span>
             </div>
             
             {/* Desktop notification display */}
             <div className="flex items-center">
               <div className={`w-3 h-3 rounded-full mr-2 ${desktopNotificationsEnabled ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-              <span className="text-sm">{t('notifications.pomodoro.enableDesktopNotifications')}</span>
+              <span className="text-sm">{t('pomodoroNotification.enableDesktopNotifications')}</span>
             </div>
           </div>
         </div>
@@ -100,7 +100,7 @@ const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, han
         {/* Notification toggle switch */}
         <div className="flex items-center justify-between py-2 mb-2 border-b border-gray-100 dark:border-gray-700">
           <label className="flex items-center text-gray-900 dark:text-white">
-            <span>{t('notifications.pomodoro.enableDesktopNotifications')}</span>
+            <span>{t('pomodoroNotification.enableDesktopNotifications')}</span>
           </label>
           <CustomSwitch
             id="config-pomodoro_notify_notifications_enable"
@@ -112,7 +112,7 @@ const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, han
         {/* Haptic feedback notification toggle switch */}
         <div className="flex items-center justify-between py-2 mb-2 border-b border-gray-100 dark:border-gray-700">
           <label className="flex items-center text-gray-900 dark:text-white">
-            <span>{t('notifications.pomodoro.enableHapticNotifications')}</span>
+            <span>{t('pomodoroNotification.enableHapticNotifications')}</span>
           </label>
           <CustomSwitch
             id="config-pomodoro_notify_haptic_enable"
