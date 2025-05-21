@@ -7,6 +7,11 @@ import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+if(process.platform==='linux') {
+    app.commandLine.appendArgument("--no-sandbox");
+}
+
 // Import translation utilities
 import enTranslations from './src/i18n/locales/en.js';
 import {
