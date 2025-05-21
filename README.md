@@ -14,9 +14,14 @@ It provides customization features tailored to each device.
 Manage layer (mode) settings.<br>Switch between different operation modes.
 
 - **Trackpad Layer**: Switch to a dedicated layer while touching the trackpad
-- **Haptic Feedback on Layer Change**: Enable/disable haptic feedback and pattern settings for layer changes
+- **Haptic Feedback on Layer Change**: Enable/disable haptic feedback and pattern settings for layer changes (See Haptic section)
 - **Automatic Layer Switching**: Automatically switch layers based on active applications
   - Automatically switches to a specified layer when a specific application becomes active
+
+#### Haptic
+Configure haptic feedback settings.
+- **Haptic Feedback on Layer Change**: Enable/disable haptic feedback when the layer changes.
+- **Haptic Pattern**: Select the haptic feedback pattern for layer changes.
 
 ### Trackpad Features
 
@@ -30,8 +35,9 @@ Adjust scroll speed and direction settings.<br>Configure smooth scrolling and di
 
 - **Direction Inversion**: Invert scrolling direction (standard/inverted)
 - **Short Scroll**: Enable/disable high-volume scrolling with short scroll operations
-- **Term**: Adjust scroll inertia duration in the range of 0-300ms
+- **Scroll Term**: Adjust scroll inertia duration in the range of 0-300ms
 - **Scroll Steps**: Adjust the number of lines moved per scroll action (1-16 lines)
+- **Short Scroll Term**: Adjust the time to activate short scroll (0-500ms)
 
 #### Drag & Drop
 Configure drag and drop behavior.
@@ -49,8 +55,26 @@ Configure time management features like Pomodoro Timer.<br>Adjust work and break
 - **Work Time**: Set Pomodoro work time (1-60 minutes)
 - **Break Time**: Set short break time (1-30 minutes)
 - **Long Break Time**: Set long break time (1-60 minutes)
-- **workInterval Until Long Break**: Set the number of work/break workInterval before a long break (1-10)
-- **Haptic Feedback**: Configure haptic feedback patterns for work start, break start, and long break start
+- **Work Interval Until Long Break**: Set the number of work/break intervals before a long break (1-10)
+- **Haptic Feedback**: Configure haptic feedback patterns for work start and break start.
+- **Continuous Mode**: Automatically start the next session (work/break) without manual intervention.
+- **Desktop Notifications**: Enable/disable desktop notifications for Pomodoro phase changes.
+- **Haptic Feedback Notifications**: Enable/disable haptic feedback notifications for Pomodoro phase changes.
+
+#### Gesture
+Configure trackpad gesture settings.
+- **Tap Term**: Maximum time for a tap to be registered (0-500ms)
+- **Swipe Term**: Maximum time for a swipe to be registered (0-500ms)
+- **Pinch Term**: Maximum time for a pinch gesture to be registered (0-500ms)
+- **Pinch Distance**: Minimum distance for a pinch gesture to be registered (0-500)
+- **Gesture Term**: Maximum time for other gestures to be registered (0-500ms)
+
+### Application Settings
+
+- **Language**: Change the application language
+- **Import/Export Settings**: Import or export all device and app settings as a file
+- **System Tray**: Minimize to tray when closed, start minimized to tray
+- **Device Polling Interval**: Adjust how often the app polls devices for status (200-2000ms)
 
 ### Keyboard Features
 
@@ -65,6 +89,7 @@ Display settings for keyboard OLED screens
 - System tray functionality
   - Minimize to tray when closed
   - Start minimized to tray
+- Language Settings: Change the application language.
 
 ## Usage
 
