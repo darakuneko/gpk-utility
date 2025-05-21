@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (isDifferent) {       
                 await saveStoreSetting('savedNotifications', notifications);
                 
-                window.dispatchEvent(new CustomEvent('showNotificationModal', {
+                window.dispatchEvent(new CustomEvent('showUpdatesNotificationModal', {
                     detail: {
                         notifications: [latestNotification]
                     }

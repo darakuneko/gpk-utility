@@ -142,18 +142,16 @@ export default {
       success: 'Success'
     }
   },
-  notifications: {
-    pomodoro: {
-      workTitle: 'Focus Session Started',
-      workBody: 'You\'ve got {{minutes}} minutes to stay focused',
-      breakTitle: 'Break Time!',
-      breakBody: 'Time to relax for {{minutes}} minutes',
-      longBreakTitle: 'Long Break Started!',
-      longBreakBody: 'Take it easy for {{minutes}} minutes',
-      stopTitle: 'Pomodoro Timer Stopped',
-      stopBody: 'Your pomodoro session has ended',
-      enableDesktopNotifications: 'Desktop Notifications',
-      enableHapticNotifications: 'Haptic Feedback Notifications'
-    }
+  pomodoroNotification: {
+    workTitle: 'Focus Session Started',
+    workBody: 'You\'ve got {{minutes}} minutes to stay focused',
+    breakTitle: 'Break Time!',
+    breakBody: 'Time to relax for {{minutes}} minutes',
+    longBreakTitle: 'Long Break Started!',
+    longBreakBody: 'Take it easy for {{minutes}} minutes',
+    stopTitle: 'Pomodoro Timer Stopped',
+    stopBody: 'Your pomodoro session has ended',
+    enableDesktopNotifications: 'Desktop Notifications',
+    enableHapticNotifications: 'Haptic Feedback Notifications'
   }
 };

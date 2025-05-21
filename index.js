@@ -295,16 +295,16 @@ ipcMain.on('pomodoroActiveChanged', (event, { deviceName, deviceId, phase, minut
     
     switch (phase) {
         case 1: // Work phase
-            titleKey = 'notifications.pomodoro.workTitle';
-            bodyKey = 'notifications.pomodoro.workBody';
+            titleKey = 'pomodoroNotification.workTitle';
+            bodyKey = 'pomodoroNotification.workBody';
             break;
         case 2: // Break phase
-            titleKey = 'notifications.pomodoro.breakTitle';
-            bodyKey = 'notifications.pomodoro.breakBody';
+            titleKey = 'pomodoroNotification.breakTitle';
+            bodyKey = 'pomodoroNotification.breakBody';
             break;
         case 3: // Long break phase
-            titleKey = 'notifications.pomodoro.longBreakTitle';
-            bodyKey = 'notifications.pomodoro.longBreakBody';
+            titleKey = 'pomodoroNotification.longBreakTitle';
+            bodyKey = 'pomodoroNotification.longBreakBody';
             break;
     }
     
@@ -898,8 +898,8 @@ ipcMain.on('deviceConnectionPomodoroPhaseChanged', (event, { deviceId, pomodoroC
                 if (pomodoroDesktopNotificationsSettings[deviceId] !== false && 
                     !(mainWindow && mainWindow.isFocused())) {
                     
-                    const title = translate('notifications.pomodoro.stopTitle');
-                    const body = translate('notifications.pomodoro.stopBody');
+                    const title = translate('pomodoroNotification.stopTitle');
+                    const body = translate('pomodoroNotification.stopBody');
                     
                     if (title && Notification.isSupported()) {
                         new Notification({ 

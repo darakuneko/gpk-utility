@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import Content from "./content.js"
 import { AppProvider } from "./context.js"
 import { LanguageProvider } from "./i18n/LanguageContext.js"
-import NotificationModal from "./components/NotificationModal.js"
+import UpdatesNotificationModal from "./components/UpdatesNotificationModal.js"
 import "./styles.css"
 
 // Set initial background color immediately
@@ -17,8 +17,8 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
 const {api} = window
 
 const App = () => {
-    const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false)
-    const [notifications, setNotifications] = useState([])
+    const [isUpdatesNotificationModalOpen, setIsUpdatesNotificationModalOpen] = useState(false)
+    const [updates, setUpdates] = useState([])
 
     useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -30,22 +30,22 @@ const App = () => {
         return () => mediaQuery.removeEventListener('change', handleChange)
     }, [])
 
-    // Listen for showNotificationModal event
+    // Listen for showUpdatesNotificationModal event
     useEffect(() => {
-        const handleNotificationModalEvent = (event) => {
-            setNotifications(event.detail.notifications)
-            setIsNotificationModalOpen(true)
+        const handleUpdatesNotificationModalEvent = (event) => {
+            setUpdates(event.detail.notifications)
+            setIsUpdatesNotificationModalOpen(true)
         }
 
-        window.addEventListener('showNotificationModal', handleNotificationModalEvent)
+        window.addEventListener('showUpdatesNotificationModal', handleUpdatesNotificationModalEvent)
         
         return () => {
-            window.removeEventListener('showNotificationModal', handleNotificationModalEvent)
+            window.removeEventListener('showUpdatesNotificationModal', handleUpdatesNotificationModalEvent)
         }
     }, [])
 
-    const handleCloseNotificationModal = () => {
-        setIsNotificationModalOpen(false)
+    const handleCloseUpdatesNotificationModal = () => {
+        setIsUpdatesNotificationModalOpen(false)
     }
 
     return (
@@ -54,10 +54,10 @@ const App = () => {
                 <LanguageProvider>
                     <div className="min-h-screen">
                         <Content />
-                        <NotificationModal 
-                            isOpen={isNotificationModalOpen} 
-                            onClose={handleCloseNotificationModal} 
-                            notifications={notifications} 
+                        <UpdatesNotificationModal 
+                            isOpen={isUpdatesNotificationModalOpen} 
+                            onClose={handleCloseUpdatesNotificationModal} 
+                            updates={updates} 
                         />
                     </div>
                 </LanguageProvider>

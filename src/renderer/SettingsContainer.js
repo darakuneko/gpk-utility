@@ -3,7 +3,7 @@ import SettingEdit from "./settingEdit.js"
 import { useStateContext, useDeviceType } from "../context.js"
 import { useLanguage } from "../i18n/LanguageContext.js"
 import { CustomSlider } from "../components/CustomComponents.js"
-import NotificationModal from "../components/NotificationModal.js"
+import UpdatesNotificationModal from "../components/UpdatesNotificationModal.js"
 import VersionModal from "../components/VersionModal.js"
 
 // Hamburger menu icon component
@@ -86,9 +86,9 @@ const SettingsContainer = (() => {
     })
     const [pollingInterval, setPollingInterval] = useState(() => window.api.getStoreSetting('pollingInterval') || 1000)
     const pollingIntervalRef = useRef(pollingInterval)
-    const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false)
+    const [isUpdatesNotificationModalOpen, setIsUpdatesNotificationModalOpen] = useState(false)
     const [isVersionModalOpen, setIsVersionModalOpen] = useState(false)
-    const [notifications, setNotifications] = useState([])
+    const [updates, setUpdates] = useState([])
 
     // Available languages
     const availableLanguages = {
@@ -155,16 +155,16 @@ const SettingsContainer = (() => {
             });
         });
         
-        // Listen for showNotificationModal event
-        const handleNotificationModalEvent = (event) => {
-            setNotifications(event.detail.notifications);
-            setIsNotificationModalOpen(true);
+        // Listen for showUpdatesNotificationModal event
+        const handleUpdatesNotificationModalEvent = (event) => {
+            setUpdates(event.detail.notifications);
+            setIsUpdatesNotificationModalOpen(true);
         };
 
-        window.addEventListener('showNotificationModal', handleNotificationModalEvent);
+        window.addEventListener('showUpdatesNotificationModal', handleUpdatesNotificationModalEvent);
         
         return () => {
-            window.removeEventListener('showNotificationModal', handleNotificationModalEvent);
+            window.removeEventListener('showUpdatesNotificationModal', handleUpdatesNotificationModalEvent);
         };
     }, [dispatch]);
 
@@ -244,21 +244,21 @@ const SettingsContainer = (() => {
         }
     }, [menuOpen]);
 
-    // Show notifications modal
-    const handleShowNotifications = async () => {
+    // Show updates notifications modal
+    const handleShowUpdatesNotifications = async () => {
         try {
             const result = await window.api.getCachedNotifications();
             if (result && result.length > 0) {
-                setNotifications(result);
-                setIsNotificationModalOpen(true);
+                setUpdates(result);
+                setIsUpdatesNotificationModalOpen(true);
                 setMenuOpen(false);
             } else {
-                // No notifications to show
-                alert(t('notification.noNotifications'));
+                // No updates to show
+                alert(t('updatesNotification.noNotification'));
                 setMenuOpen(false);
             }
         } catch (error) {
-            console.error("Failed to load notifications:", error);
+            console.error("Failed to load updates:", error);
         }
     };
 
@@ -440,7 +440,7 @@ const SettingsContainer = (() => {
                                 {t('settings.startInTray')}
                             </MenuItem>
                             <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                            <MenuItem onClick={handleShowNotifications}>{t('notification.title')}</MenuItem>
+                            <MenuItem onClick={handleShowUpdatesNotifications}>{t('updatesNotification.title')}</MenuItem>
                             <MenuItem onClick={handleShowVersion}>{t('about.title')}</MenuItem>
                         </div>
                     )}
@@ -480,11 +480,11 @@ const SettingsContainer = (() => {
                 </div>
             </div>
             
-            {/* Notification Modal */}
-            <NotificationModal 
-                isOpen={isNotificationModalOpen}
-                onClose={() => setIsNotificationModalOpen(false)}
-                notifications={notifications}
+            {/* Updates Notification Modal */}
+            <UpdatesNotificationModal 
+                isOpen={isUpdatesNotificationModalOpen}
+                onClose={() => setIsUpdatesNotificationModalOpen(false)}
+                updates={updates}
             />
             
             {/* Version Modal */}
