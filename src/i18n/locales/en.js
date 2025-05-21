@@ -89,7 +89,7 @@ export default {
     activePhase: 'Pomodoro timer is currently active',
     pressToggleToStop: 'Press Pomodoro Toggle key to stop it',
     workInterval	: 'Work Interval',
-    phase: 'CurrentPhase',
+    phase: 'Current Phase',
     longBreak: 'Long Break',
     work: 'WORK',
     break: 'Break',
