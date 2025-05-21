@@ -9,7 +9,7 @@
     "dist:mac": "npm run build  && electron-builder -m",
     "dist:linux": "npm run build && electron-builder -l"
   },
-  "name": "gpk_utility",
+  "name": "gpk-utility",
   "version": "1.0.0",
   "description": "GPK Utility",
   "homepage": "https://github.com/darakuneko/gpk-utility",
@@ -22,8 +22,8 @@
     "autoprefixer": "^10.4.21",
     "cross-env": "^7.0.3",
     "css-loader": "^7.1.2",
-    "electron": "32.1.0",
-    "electron-builder": "25.0.5",
+    "electron": "36.2.1",
+    "electron-builder": "26.0.15",
     "postcss": "^8.5.3",
     "postcss-import": "^16.1.0",
     "postcss-loader": "^7.3.4",
@@ -46,6 +46,7 @@
     "dotenv": "^16.4.5",
     "electron-store": "^10.0.1",
     "firebase": "^11.8.0",
+    "node-fetch": "^3.3.2",
     "node-hid": "3.1.0",
     "node-loader": "2.0.0",
     "react": "18.3.1",
@@ -63,7 +64,8 @@
       "index.js",
       "preload.cjs",
       "gpkrc.js",
-      "package.json"
+      "package.json",
+      "src/i18n/locales/**/*"
     ],
     "win": {
       "target": "nsis",
@@ -79,8 +81,7 @@
     },
     "linux": {
       "target": [
-        "AppImage",
-        "deb"
+        "AppImage"
       ],
       "icon": "icons"
     }
