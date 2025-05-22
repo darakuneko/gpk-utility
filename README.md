@@ -163,3 +163,6 @@ GPKRC_ENABLE = yes
 - **Trackpad**: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento)
 
 **Specifications are subject to change without notice.**
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/darakuneko/gpk-utility)
+
