@@ -77,8 +77,10 @@ https://github.com/user-attachments/assets/ba6a7bcf-7245-4bfc-9b17-367660a74c7d
 - **Continuous Mode**: 手動介入なしに次のセッション（作業/休憩）を自動的に開始します。
 - **Desktop Notification**: ポモドーロのフェーズ変更時にデスクトップ通知を有効/無効にします。<br>
 GPK Utilityがアクティブでない時に通知されます。
-- **Haptic Notification**: ポモドーロのフェーズ変更時に触覚通知を有効/無効にします。
-
+- **Haptic Notification**: ポモドーロのフェーズ変更時に触覚通知を有効/無効にします。<br><br>
+Break、Long Break時は30秒間通知されます。<br>
+通知が解除されないとトラックパッドのタップ操作が行えないので、ダブルタップして通知を解除してください。<br>
+<br>
 対応デバイスは状態に合わせて、LEDの一部が光ります(solid_color時のみ)
 Work - RED  
 ![RED](https://github.com/user-attachments/assets/18df9665-6e15-411e-a44b-80f67e20b3cb)  

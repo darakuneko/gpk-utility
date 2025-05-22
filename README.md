@@ -86,6 +86,11 @@ Press **Pomodoro Toggle** to start the timer.
 Notified when the GPK Utility is inactive.
 - **Haptic Feedback Notifications**: Enable/disable haptic feedback notifications for Pomodoro phase changes.
 
+Enable or disable haptic notifications when the Pomodoro phase changes.  
+During **Break** and **Long Break**, the notification will be active for 30 seconds.  
+While the notification is active, tap operations on the trackpad will be disabled.  
+Double-tap the trackpad to dismiss the notification.
+
 On supported devices, certain LEDs will light up according to the device status (only when in `solid_color` mode).
 
 Work - RED  
