@@ -12,6 +12,8 @@ If you do not wish to use these functions, you can configure the application via
 ![Image](https://github.com/user-attachments/assets/b9a13791-89b5-4eea-942b-cd967c2d444d)
 
 #### Notice
+Please do not launch any applications that communicate with the device, such as Vial, before starting GPK Utility.  
+If the device is not recognized when multiple applications are running simultaneously, please close all related applications, reconnect the device, and then launch GPK Utility.  
 Some touchpad settings may interfere with the proper operation of the device depending on the configuration.<br>
 Please review and apply settings carefully. <br>
 If any operational issues occur, you can initialize the device settings by pressing the **"EEPROM Clear"** button within the application.<br>
@@ -65,13 +67,19 @@ Configure drag and drop behavior.
 - **Strength**: Adjust the intensity required to enter drag state (1-12)
 
 #### Timer
-Sets the time management function of the Pomodoro Timer.  
-Adjust the working time and rest time.
+Configure time management settings for the Pomodoro timer.  
+You can adjust both the work time and break time intervals.  
+
+![Image](https://github.com/user-attachments/assets/bc964f72-80b5-40a8-9988-5310a1126fa4)
+
+The timer is disabled when the device starts up.  
+Press **Pomodoro Toggle** to start the timer.
 
 - **Work Time**: Set Pomodoro work time (1-60 minutes)
 - **Break Time**: Set short break time (1-30 minutes)
 - **Long Break Time**: Set long break time (1-60 minutes)
-- **Work Interval Until Long Break**: Set the number of work/break intervals before a long break (1-10)
+- **Work Interval**: Set the number of work/break intervals before a long break (1-10)
+- **Pomodoro Cycle**: Set the number of work interval repetitions (1-10)
 - **Haptic Feedback**: Configure haptic feedback patterns for work start and break start.
 - **Continuous Mode**: Automatically start the next session (work/break) without manual intervention.
 - **Desktop Notifications**: Enable/disable desktop notifications for Pomodoro phase changes.  
