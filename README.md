@@ -1,8 +1,7 @@
 # GPK Utility
 ![Image](https://github.com/user-attachments/assets/706d0026-5f85-492e-bf3a-8cf3270cd40f)
 
-- [English](./README.md)
-- [日本語](./README.ja.md)
+[README (日本語)](./README.ja.md)
 
 **GPK Utility** is a configuration utility for touchpads and keyboards.<br>
 It provides customization features tailored to each connected device.<br>
