@@ -92,7 +92,8 @@ const SettingsContainer = (() => {
 
     // Available languages
     const availableLanguages = {
-        en: 'English'
+        en: 'English',
+        ja: '日本語'
     };
 
     // Filter connected devices only
@@ -284,11 +285,11 @@ const SettingsContainer = (() => {
                     <p className="text-lg mb-2">
                         {isLoading 
                             ? "No devices connected" 
-                            : t('header.noDevices', "No devices connected")
+                            : t('header.noDevices')
                         }
                     </p>
                     <p className="text-sm">
-                        Please connect a compatible device and ensure it is recognized by your system.
+                        {t('header.connectionMessage')}
                     </p>
                 </div>
             </div>
@@ -301,7 +302,7 @@ const SettingsContainer = (() => {
                 <div className="text-center text-gray-600 dark:text-gray-400">
                     <p className="text-lg mb-2">{t('header.connecting')}</p>
                     <p className="text-sm">
-                        Please connect a compatible device to configure settings.
+                        {t('header.pleaseConnect')}
                     </p>
                 </div>
             </div>
@@ -360,7 +361,7 @@ const SettingsContainer = (() => {
                                 
                                 {/* Language Submenu */}
                                 {languageMenuOpen && (
-                                    <div className="absolute left-full top-0 mt-0 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-20 border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                    <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-20 border border-gray-200 dark:border-gray-700 overflow-hidden">
                                         {Object.entries(availableLanguages).map(([code, name]) => (
                                             <MenuItem 
                                                 key={code}

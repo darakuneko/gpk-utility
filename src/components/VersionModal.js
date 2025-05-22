@@ -31,20 +31,20 @@ const VersionModal = ({ isOpen, onClose }) => {
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${t('about.title', 'About')} ${appInfo.name}`}
+      title={`${t('about.title')} ${appInfo.name}`}
       showCloseIcon={true}
     >
       <div className="space-y-2 text-gray-700 dark:text-gray-300">
         <div className="grid grid-cols-3 gap-4">
-          <div className="font-medium">{t('about.version', 'Version')}:</div>
+          <div className="font-medium">{t('about.version')}:</div>
           <div className="col-span-2">{appInfo.version}</div>
           
-          <div className="font-medium">{t('about.author', 'Author')}:</div>
+          <div className="font-medium">{t('about.author')}:</div>
           <div className="col-span-2">
             {appInfo.author ? `${appInfo.author.name}` : ''}
           </div>
           
-          <div className="font-medium">{t('about.homepage', 'Homepage')}:</div>
+          <div className="font-medium">{t('about.homepage')}:</div>
           <div className="col-span-2">
             <a 
               href="#" 

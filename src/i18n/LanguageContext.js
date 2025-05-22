@@ -47,7 +47,7 @@ export function LanguageProvider({ children }) {
       });
   }, [locale]);
 
-  const t = (key, ...args) => {
+  const t = (key) => {
     if (!key) return '';
     
     // If translations are not yet loaded, return the key without warning
@@ -68,14 +68,6 @@ export function LanguageProvider({ children }) {
         console.warn(`Translation key not found: ${key}`);
         return key;
       }
-    }
-    
-    // Placeholder replacement processing
-    if (typeof value === 'string' && args.length > 0 && typeof args[0] === 'object') {
-      const params = args[0];
-      return value.replace(/\{\{(\w+)\}\}/g, (match, paramKey) => {
-        return params[paramKey] !== undefined ? params[paramKey] : match;
-      });
     }
 
     return value || key;

@@ -16,7 +16,8 @@ export default function LanguageSettings() {
   };
 
   const availableLanguages = {
-    en: 'English'
+    en: 'English',
+    ja: '日本語'
   };
 
   return (

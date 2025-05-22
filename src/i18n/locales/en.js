@@ -34,6 +34,8 @@ export default {
     title: 'GPK Utility',
     noDevices: 'No devices connected',
     connecting: 'Connecting...',
+    connectionMessage: 'Please connect a compatible device and ensure it is recognized by your system.',
+    pleaseConnect: 'Please connect a compatible device to configure settings.'
   },
   tabs: {
     mouse: 'Mouse',
