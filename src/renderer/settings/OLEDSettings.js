@@ -36,7 +36,7 @@ const OLEDSettings = memo(({ device, handleChange }) => {
   return (
     <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
       <div className="flex flex-col gap-3 mb-3">
-        <div className="pt-2 w-full">
+        <div className="pt-2 w-[45%]">
           <label className="block mb-1 text-gray-900 dark:text-white">{t('oled.title')}</label>
           <CustomSwitch
             id="config-oled_enabled"

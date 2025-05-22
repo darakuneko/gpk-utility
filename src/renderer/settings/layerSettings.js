@@ -315,7 +315,7 @@ const LayerSettings = ({ device, handleChange }) => {
             {(device.deviceType === DeviceType.KEYBOARD_TP || device.deviceType === DeviceType.MACROPAD_TP)  && (
                 <div className={`${device.deviceType === DeviceType.KEYBOARD_TP ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
                     <div className="flex flex-col gap-3 mb-4">
-                        <div className="pt-2 w-full">
+                        <div className="pt-2 w-[45%]">
                             <label className="block mb-1 text-gray-900 dark:text-white">{t('haptic.layerMoving')}</label>
                             <CustomSwitch
                                 id="config-can_hf_for_layer"
@@ -323,7 +323,7 @@ const LayerSettings = ({ device, handleChange }) => {
                                 checked={trackpadConfig.can_hf_for_layer === 1}
                             />
                         </div>
-                        <div className="pt-2 w-full">
+                        <div className="pt-2 w-[45%]">
                             <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
                                 <span>{t('haptic.mode')}</span>
                             </label>

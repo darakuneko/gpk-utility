@@ -11,7 +11,7 @@ const ScrollSettings = ({ device, handleChange, handleSliderStart, handleSliderE
   return (
     <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
       <div className="flex flex-wrap items-center gap-6 mb-3">
-        <div className="pt-2 w-[200px]">
+        <div className="pt-2 w-[45%]">
           <label className="block mb-1 text-gray-900 dark:text-white">{t('scroll.reverseDirection')}</label>
           <CustomSwitch
             id="config-can_reverse_scrolling_direction"
@@ -63,7 +63,7 @@ const ScrollSettings = ({ device, handleChange, handleSliderStart, handleSliderE
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-6 mb-6">
-        <div className="pt-2 w-[200px]">
+        <div className="pt-2 w-[45%]">
           <label className="block mb-1 text-gray-900 dark:text-white">{t('scroll.shortScroll')}</label>
           <CustomSwitch
             id="config-can_short_scroll"
