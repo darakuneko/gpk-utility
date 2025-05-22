@@ -1,8 +1,7 @@
 # GPK Utility
 ![Image](https://github.com/user-attachments/assets/706d0026-5f85-492e-bf3a-8cf3270cd40f)
 
-- [English](./README.md)
-- [日本語](./README.ja.md)
+[README (English)](./README.md)
 
 **GPK Utility**は、トラックパッドおよびキーボードのための設定ユーティリティです。<br>
 デバイスに応じたカスタマイズ機能を提供します。<br>
