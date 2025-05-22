@@ -28,6 +28,10 @@ Manage layer (mode) settings.<br>Switch between different operation modes.
 - **Haptic Feedback on Layer Change**: Enable/disable haptic feedback and pattern settings for layer changes (See Haptic section)
 - **Automatic Layer Switching**: Automatically switch layers based on active applications
   - Automatically switches to a specified layer when a specific application becomes active
+- **Registration Method**: When you activate an application you wish to configure, it will be added to the select list.  
+  Only the 10 most recent applications will be kept in the list.  
+  The list will be reset when the application is restarted.  
+https://github.com/user-attachments/assets/ba6a7bcf-7245-4bfc-9b17-367660a74c7d
 
 #### Haptic
 Configure haptic feedback settings.
@@ -46,7 +50,7 @@ Adjust scroll speed and direction settings.<br>Configure smooth scrolling and di
 
 - **Direction Inversion**: Invert scrolling direction (standard/inverted)
 - **Short Scroll**: Enable/disable high-volume scrolling with short scroll operations
-- **Scroll Term**: Adjust scroll inertia duration in the range of 0-300ms
+- **Scroll Term**: Adjust the interval between scroll commands within a range of 0–300 ms.
 - **Scroll Steps**: Adjust the number of lines moved per scroll action (1-16 lines)
 - **Short Scroll Term**: Adjust the time to activate short scroll (0-500ms)
 
@@ -61,7 +65,8 @@ Configure drag and drop behavior.
 - **Strength**: Adjust the intensity required to enter drag state (1-12)
 
 #### Timer
-Configure time management features like Pomodoro Timer.<br>Adjust work and break times.
+Sets the time management function of the Pomodoro Timer.  
+Adjust the working time and rest time.
 
 - **Work Time**: Set Pomodoro work time (1-60 minutes)
 - **Break Time**: Set short break time (1-30 minutes)
@@ -69,16 +74,17 @@ Configure time management features like Pomodoro Timer.<br>Adjust work and break
 - **Work Interval Until Long Break**: Set the number of work/break intervals before a long break (1-10)
 - **Haptic Feedback**: Configure haptic feedback patterns for work start and break start.
 - **Continuous Mode**: Automatically start the next session (work/break) without manual intervention.
-- **Desktop Notifications**: Enable/disable desktop notifications for Pomodoro phase changes.
+- **Desktop Notifications**: Enable/disable desktop notifications for Pomodoro phase changes.  
+Notified when the GPK Utility is inactive.
 - **Haptic Feedback Notifications**: Enable/disable haptic feedback notifications for Pomodoro phase changes.
 
 #### Gesture
-Configure trackpad gesture settings.
-- **Tap Term**: Maximum time for a tap to be registered (0-500ms)
-- **Swipe Term**: Maximum time for a swipe to be registered (0-500ms)
-- **Pinch Term**: Maximum time for a pinch gesture to be registered (0-500ms)
-- **Pinch Distance**: Minimum distance for a pinch gesture to be registered (0-500)
-- **Gesture Term**: Maximum time for other gestures to be registered (0-500ms)
+CConfigure touchpad gesture settings
+- **Tap Term**: Interval before the next tap gesture can be recognized (0–500 ms)
+- **Swipe Term**: Interval before the next swipe gesture can be recognized (0–500 ms)
+- **Pinch Term**: Interval before the next pinch gesture can be recognized (0–500 ms)
+- **Pinch Distance**: Minimum distance required to recognize the next pinch gesture (0–500)
+- **Gesture Term**: Interval before the next gesture can be recognized (0–500 ms)
 
 ### Application Settings
 
@@ -92,7 +98,7 @@ Configure trackpad gesture settings.
 #### OLED
 Display settings for keyboard OLED screens
 
-- **Time Display**: Show current time on the OLED display
+- **Time Display**: Displays the current time on the last line of the OLED screen.
 
 ## Other Features
 
@@ -101,6 +107,7 @@ Display settings for keyboard OLED screens
   - Minimize to tray when closed
   - Start minimized to tray
 - Language Settings: Change the application language.
+- Updates: Information on the latest 10 updates.
 
 ## Usage
 
@@ -110,11 +117,24 @@ Display settings for keyboard OLED screens
 4. Choose the feature you want to configure from the left menu
 5. Adjust settings and apply them to your device
 
-## Compatible Devices
-https://github.com/darakuneko/vial-qmk/tree/gpk_rc
+## Supported Devices
+https://github.com/darakuneko/vial-qmk/tree/gpk-utility
 
-Use the gpk_rc branch and be sure to add GPKRC_ENABLE = yes to your rules.mk
+If you would like to make your own Vial-compatible keyboard work with this utility, please use the `gpk-utility` branch and make sure to add the following line to your `rules.mk`.
 
-rules.mk<br>
+```
+rules.mk  
 GPKRC_ENABLE = yes
+```
 
+### Definitions
+- **Device**:  
+  https://github.com/darakuneko/vial-qmk/blob/gpk-utility/quantum/gpk_rc.h  
+- **Application**:  
+  https://github.com/darakuneko/gpk-utility/blob/main/gpkrc.js  
+
+### Examples
+- **Keyboard (Auto Layer Switch / OLED)**: [gpk60_47gr1re_vial](https://github.com/darakuneko/keyboard/tree/main/qmk/gpk60_47gr1re_vial)  
+- **Trackpad**: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento)
+
+**Specifications are subject to change without notice.**
