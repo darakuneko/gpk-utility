@@ -79,6 +79,14 @@ https://github.com/user-attachments/assets/ba6a7bcf-7245-4bfc-9b17-367660a74c7d
 GPK Utilityがアクティブでない時に通知されます。
 - **Haptic Notification**: ポモドーロのフェーズ変更時に触覚通知を有効/無効にします。
 
+対応デバイスは状態に合わせて、LEDの一部が光ります(solid_color時のみ)
+Work - RED  
+![RED](https://github.com/user-attachments/assets/18df9665-6e15-411e-a44b-80f67e20b3cb)  
+Break - GREEN  
+![GREEN](https://github.com/user-attachments/assets/07c4853a-408d-4321-897a-69f009da559b)  
+Long Break - BLUE  
+![BLUE](https://github.com/user-attachments/assets/d8f952c1-e35a-46e3-b6fd-e4bd8a21cbc8)  
+
 #### Gesture
 トラックパッドのジェスチャー設定を構成します。
 - **Tap Term**: 次のタップが使用できるまでの間隔（0-500ms）

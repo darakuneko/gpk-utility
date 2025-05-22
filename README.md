@@ -86,6 +86,15 @@ Press **Pomodoro Toggle** to start the timer.
 Notified when the GPK Utility is inactive.
 - **Haptic Feedback Notifications**: Enable/disable haptic feedback notifications for Pomodoro phase changes.
 
+On supported devices, certain LEDs will light up according to the device status (only when in `solid_color` mode).
+
+Work - RED  
+![RED](https://github.com/user-attachments/assets/18df9665-6e15-411e-a44b-80f67e20b3cb)  
+Break - GREEN  
+![GREEN](https://github.com/user-attachments/assets/07c4853a-408d-4321-897a-69f009da559b)  
+Long Break - BLUE  
+![BLUE](https://github.com/user-attachments/assets/d8f952c1-e35a-46e3-b6fd-e4bd8a21cbc8)  
+
 #### Gesture
 Configure touchpad gesture settings
 - **Tap Term**: Interval before the next tap gesture can be recognized (0–500 ms)
