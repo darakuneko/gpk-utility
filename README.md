@@ -125,7 +125,7 @@ Display settings for keyboard OLED screens
 4. Choose the feature you want to configure from the left menu
 5. Adjust settings and apply them to your device
 
-## Supported Devices
+## Custom Devices
 https://github.com/darakuneko/vial-qmk/tree/gpk-utility
 
 If you would like to make your own Vial-compatible keyboard work with this utility, please use the `gpk-utility` branch and make sure to add the following line to your `rules.mk`.
