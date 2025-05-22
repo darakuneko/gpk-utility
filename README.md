@@ -79,7 +79,7 @@ Notified when the GPK Utility is inactive.
 - **Haptic Feedback Notifications**: Enable/disable haptic feedback notifications for Pomodoro phase changes.
 
 #### Gesture
-CConfigure touchpad gesture settings
+Configure touchpad gesture settings
 - **Tap Term**: Interval before the next tap gesture can be recognized (0–500 ms)
 - **Swipe Term**: Interval before the next swipe gesture can be recognized (0–500 ms)
 - **Pinch Term**: Interval before the next pinch gesture can be recognized (0–500 ms)
