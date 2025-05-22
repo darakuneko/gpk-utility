@@ -38,7 +38,7 @@ export default {
   scroll: {
     reverseDirection: 'Reverse Direction',
     shortScroll: 'Short Scroll',
-    term: 'Term',
+    term: 'Scroll Term',
     scrollStep: 'Scroll Step',
     shortScrollTerm: 'Short Scroll Term'
   },

@@ -38,7 +38,7 @@ export default {
   scroll: {
     reverseDirection: '方向を反転',
     shortScroll: 'ショートスクロール',
-    term: '間隔',
+    term: 'スクロール間隔',
     scrollStep: 'スクロール幅',
     shortScrollTerm: 'ショートスクロール間隔'
   },
