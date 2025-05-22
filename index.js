@@ -167,7 +167,7 @@ const createTray = () => {
     const contextMenu = Menu.buildFromTemplate(createTrayMenuTemplate());
     tray.setContextMenu(contextMenu);
     
-    tray.setToolTip('GPK Utility');
+    tray.setToolTip(translate('header.title'));
     
     // Set up click handler
     tray.on('click', () => {
@@ -247,7 +247,7 @@ const createWindow = () => {
 const doubleBoot = app.requestSingleInstanceLock()
 if (!doubleBoot) app.quit()
 
-app.setName("GPK Utility")
+app.setName(translate('header.title'))
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
@@ -741,6 +741,16 @@ ipcMain.handle('getAppLocale', async (event) => {
     }
 });
 
+// Translate a string using the current locale
+ipcMain.handle('translate', async (event, key, params = {}) => {
+    try {
+        return translate(key, params);
+    } catch (error) {
+        console.error(`Error translating key ${key}:`, error);
+        return key; // Return the key itself as fallback
+    }
+});
+
 // Save pomodoro notification settings
 ipcMain.handle('savePomodoroDesktopNotificationSettings', async (event, deviceId, enabled) => {
     try {
@@ -958,7 +968,7 @@ ipcMain.handle('getAppInfo', async () => {
     const packageJsonPath = path.join(__dirname, 'package.json');
     const packageData = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
     return {
-      name: packageData.description,
+      name: packageData.description || translate('header.title'),
       version: packageData.version,
       author: packageData.author,
       homepage: packageData.homepage
@@ -966,7 +976,7 @@ ipcMain.handle('getAppInfo', async () => {
   } catch (error) {
     console.error('Error reading package.json:', error);
     return {
-      name: 'GPK Utility',
+      name: translate('header.title'),
       version: 'unknown',
       description: '',
       author: {},

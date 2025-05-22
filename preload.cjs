@@ -696,8 +696,10 @@ contextBridge.exposeInMainWorld("api", {
             return packageInfo;
         } catch (error) {
             console.error("Error getting app info:", error);
+            // 直接埋め込まれている値を cachedStoreSettings から取得するように変更
+            const locale = cachedStoreSettings.locale || 'en';
             return { 
-                name: "GPK Utility", 
+                name: await ipcRenderer.invoke('translate', 'header.title'), 
                 version: "unknown", 
                 description: "", 
                 author: {} 

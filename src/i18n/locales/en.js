@@ -1,23 +1,9 @@
 export default {
   common: {
-    save: 'Save',
-    cancel: 'Cancel',
-    apply: 'Apply',
-    reset: 'Reset',
     import: 'Import',
     export: 'Export',
-    enabled: 'Enabled',
-    disabled: 'Disabled',
-    on: 'On',
-    off: 'Off',
-    settings: 'Settings',
-    mode: 'Mode',
-    default: 'Default',
-    delete: 'Delete',
-    unlimited: 'Unlimited',
-    saveComplete: 'Settings saved successfully',
-    saveError: 'Error saving settings',
-    ok: 'OK'
+    ok: 'OK',
+    delete: 'Delete'
   },
   about: {
     title: 'About',
@@ -41,15 +27,13 @@ export default {
     mouse: 'Mouse',
     scroll: 'Scroll',
     dragDrop: 'Drag & Drop',
-    haptic: 'Haptic',
     layer: 'Layer',
     timer: 'Timer',
     oled: 'OLED',
-    settings: 'Settings',
     gesture: 'Gesture'
   },
   mouse: {
-    speed: 'Speed',
+    speed: 'Speed'
   },
   scroll: {
     reverseDirection: 'Reverse Direction',
@@ -69,11 +53,10 @@ export default {
     title: 'Drag & Drop',
     mode: 'Mode',
     term: 'Term',
-    strength: 'Strength',
+    strength: 'Strength'
   },
   layer: {
     trackpadLayer: 'Trackpad Layer',
-    changeHaptics: 'Layer Change Haptics',
     autoSwitching: 'Auto Layer Switching',
     currentMappings: 'Application Mappings',
     notSpecified: 'Not specified',
@@ -90,7 +73,7 @@ export default {
     title: 'Pomodoro Timer',
     activePhase: 'Pomodoro timer is currently active',
     pressToggleToStop: 'Press Pomodoro Toggle key to stop it',
-    workInterval	: 'Work Interval',
+    workInterval: 'Work Interval',
     phase: 'Current Phase',
     longBreak: 'Long Break',
     work: 'WORK',
@@ -108,23 +91,16 @@ export default {
     settings: 'Timer Settings'
   },
   oled: {
-    title: 'Time Display',
+    title: 'Time Display'
   },
   settings: {
     appSettings: 'Application Settings',
-    systemTray: 'System Tray',
     minimizeToTray: 'Minimize to Tray When Closed',
     startInTray: 'Start Minimized to Tray',
     language: 'Language',
     selectLanguage: 'Select Language',
     import: 'Import Settings',
     export: 'Export Settings',
-    resetSettings: 'Reset Settings',
-    resetConfirmation: 'Are you sure you want to reset all settings?',
-    importSuccess: 'Settings imported successfully',
-    importError: 'Error importing settings',
-    exportSuccess: 'Settings exported successfully',
-    exportError: 'Error exporting settings',
     pollingInterval: 'Device Polling Interval',
     faster: 'Faster',
     slower: 'Slower'
@@ -132,17 +108,7 @@ export default {
   haptic: {
     title: 'Haptic Feedback',
     mode: 'Haptic Mode',
-    layerMoving: 'Haptics when moving layers',
-    patterns: {
-      none: 'None',
-      click: 'Click',
-      doubleClick: 'Double Click',
-      tick: 'Tick',
-      vibration: 'Vibration',
-      alert: 'Alert',
-      error: 'Error',
-      success: 'Success'
-    }
+    layerMoving: 'Haptics when moving layers'
   },
   pomodoroNotification: {
     workTitle: 'Focus Session Started',

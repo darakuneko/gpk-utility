@@ -314,12 +314,6 @@ const LayerSettings = ({ device, handleChange }) => {
             {/* Haptic Settings Section */}
             {(device.deviceType === DeviceType.KEYBOARD_TP || device.deviceType === DeviceType.MACROPAD_TP)  && (
                 <div className={`${device.deviceType === DeviceType.KEYBOARD_TP ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
-                    <div className="flex items-center mb-4">
-                        <div className="flex-1">
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.changeHaptics')}</h3>
-                        </div>
-                    </div>
-                    
                     <div className="flex flex-col gap-3 mb-4">
                         <div className="pt-2 w-full">
                             <label className="block mb-1 text-gray-900 dark:text-white">{t('haptic.layerMoving')}</label>

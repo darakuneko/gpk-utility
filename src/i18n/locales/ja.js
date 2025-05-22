@@ -1,24 +1,10 @@
 export default {
     common: {
-    save: '保存',
-    cancel: 'キャンセル',
-    apply: '適用',
-    reset: 'リセット',
     import: 'インポート',
     export: 'エクスポート',
-    enabled: '有効',
-    disabled: '無効',
-    on: 'オン',
-    off: 'オフ',
-    settings: '設定',
-    mode: 'モード',
-    default: '初期値',
-    delete: '削除',
-    unlimited: '無制限',
-    saveComplete: '設定が正常に保存されました。',
-    saveError: '設定の保存中にエラーが発生しました。',
-    ok: 'OK'
-},      
+    ok: 'OK',
+    delete: '削除'
+  },
   about: {
     title: '概要',
     version: 'バージョン',
@@ -41,11 +27,9 @@ export default {
     mouse: 'マウス',
     scroll: 'スクロール',
     dragDrop: 'ドラッグ＆ドロップ',
-    haptic: '振動フィードバック',
     layer: 'レイヤー',
     timer: 'タイマー',
     oled: 'OLED',
-    settings: '設定',
     gesture: 'ジェスチャー'
   },
   mouse: {
@@ -73,7 +57,6 @@ export default {
   },
   layer: {
     trackpadLayer: 'トラックパッドレイヤー',
-    changeHaptics: 'レイヤー変更の振動フィードバック',
     autoSwitching: '自動レイヤー切替',
     currentMappings: 'アプリケーションマッピング',
     notSpecified: '指定なし',
@@ -112,19 +95,12 @@ export default {
   },
   settings: {
     appSettings: 'アプリケーション設定',
-    systemTray: 'システムトレイ',
     minimizeToTray: '閉じるとトレイに最小化',
     startInTray: 'トレイに最小化した状態で起動',
     language: '言語',
     selectLanguage: '言語を選択',
     import: '設定をインポート',
     export: '設定をエクスポート',
-    resetSettings: '設定をリセット',
-    resetConfirmation: 'すべての設定をリセットしてもよろしいですか？',
-    importSuccess: '設定が正常にインポートされました',
-    importError: '設定のインポート中にエラーが発生しました',
-    exportSuccess: '設定が正常にエクスポートされました',
-    exportError: '設定のエクスポート中にエラーが発生しました',
     pollingInterval: 'デバイスポーリング間隔',
     faster: '速く',
     slower: '遅く'
@@ -132,17 +108,7 @@ export default {
   haptic: {
     title: '振動フィードバック',
     mode: '振動モード',
-    layerMoving: 'レイヤー移動時の振動フィードバック',
-    patterns: {
-      none: 'なし',
-      click: 'クリック',
-      doubleClick: 'ダブルクリック',
-      tick: 'ティック',
-      vibration: '振動',
-      alert: 'アラート',
-      error: 'エラー',
-      success: '成功'
-    }
+    layerMoving: 'レイヤー移動時の振動フィードバック'
   },
   pomodoroNotification: {
     workTitle: '集中セッション開始',
