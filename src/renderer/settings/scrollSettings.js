@@ -19,14 +19,6 @@ const ScrollSettings = ({ device, handleChange, handleSliderStart, handleSliderE
             checked={trackpadConfig.can_reverse_scrolling_direction === 1}
           />
         </div>
-        <div className="pt-2 w-[200px]">
-          <label className="block mb-1 text-gray-900 dark:text-white">{t('scroll.shortScroll')}</label>
-          <CustomSwitch
-            id="config-can_short_scroll"
-            onChange={handleChange("can_short_scroll", device.id)}
-            checked={trackpadConfig.can_short_scroll === 1}
-          />
-        </div>
       </div>
       <div className="flex flex-wrap items-center gap-6 mb-6">
         <div className="pt-2 w-[45%]">
@@ -71,6 +63,14 @@ const ScrollSettings = ({ device, handleChange, handleSliderStart, handleSliderE
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-6 mb-6">
+        <div className="pt-2 w-[200px]">
+          <label className="block mb-1 text-gray-900 dark:text-white">{t('scroll.shortScroll')}</label>
+          <CustomSwitch
+            id="config-can_short_scroll"
+            onChange={handleChange("can_short_scroll", device.id)}
+            checked={trackpadConfig.can_short_scroll === 1}
+          />
+        </div>
         <div className="pt-2 w-[45%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
             <span>{t('scroll.shortScrollTerm')}</span>
