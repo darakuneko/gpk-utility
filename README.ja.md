@@ -65,8 +65,8 @@ EEPROM Clearはトラックパッド以外の全ての設定もクリアされ�
 
 #### Timer
 ポモドーロタイマーの時間管理機能を設定します。<br>
-作業時間と休憩時間の調整が可能です。<br>
-[Image](https://github.com/user-attachments/assets/bc964f72-80b5-40a8-9988-5310a1126fa4)<br>
+作業時間と休憩時間の調整が可能です。  
+![Image](https://github.com/user-attachments/assets/bc964f72-80b5-40a8-9988-5310a1126fa4)  
 デバイスの起動時はオフになっているので、Pomodoro Toggleを押してタイマーがスタートさせます。<br>
 
 - **Work Time**: ポモドーロタイマーの作業時間を1-60分の範囲で設定
