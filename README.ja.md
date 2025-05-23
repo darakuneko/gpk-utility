@@ -1,4 +1,4 @@
-f# GPK Utility
+# GPK Utility
 ![Image](https://github.com/user-attachments/assets/706d0026-5f85-492e-bf3a-8cf3270cd40f)
 
 [README (English)](./README.md)
