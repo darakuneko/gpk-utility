@@ -30,7 +30,7 @@ EEPROM Clearはトラックパッド以外の全ての設定もクリアされ�
 - **Auto Layer Switch**: アプリケーションごとに自動的にレイヤーを切り替える設定
   - 特定のアプリケーションがアクティブになったときに指定したレイヤーに自動的に切り替わる
 - **登録方法**: 設定したいアプリケーションをアクティブにするとセレクトリストに登録されます<br>リストに登録されるアプリケーションは最新の10件のみです<br>アプリケーションを起動し直すと初期化されます  
-https://github.com/user-attachments/assets/ba6a7bcf-7245-4bfc-9b17-367660a74c7d
+![Image](https://github.com/user-attachments/assets/ba6a7bcf-7245-4bfc-9b17-367660a74c7d)
 
 #### Haptic
 触覚フィードバックの設定を管理します。
