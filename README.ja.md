@@ -83,6 +83,7 @@ Break、Long Break時は30秒間通知されます。<br>
 通知が解除されないとトラックパッドのタップ操作が行えないので、ダブルタップして通知を解除してください。<br>
 <br>
 対応デバイスは状態に合わせて、LEDの一部が光ります(solid_color時のみ)
+
 Work - RED  
 ![RED](https://github.com/user-attachments/assets/18df9665-6e15-411e-a44b-80f67e20b3cb)  
 Break - GREEN  
