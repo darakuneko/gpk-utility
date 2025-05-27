@@ -131,13 +131,13 @@ rules.mk<br>
 GPKRC_ENABLE = yes
 
 ### 定義
-Device: 
-https://github.com/darakuneko/vial-qmk/blob/gpk-utility/quantum/gpk_rc.h
-Application:
-https://github.com/darakuneko/gpk-utility/blob/main/gpkrc.js
-
-### 作例:
-keyboard(Auto Layer Switch/OLED): [gpk60_47gr1re_vial](https://github.com/darakuneko/keyboard/tree/main/qmk/gpk60_47gr1re_vial)<br>
-trakpad: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento)
+- **Application**: 
+https://github.com/darakuneko/vial-qmk/blob/gpk-utility/quantum/gpk_rc.h  
+- **Application**: 
+https://github.com/darakuneko/gpk-utility/blob/main/gpkrc.js  
+  
+### 作例:   
+keyboard(Auto Layer Switch/OLED): [gpk60_47gr1re_vial](https://github.com/darakuneko/keyboard/tree/main/qmk/gpk60_47gr1re_vial)   
+trakpad: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento)   
 
 **仕様は予告なく変更されます**
