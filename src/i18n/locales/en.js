@@ -2,6 +2,8 @@ export default {
   common: {
     import: 'Import',
     export: 'Export',
+    saveComplete: 'Settings saved successfully',
+    saveError: 'Error saving settings',
     ok: 'OK',
     delete: 'Delete'
   },

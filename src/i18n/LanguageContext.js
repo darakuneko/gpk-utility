@@ -47,7 +47,7 @@ export function LanguageProvider({ children }) {
       });
   }, [locale]);
 
-  const t = (key) => {
+  const t = (key, params = {}) => {
     if (!key) return '';
     
     // If translations are not yet loaded, return the key without warning
@@ -70,7 +70,17 @@ export function LanguageProvider({ children }) {
       }
     }
 
-    return value || key;
+    let result = value || key;
+    
+    // Replace parameters in the translation string
+    if (typeof result === 'string' && params && typeof params === 'object') {
+      Object.keys(params).forEach(paramKey => {
+        const placeholder = `{{${paramKey}}}`;
+        result = result.replace(new RegExp(placeholder, 'g'), params[paramKey]);
+      });
+    }
+
+    return result;
   };
 
   const changeLocale = (newLocale) => {

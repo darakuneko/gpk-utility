@@ -1,7 +1,9 @@
 export default {
-    common: {
+  common: {
     import: 'インポート',
     export: 'エクスポート',
+    saveComplete: '設定が正常に保存されました。',
+    saveError: '設定の保存中にエラーが発生しました。',
     ok: 'OK',
     delete: '削除'
   },
