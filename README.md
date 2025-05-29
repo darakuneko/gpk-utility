@@ -32,8 +32,9 @@ Manage layer (mode) settings.<br>Switch between different operation modes.
   - Automatically switches to a specified layer when a specific application becomes active
 - **Registration Method**: When you activate an application you wish to configure, it will be added to the select list.  
   Only the 10 most recent applications will be kept in the list.  
-  The list will be reset when the application is restarted.  
-![Image](https://github.com/user-attachments/assets/ba6a7bcf-7245-4bfc-9b17-367660a74c7d)
+  The list will be reset when the application is restarted.
+
+https://github.com/user-attachments/assets/ba6a7bcf-7245-4bfc-9b17-367660a74c7d
 
 #### Haptic
 Configure haptic feedback settings.

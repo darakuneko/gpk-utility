@@ -30,7 +30,8 @@ EEPROM Clearはトラックパッド以外の全ての設定もクリアされ�
 - **Auto Layer Switch**: アプリケーションごとに自動的にレイヤーを切り替える設定
   - 特定のアプリケーションがアクティブになったときに指定したレイヤーに自動的に切り替わる
 - **登録方法**: 設定したいアプリケーションをアクティブにするとセレクトリストに登録されます<br>リストに登録されるアプリケーションは最新の10件のみです<br>アプリケーションを起動し直すと初期化されます  
-![Image](https://github.com/user-attachments/assets/ba6a7bcf-7245-4bfc-9b17-367660a74c7d)
+
+https://github.com/user-attachments/assets/ba6a7bcf-7245-4bfc-9b17-367660a74c7d
 
 #### Haptic
 触覚フィードバックの設定を管理します。
@@ -131,13 +132,13 @@ rules.mk<br>
 GPKRC_ENABLE = yes
 
 ### 定義
-Device: 
-https://github.com/darakuneko/vial-qmk/blob/gpk-utility/quantum/gpk_rc.h
-Application:
-https://github.com/darakuneko/gpk-utility/blob/main/gpkrc.js
-
-### 作例:
-keyboard(Auto Layer Switch/OLED): [gpk60_47gr1re_vial](https://github.com/darakuneko/keyboard/tree/main/qmk/gpk60_47gr1re_vial)<br>
-trakpad: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento)
+- **Application**: 
+https://github.com/darakuneko/vial-qmk/blob/gpk-utility/quantum/gpk_rc.h  
+- **Application**: 
+https://github.com/darakuneko/gpk-utility/blob/main/gpkrc.js  
+  
+### 作例:   
+keyboard(Auto Layer Switch/OLED): [gpk60_47gr1re_vial](https://github.com/darakuneko/keyboard/tree/main/qmk/gpk60_47gr1re_vial)   
+trakpad: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento)   
 
 **仕様は予告なく変更されます**
