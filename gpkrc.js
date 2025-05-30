@@ -688,11 +688,9 @@ const start = async (device) => {
 const stop = (device) => {
     const id = encodeDeviceId(device);
 
-    
     if (hidDeviceInstances[id]) {
         try {
             hidDeviceInstances[id].removeAllListeners();
-            _close(id);
         } catch (error) {
             console.error(`Error during device stop for ${id}:`, error);
         }
@@ -721,18 +719,13 @@ const stop = (device) => {
 
 const _close = (id) => {
     if (!hidDeviceInstances[id]) {
-
         return false;
     }
     
     try {
-
-        hidDeviceInstances[id].close();
-
-        return true;
+         hidDeviceInstances[id].close()
     } catch (err) {
-        console.error(`Error closing device ${id}:`, err);
-        return false;
+        console.error(`Error in _close for ${id}:`, err);
     }
 }
 

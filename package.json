@@ -47,7 +47,7 @@
     "electron-store": "^10.0.1",
     "firebase": "^11.8.0",
     "node-fetch": "^3.3.2",
-    "node-hid": "3.1.0",
+    "node-hid": "^3.1.2",
     "node-loader": "2.0.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
