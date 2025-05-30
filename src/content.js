@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react'
+import React, {useEffect, useState, useCallback, useRef} from 'react'
 import SettingsContainer from "./renderer/SettingsContainer.js"
 import {useStateContext} from "./context.js"
 import { useLanguage } from "./i18n/LanguageContext.js"
@@ -31,40 +31,35 @@ const Content = () => {
         api.on("changeConnectDevice", handleDeviceChange);
         
         return () => {
-            if (api.off) {
-                api.off("changeConnectDevice", handleDeviceChange);
-            }
+            api.off("changeConnectDevice", handleDeviceChange);
         };
-    }, [setState]);
+    }, []);
+
+    const handleActiveWindow = useCallback((dat) => {
+        if (!dat) return;
+    
+        setState(prev => {
+            if (!prev.activeWindow.includes(dat)) {
+                const activeWindows = [...prev.activeWindow, dat];
+                if (activeWindows.length > 10) activeWindows.shift();
+            
+                return {
+                    ...prev,
+                 activeWindow: activeWindows
+                };
+            }
+            return prev;
+        });
+    }, [])
 
     useEffect(() => {
-        if (!hasApi) return;
-        
-        const handleActiveWindow = async (dat) => {
-            if (!dat) return;
-            
-            setState(prev => {
-                if (!prev.activeWindow.includes(dat)) {
-                    const activeWindows = [...prev.activeWindow, dat];
-                    if (activeWindows.length > 10) activeWindows.shift();
-                    
-                    return {
-                        ...prev,
-                        activeWindow: activeWindows
-                    };
-                }
-                return prev;
-            });
-        };
-        
+            if (!hasApi) return;
+
         api.on("activeWindow", handleActiveWindow);
-        
         return () => {
-            if (api.off) {
-                api.off("activeWindow", handleActiveWindow);
-            }
+            api.off("activeWindow", handleActiveWindow);
         };
-    }, [setState]);
+    }, [handleActiveWindow]);
 
     // Monitor config save completion event
     const [saveStatus, setSaveStatus] = useState({

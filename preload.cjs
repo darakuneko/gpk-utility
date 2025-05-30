@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+const listeners = new Map();
 let cachedDeviceRegistry = [];
 let keyboardPollingInterval = null;
 let windowMonitoringInterval = null;
@@ -831,10 +832,16 @@ contextBridge.exposeInMainWorld("api", {
         };
     },
     on: (channel, func) => {
-        ipcRenderer.on(channel, (event, ...args) => func(...args));
+        const listener = (event, ...args) => func(...args);
+        listeners.set(func, listener);
+        ipcRenderer.on(channel, listener);
     },
     off: (channel, func) => {
-        ipcRenderer.removeListener(channel, func);
+        const listener = listeners.get(func);
+        if (listener) {
+            ipcRenderer.removeListener(channel, listener);
+            listeners.delete(func);
+        }
     },
     getCachedNotifications: async() => cachedStoreSettings.savedNotifications || [],
     
