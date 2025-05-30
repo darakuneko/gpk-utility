@@ -9,7 +9,7 @@ const OLEDSettings = memo(({ device, handleChange }) => {
   // Update state when device config changes
   useEffect(() => {
     if (device?.config) {
-      setOledEnabled(device.config.oled_enabled === 1);
+      setOledEnabled(device.config?.oled_enabled === 1);
     }
   }, [device.config?.oled_enabled]);
 

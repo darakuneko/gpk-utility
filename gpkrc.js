@@ -14,11 +14,6 @@ const DeviceType = {
 
 const getDeviceType = () => DeviceType
 
-// Convert DeviceType enum to string for external interfaces
-const deviceTypeToString = (type) => {
-    return type;
-}
-
 // Convert string to DeviceType enum for incoming data
 const stringToDeviceType = (typeStr) => {
     const normalizedStr = typeStr.toLowerCase();
@@ -275,7 +270,7 @@ const getKBDList = () => HID.devices().filter(d =>
     .map(device => {
         const id = encodeDeviceId(device)        
         if (deviceStatusMap[id]) {
-            return {...device, id: id, deviceType: deviceTypeToString(deviceStatusMap[id].deviceType), gpkRCVersion: deviceStatusMap[id].gpkRCVersion}
+            return {...device, id: id, deviceType: deviceStatusMap[id].deviceType, gpkRCVersion: deviceStatusMap[id].gpkRCVersion}
         } else {
             return {...device, id: id}
         }
@@ -569,7 +564,7 @@ const start = async (device) => {
                                     deviceId: id,
                                     connected: deviceStatusMap[id].connected,
                                     gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
-                                    deviceType: deviceTypeToString(deviceStatusMap[id].deviceType),
+                                    deviceType: deviceStatusMap[id].deviceType,
                                     config: deviceStatusMap[id].config 
                                 });
                             } else if (receivedActionId === actionId.trackpadGetValue) {
@@ -579,7 +574,7 @@ const start = async (device) => {
                                     deviceId: id,
                                     connected: deviceStatusMap[id].connected,
                                     gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
-                                    deviceType: deviceTypeToString(deviceStatusMap[id].deviceType),
+                                    deviceType: deviceStatusMap[id].deviceType,
                                     config: deviceStatusMap[id].config
                                 });
                             } else if (receivedActionId === actionId.pomodoroGetValue) {

@@ -91,8 +91,8 @@ export default {
     workIntervalBeforeLongBreak: 'Work Interval',
     pomodoroCycle: 'Pomodoro Cycle',
     continuousMode: 'Continuous Mode',
-    workPhasePattern: 'Work Phase Pattern',
-    breakPhasePattern: 'Break Phase Pattern',
+    workPhasePattern: 'Work Phase',
+    breakPhasePattern: 'Break Phase',
     timeRemaining: 'Time Remaining',
     workIntervalCount: 'WorkInterval',
     settings: 'Timer Settings'

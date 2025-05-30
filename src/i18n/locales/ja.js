@@ -91,8 +91,8 @@ export default {
     workIntervalBeforeLongBreak: 'ワークインターバル',
     pomodoroCycle: 'ポモドーロサイクル',
     continuousMode: '連続モード',
-    workPhasePattern: '作業フェーズパターン',
-    breakPhasePattern: '休憩フェーズパターン',
+    workPhasePattern: '作業フェーズ',
+    breakPhasePattern: '休憩フェーズ',
     timeRemaining: '残り時間',
     workIntervalCount: 'ワークインターバル',
     settings: 'タイマー設定'
