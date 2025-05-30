@@ -335,4 +335,15 @@ export const setupStoreHandlers = () => {
             return { success: false, error: error.message };
         }
     });
+
+    // Get store file path
+    ipcMain.handle('getStoreFilePath', async () => {
+        try {
+            const storePath = store ? store.path : null;
+            return { success: true, path: storePath };
+        } catch (error) {
+            console.error('Error getting store file path:', error);
+            return { success: false, error: error.message };
+        }
+    });
 };

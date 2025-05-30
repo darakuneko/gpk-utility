@@ -12,7 +12,8 @@ export default {
     version: 'Version',
     description: 'Description',
     author: 'Author',
-    homepage: 'Homepage'
+    homepage: 'Homepage',
+    configPath: 'Configuration File Path'
   },
   updatesNotification: {
     title: 'Updates',

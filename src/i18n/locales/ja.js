@@ -12,7 +12,8 @@ export default {
     version: 'バージョン',
     description: '説明',
     author: '開発者',
-    homepage: 'ホームページ'
+    homepage: 'ホームページ',
+    configPath: '設定ファイルパス'
   },
   updatesNotification: {
     title: 'アップデート',

@@ -11,6 +11,7 @@ const VersionModal = ({ isOpen, onClose }) => {
     author: {},
     homepage: ''
   });
+  const [storeFilePath, setStoreFilePath] = useState('');
   
   useEffect(() => {
     if (isOpen) {
@@ -19,6 +20,15 @@ const VersionModal = ({ isOpen, onClose }) => {
         setAppInfo(info);
       }).catch(err => {
         console.error('Failed to get app info:', err);
+      });
+      
+      // Get store file path
+      window.api.getStoreFilePath().then(result => {
+        if (result.success && result.path) {
+          setStoreFilePath(result.path);
+        }
+      }).catch(err => {
+        console.error('Failed to get store file path:', err);
       });
     }
   }, [isOpen]);
@@ -56,6 +66,13 @@ const VersionModal = ({ isOpen, onClose }) => {
             >
               {appInfo.homepage}
             </a>
+          </div>
+          
+          <div className="font-medium">{t('about.configPath')}:</div>
+          <div className="col-span-2">
+            <span className="text-sm font-mono text-gray-600 dark:text-gray-400 break-all">
+              {storeFilePath || 'Loading...'}
+            </span>
           </div>
         </div>
       </div>

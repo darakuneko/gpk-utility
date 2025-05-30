@@ -784,6 +784,11 @@ contextBridge.exposeInMainWorld("api", {
     // Open external links (for version modal)
     openExternalLink: async (url) => {
         return await ipcRenderer.invoke('openExternalLink', url);
+    },
+    
+    // Get store file path
+    getStoreFilePath: async () => {
+        return await ipcRenderer.invoke('getStoreFilePath');
     }
 });
 
