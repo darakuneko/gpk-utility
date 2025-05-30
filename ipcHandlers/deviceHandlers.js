@@ -54,6 +54,18 @@ export const setupDeviceHandlers = () => {
             return { success: true };
         } catch (error) {
             console.error(`IPC handler: Error getting device config for ${device.id}:`, error);
+            
+            // If the error is related to HID instance unavailability, suggest reconnection
+            if (error.message.includes("No HID instance available") || 
+                error.message.includes("Device may need to be reconnected")) {
+                return { 
+                    success: false, 
+                    error: error.message,
+                    requiresReconnection: true,
+                    suggestion: "Please disconnect and reconnect the device to re-establish communication."
+                };
+            }
+            
             return { success: false, error: error.message };
         }
     });

@@ -40,6 +40,110 @@ const stringToDeviceType = (typeStr) => {
     }
 }
 
+// Device health monitoring variables
+let deviceHealthMonitor = null;
+let deviceHealthCheckInterval = 10000; // Check every 10 seconds
+
+// Function to start device health monitoring
+const startDeviceHealthMonitoring = () => {
+    if (deviceHealthMonitor) {
+        clearInterval(deviceHealthMonitor);
+    }
+    
+    deviceHealthMonitor = setInterval(async () => {
+        await checkDeviceHealth();
+    }, deviceHealthCheckInterval);
+};
+
+// Function to stop device health monitoring
+const stopDeviceHealthMonitoring = () => {
+    if (deviceHealthMonitor) {
+        clearInterval(deviceHealthMonitor);
+        deviceHealthMonitor = null;
+    }
+};
+
+// Function to check device health and attempt recovery
+const checkDeviceHealth = async () => {
+    try {
+        const deviceIds = Object.keys(deviceStatusMap);
+        
+        for (const deviceId of deviceIds) {
+            const deviceStatus = deviceStatusMap[deviceId];
+            const hidInstance = hidDeviceInstances[deviceId];
+            
+            // Skip health check if device is explicitly marked as disconnected
+            if (!deviceStatus || deviceStatus.connected === false) {
+                continue;
+            }
+            
+            // Check if HID instance exists but is marked as closed
+            if (hidInstance && hidInstance.closed) {
+                console.warn(`Device ${deviceId} HID instance is closed, attempting recovery...`);
+                
+                // Mark device as disconnected
+                deviceStatus.connected = false;
+                
+                // Clean up closed instance
+                try {
+                    hidInstance.removeAllListeners();
+                    hidInstance.close();
+                } catch (e) {}
+                hidDeviceInstances[deviceId] = null;
+                
+                // Notify UI about disconnection
+                if (global.mainWindow) {
+                    global.mainWindow.webContents.send("deviceConnectionStateChanged", {
+                        deviceId: deviceId,
+                        connected: false,
+                        gpkRCVersion: deviceStatus.gpkRCVersion || 0,
+                        deviceType: deviceStatus.deviceType || DeviceType.KEYBOARD,
+                        config: deviceStatus.config || {}
+                    });
+                }
+            }
+            
+            // Check if device status indicates it should be connected but HID instance is missing
+            if (deviceStatus.connected && !hidInstance) {
+                console.warn(`Device ${deviceId} status shows connected but HID instance is missing`);
+                
+                // Try to find the device and recreate HID instance
+                try {
+                    const deviceInfo = parseDeviceId(deviceId);
+                    if (deviceInfo) {
+                        const foundDevice = await getKBD(deviceInfo);
+                        if (foundDevice) {
+                            const newDeviceId = await addKbd(deviceInfo);
+                            
+                            if (hidDeviceInstances[newDeviceId]) {
+                                deviceStatus.connected = true;
+                            }
+                        } else {
+                            deviceStatus.connected = false;
+                            
+                            // Notify UI about disconnection
+                            if (global.mainWindow) {
+                                global.mainWindow.webContents.send("deviceConnectionStateChanged", {
+                                    deviceId: deviceId,
+                                    connected: false,
+                                    gpkRCVersion: deviceStatus.gpkRCVersion || 0,
+                                    deviceType: deviceStatus.deviceType || DeviceType.KEYBOARD,
+                                    config: deviceStatus.config || {}
+                                });
+                            }
+                        }
+                    }
+                } catch (recoveryError) {
+                    console.error(`Failed to recover device ${deviceId}:`, recoveryError);
+                    deviceStatus.connected = false;
+                }
+            }
+        }
+    } catch (healthCheckError) {
+        console.error("Error during device health check:", healthCheckError);
+    }
+};
+
 let deviceStatusMap = {}
 let hidDeviceInstances = {}
 // Object to manage tab state for each device
@@ -131,15 +235,37 @@ const parseDeviceId = (id) => {
     return null
 }
 
-const getKBD = (device) => HID.devices().find(d =>
-    (device ?
-        (d.manufacturer === device.manufacturer &&
-            d.product === device.product &&
-            d.vendorId === device.vendorId &&
-            d.productId === device.productId) : false) &&
-    d.usage === DEFAULT_USAGE.usage &&
-    d.usagePage === DEFAULT_USAGE.usagePage
-)
+const getKBD = async (device, retryCount = 0) => {
+    const maxRetries = 3;
+    
+    const searchDevice = () => HID.devices().find(d =>
+        (device ?
+            (d.manufacturer === device.manufacturer &&
+                d.product === device.product &&
+                d.vendorId === device.vendorId &&
+                d.productId === device.productId) : false) &&
+        d.usage === DEFAULT_USAGE.usage &&
+        d.usagePage === DEFAULT_USAGE.usagePage
+    );
+    
+    let foundDevice = searchDevice();
+    
+    if (!foundDevice && retryCount < maxRetries) {        
+        // Wait before retry with progressive delay
+        await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
+        
+        // Force HID device refresh
+        try {
+            HID.devices(); // Refresh device list
+        } catch (refreshError) {
+            console.warn(`HID device list refresh failed:`, refreshError);
+        }
+        
+        foundDevice = await getKBD(device, retryCount + 1);
+    }
+
+    return foundDevice;
+}
 
 const getKBDList = () => HID.devices().filter(d =>
         d.serialNumber.match(/^vial:/i) &&
@@ -245,13 +371,13 @@ const setMainWindow = (window) => {
     global.mainWindow = window
 }
 
-const addKbd = (device) => { 
-    const d = getKBD(device);
+const addKbd = async (device) => { 
+    const d = await getKBD(device);
     const id = encodeDeviceId(device);
     
     if (!d || !d.path) {
         console.error(`Device not found or path not available for device: ${id}`);
-        return id; // Still return id even if device is not connected
+        throw new Error(`Device not found or path not available for device: ${id}`);
     }
     
     // Clean up any existing instance before creating a new one
@@ -268,22 +394,26 @@ const addKbd = (device) => {
     try {
         hidDeviceInstances[id] = new HID.HID(d.path);
         
+        // Verify HID instance was created successfully
+        if (!hidDeviceInstances[id] || !hidDeviceInstances[id].write) {
+            throw new Error(`HID instance not properly initialized for ${id}`);
+        }
+                
         // Fetch device info using customGetValue and deviceGetValue action
         // Add a small delay before sending the first command
         setTimeout(() => {
             try {
                 if (hidDeviceInstances[id]) {
                     hidDeviceInstances[id].write(commandToBytes({id: commandId.customGetValue, data: [actionId.deviceGetValue]}));
-
                 }
             } catch (writeError) {
                 console.error(`Failed to send initial command to ${id}:`, writeError);
             }
-        }, 50);
+        }, 200); // Increased delay for better reliability
     } catch (error) {
         console.error(`Failed to initialize HID device ${id}:`, error);
         hidDeviceInstances[id] = null; // Ensure we don't leave a broken instance
-        return id;
+        throw error; // Propagate error to caller
     }
     
     return id;
@@ -307,8 +437,37 @@ const start = async (device) => {
             initializing: true, // Track initialization state
         };
         
-        // Add device and create HID instance (addKbd will handle cleanup)
-        const newId = addKbd(device);
+        // Add device and create HID instance with retry logic
+        let newId;
+        let retryCount = 0;
+        const maxRetries = 1;
+        
+        while (retryCount < maxRetries) {
+            try {
+                newId = await addKbd(device);
+                // If addKbd succeeds and HID instance exists, break the retry loop
+                if (hidDeviceInstances[newId]) {
+                    break;
+                }
+                throw new Error(`HID instance not created despite successful addKbd call`);
+            } catch (addError) {
+                retryCount++;
+                console.warn(`Failed to add device ${id} (attempt ${retryCount}/${maxRetries}):`, addError.message);
+                
+                if (retryCount >= maxRetries) {
+                    console.error(`Failed to create HID instance for ${id} after ${maxRetries} attempts`);
+                    // Mark device as connected but not properly initialized
+                    if (deviceStatusMap[id]) {
+                        deviceStatusMap[id].initializing = false;
+                        deviceStatusMap[id].connected = false;
+                    }
+                    throw new Error(`Failed to initialize device ${id} after ${maxRetries} attempts: ${addError.message}`);
+                }
+                
+                // Wait before retry
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            }
+        }
         
         // Ensure device status exists for the returned ID
         if (!deviceStatusMap[newId]) {
@@ -328,7 +487,33 @@ const start = async (device) => {
             
             hidDeviceInstances[newId].on('error', (err) => {
                 console.error(`Device error: ${newId}`, err);
-                stop(device);
+                
+                // Mark device as disconnected and clean up HID instance
+                if (deviceStatusMap[newId]) {
+                    deviceStatusMap[newId].connected = false;
+                }
+                
+                // Clean up the problematic HID instance
+                try {
+                    if (hidDeviceInstances[newId]) {
+                        hidDeviceInstances[newId].removeAllListeners();
+                        hidDeviceInstances[newId].close();
+                    }
+                } catch (closeError) {
+                    console.error(`Error closing HID instance after error for ${newId}:`, closeError);
+                }
+                hidDeviceInstances[newId] = null;
+                
+                // Notify UI about device disconnection
+                if (global.mainWindow) {
+                    global.mainWindow.webContents.send("deviceConnectionStateChanged", {
+                        deviceId: newId,
+                        connected: false,
+                        gpkRCVersion: deviceStatusMap[newId]?.gpkRCVersion || 0,
+                        deviceType: deviceStatusMap[newId]?.deviceType || DeviceType.KEYBOARD,
+                        config: deviceStatusMap[newId]?.config || {}
+                    });
+                }
             });
             
             hidDeviceInstances[newId].on('data', buffer => {
@@ -402,7 +587,7 @@ const start = async (device) => {
                             
                                 const oldPhase = deviceStatusMap[id].config.pomodoro.phase;
                                 const newPhase = receivedPomoConfig.pomodoro.phase;
-                                const oldTimerActive = deviceStatusMap[id].config.pomodoro.timer_active;
+                                const oldTimerActive = deviceStatusMap[id].config?.pomodoro?.timer_active;
                                 const newTimerActive = receivedPomoConfig.pomodoro.timer_active;
                                 const notificationsEnabled = deviceStatusMap[id].config.pomodoro.notifications_enabled; // Preserve existing UI-side setting
                                 
@@ -448,48 +633,49 @@ const start = async (device) => {
                             }
                         }
                     }
-                } catch (err) {
-                    console.error(`Error processing device data: ${id}`, err);
+                } catch (dataProcessingError) {
+                    console.error(`Error processing device data for ${newId}:`, dataProcessingError);
+                    
+                    // If error suggests HID communication issues, trigger error event
+                    if (dataProcessingError.message.includes("could not read from HID device") ||
+                        dataProcessingError.message.includes("HID device disconnected")) {
+                        console.error(`HID communication error detected for ${newId}, triggering cleanup`);
+                        
+                        // Trigger the error event which will handle cleanup
+                        if (hidDeviceInstances[newId]) {
+                            hidDeviceInstances[newId].emit('error', dataProcessingError);
+                        }
+                    }
                 }
             });
             
             // Wait for device initialization to complete or timeout
-            const timeout = 5000; // 5 second timeout
+            const timeout = 10000; // Increased timeout to 10 seconds
             const startTime = Date.now();
-            
+                        
             while (!initializationComplete && (Date.now() - startTime) < timeout) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            if (initializationComplete) {
-
-            } else {
-                console.warn(`Device ${id} startup completed but initial response not received within timeout`);
-                // Clear initialization flag even if timeout occurred
-                if (deviceStatusMap[id]) {
-                    deviceStatusMap[id].initializing = false;
-                }
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Increased check interval
             }
             
             // Additional validation: ensure HID instance is still valid after timeout
-            if (hidDeviceInstances[id]) {
+            if (hidDeviceInstances[newId]) {
                 try {
                     // Test HID instance readiness
-                    if (!hidDeviceInstances[id].read) {
-                        console.warn(`Device ${id} HID instance not fully ready after timeout`);
+                    if (!hidDeviceInstances[newId].read) {
+                        console.warn(`Device ${newId} HID instance not fully ready after timeout`);
                     } else {
-
+                        console.log(`Device ${newId} HID instance validated successfully`);
                     }
                 } catch (hidTestError) {
-                    console.warn(`Device ${id} HID instance validation failed:`, hidTestError);
+                    console.warn(`Device ${newId} HID instance validation failed:`, hidTestError);
                 }
             }
         } else {
-            console.warn(`Device ${id} started but no HID instance available`);
+            console.warn(`Device ${newId} started but no HID instance available`);
             // Ensure device status reflects the lack of HID instance
-            if (deviceStatusMap[id]) {
-                deviceStatusMap[id].initializing = false;
-                deviceStatusMap[id].connected = false;
+            if (deviceStatusMap[newId]) {
+                deviceStatusMap[newId].initializing = false;
+                deviceStatusMap[newId].connected = false;
             }
         }
         
@@ -497,6 +683,11 @@ const start = async (device) => {
     } catch (err) {
         console.error(`Error starting device:`, err);
         throw err;
+    } finally {
+        // Start device health monitoring if not already running
+        if (!deviceHealthMonitor) {
+            startDeviceHealthMonitoring();
+        }
     }
 }
 
@@ -552,6 +743,9 @@ const _close = (id) => {
 }
 
 const close = () => {
+    // Stop device health monitoring
+    stopDeviceHealthMonitoring();
+    
     if (!hidDeviceInstances) {
         return;
     }
@@ -561,8 +755,9 @@ const close = () => {
     });
 }
 
-const writeCommand = async (device, command) => {
+const writeCommand = async (device, command, retryCount = 0) => {
     const id = encodeDeviceId(device);
+    const maxRetries = 2; // Allow 2 retries for communication failures
     
     try {
         // Check if device is connected and HID instance exists
@@ -577,28 +772,88 @@ const writeCommand = async (device, command) => {
             return { success: false, message: "Device marked as disconnected" };
         }
         
+        // Additional check: verify HID instance hasn't been closed
+        if (hidDeviceInstances[id].closed) {
+            console.error(`Device ${id} writeCommand failed: HID instance is closed`);
+            
+            // Mark device as disconnected
+            if (deviceStatusMap[id]) {
+                deviceStatusMap[id].connected = false;
+            }
+            
+            return { success: false, message: "Device connection lost - HID instance closed" };
+        }
+        
         const bytes = commandToBytes(command);
         await hidDeviceInstances[id].write(bytes);    
 
         return { success: true };
     } catch (err) {
-        console.error(`Error writing command to device ${id}:`, err);
+        console.error(`Error writing command to device ${id} (attempt ${retryCount + 1}):`, err);
         
         // If write fails, mark device as potentially disconnected
         if (deviceStatusMap[id]) {
             deviceStatusMap[id].connected = false;
         }
         
-        // Clean up invalid HID instance
-        if (hidDeviceInstances[id] && err.message.includes("cannot write to hid device")) {
-
-            try {
-                hidDeviceInstances[id].removeAllListeners();
-                hidDeviceInstances[id].close();
-            } catch (closeError) {
-                console.error(`Error closing invalid HID instance for ${id}:`, closeError);
+        // Check if this is a recoverable error and we haven't exceeded retries
+        const isRecoverableError = err.message.includes("cannot write to hid device") ||
+                                   err.message.includes("could not read from HID device") ||
+                                   err.message.includes("HID device disconnected") ||
+                                   err.message.includes("Device or resource busy");
+        
+        if (isRecoverableError && retryCount < maxRetries) {
+            console.log(`Attempting to recover from HID error for ${id}, retry ${retryCount + 1}/${maxRetries}`);
+            
+            // Clean up current HID instance
+            if (hidDeviceInstances[id]) {
+                try {
+                    hidDeviceInstances[id].removeAllListeners();
+                    hidDeviceInstances[id].close();
+                } catch (closeError) {
+                    console.error(`Error closing invalid HID instance for ${id}:`, closeError);
+                }
+                hidDeviceInstances[id] = null;
             }
-            hidDeviceInstances[id] = null;
+            
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 500 * (retryCount + 1)));
+            
+            // Try to recreate HID instance
+            try {
+                console.log(`Attempting to recreate HID instance for ${id}...`);
+                const newDeviceId = await addKbd(device);
+                
+                if (hidDeviceInstances[newDeviceId]) {
+                    console.log(`HID instance recreated for ${id}, retrying command...`);
+                    // Restore connection status
+                    if (deviceStatusMap[id]) {
+                        deviceStatusMap[id].connected = true;
+                    }
+                    
+                    // Wait a bit for device to stabilize
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    // Retry the command
+                    return writeCommand(device, command, retryCount + 1);
+                } else {
+                    throw new Error("Failed to recreate HID instance");
+                }
+            } catch (recreateError) {
+                console.error(`Failed to recreate HID instance for ${id}:`, recreateError);
+                return { success: false, message: `Write error after recovery attempt: ${err.message}` };
+            }
+        } else {
+            // Clean up invalid HID instance for non-recoverable errors or after max retries
+            if (hidDeviceInstances[id]) {
+                try {
+                    hidDeviceInstances[id].removeAllListeners();
+                    hidDeviceInstances[id].close();
+                } catch (closeError) {
+                    console.error(`Error closing invalid HID instance for ${id}:`, closeError);
+                }
+                hidDeviceInstances[id] = null;
+            }
         }
         
         return { success: false, message: `Write error: ${err.message}` };
@@ -608,14 +863,14 @@ const writeCommand = async (device, command) => {
 // Device config functions
 const getDeviceConfig = async (device, retryCount = 0) => {
     const id = encodeDeviceId(device);
-    const maxRetries = 5; // Increased retry count
+    const maxRetries = 3; // Reduced retry count for faster feedback
     
-
+    console.log(`Getting device config for ${id} (attempt ${retryCount + 1}/${maxRetries + 1})`);
     
     try {
         // Check if device has valid HID instance before attempting communication
         if (!hidDeviceInstances[id]) {
-            throw new Error(`No HID instance available for device ${id}`);
+            throw new Error(`No HID instance available for device ${id}. Device may need to be reconnected.`);
         }
         
         // Additional validation: check if device status indicates it's connected
@@ -623,18 +878,26 @@ const getDeviceConfig = async (device, retryCount = 0) => {
             throw new Error(`Device ${id} marked as disconnected in status map`);
         }
         
-        // Check if device is still initializing
+        // Check if device is still initializing with more detailed logging
         if (deviceStatusMap[id] && deviceStatusMap[id].initializing === true) {
+            console.log(`Device ${id} status: initializing=true, waiting for initialization to complete...`);
             throw new Error(`Device ${id} still initializing`);
         }
         
+        console.log(`Device ${id} status checks passed, proceeding with config request`);
+        
         // Additional check: test if HID instance is actually usable
         try {
-            // Try to access the HID device to ensure it's ready
-
-            if (!hidDeviceInstances[id].read) {
-                console.warn(`HID instance for ${id} missing read method`);
+            // Verify HID instance has required methods
+            if (!hidDeviceInstances[id].read || !hidDeviceInstances[id].write) {
+                console.warn(`HID instance for ${id} missing required methods`);
                 throw new Error(`HID instance for ${id} not fully initialized`);
+            }
+            
+            // Test if HID instance is responsive
+            if (hidDeviceInstances[id].closed) {
+                console.warn(`HID instance for ${id} is marked as closed`);
+                throw new Error(`HID instance for ${id} is closed`);
             }
 
         } catch (hidCheckError) {
@@ -647,11 +910,11 @@ const getDeviceConfig = async (device, retryCount = 0) => {
                 } catch (e) {}
                 hidDeviceInstances[id] = null;
             }
-            throw new Error(`HID instance not ready for ${id}`);
+            throw new Error(`HID instance not ready for ${id}: ${hidCheckError.message}`);
         }
         
         // Wait a bit before attempting communication to ensure device is ready
-        await new Promise(resolve => setTimeout(resolve, 200)); // Increased initial delay
+        await new Promise(resolve => setTimeout(resolve, 300)); // Increased initial delay
         
         const trackpadResult = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.trackpadGetValue] });
 
@@ -661,7 +924,7 @@ const getDeviceConfig = async (device, retryCount = 0) => {
         }
         
         // Add delay between commands
-        await new Promise(resolve => setTimeout(resolve, 200)); // Increased delay between commands
+        await new Promise(resolve => setTimeout(resolve, 300)); // Increased delay between commands
         
         const pomodoroResult = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroGetValue] });
 
@@ -680,13 +943,24 @@ const getDeviceConfig = async (device, retryCount = 0) => {
             (err.message.includes("HID instance not found") || 
              err.message.includes("Device not connected") ||
              err.message.includes("cannot write to hid device") ||
+             err.message.includes("could not read from HID device") ||
              err.message.includes("marked as disconnected") ||
              err.message.includes("still initializing") ||
              err.message.includes("not fully initialized") ||
-             err.message.includes("not ready"))) {
+             err.message.includes("not ready") ||
+             err.message.includes("No HID instance available") ||
+             err.message.includes("is closed") ||
+             err.message.includes("Write error after recovery attempt"))) {
 
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Increased retry delay
+            console.log(`Retrying getDeviceConfig for ${id} in ${1500 * (retryCount + 1)}ms...`);
+            await new Promise(resolve => setTimeout(resolve, 1500 * (retryCount + 1))); // Progressive retry delay
             return getDeviceConfig(device, retryCount + 1);
+        }
+        
+        // If all retries failed, mark device as potentially needing reconnection
+        if (deviceStatusMap[id]) {
+            deviceStatusMap[id].connected = false;
+            deviceStatusMap[id].initializing = false;
         }
         
         throw err;

@@ -58,18 +58,37 @@ const getSupportedSettingTabs = (device, t, DeviceType) => {
         haptic: { id: "haptic", label: t('tabs.haptic') }
     };
 
-    // 共通セット
-    const tpTabs = [
-        tabs.mouse, tabs.scroll, tabs.dragdrop, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer
-    ];
+    // Check if device is a trackpad device type
+    const isTrackpadDevice = device.deviceType === 'macropad_tp' || 
+                           device.deviceType === 'macropad_tp_btns' || 
+                           device.deviceType === 'keyboard_tp';
+
+    // For trackpad devices, check if trackpad configuration has been received and is stable
+    // Use both default_speed > 0 and ensure device is fully initialized
+    // Longer debounce is used to handle unstable HID communication during device initialization
+        
+    const hasTrackpadConfig = isTrackpadDevice && 
+                             device.config?.trackpad?.default_speed > 0 &&
+                             device.connected === true &&
+                             device.initialized !== false && // Change back to !== false instead of === true
+                             typeof device.config?.trackpad?.default_speed === 'number' &&
+                             device.config.trackpad.default_speed >= 1;
+
+    // 共通セット - only include trackpad tabs if config is available and stable
+    // However, always show layer tab for TP devices regardless of trackpad config status
+    const tpTabs = hasTrackpadConfig 
+        ? [tabs.mouse, tabs.scroll, tabs.dragdrop, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer]
+        : []; // Always show layer tab, even without trackpad config
 
     const tabDefinitions = {
         [DeviceType.MACROPAD_TP]: tpTabs,
-        [DeviceType.MACROPAD_TP_BTNS]: [tabs.mouse, tabs.scroll, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer],
+        [DeviceType.MACROPAD_TP_BTNS]: hasTrackpadConfig 
+            ? [tabs.mouse, tabs.scroll, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer]
+            : [], // Always show layer tab, even without trackpad config
         [DeviceType.KEYBOARD_TP]: tpTabs,
         [DeviceType.KEYBOARD_OLED]: [tabs.layer, tabs.oled]
     };
-    return tabDefinitions[device.deviceType] || [tabs.layer];
+    return tabDefinitions[device.deviceType] || [];
 };
 
 const SettingsContainer = () => {
@@ -147,8 +166,15 @@ const SettingsContainer = () => {
                                      activeDevice.deviceType === 'macropad_tp_btns' || 
                                      activeDevice.deviceType === 'keyboard_tp';
                     
-                    // Only auto-switch to mouse tab if user hasn't manually selected a tab
-                    if (!currentTabSupported || (isTPDevice && activeSettingTab === "layer" && supportedTabs.find(tab => tab.id === "mouse") && !userSelectedTab)) {
+                    // Only auto-switch if current tab is not supported or if we should prioritize mouse tab for TP devices
+                    const shouldSwitchTab = !currentTabSupported || 
+                                          (isTPDevice && 
+                                           activeSettingTab === "layer" && 
+                                           supportedTabs.find(tab => tab.id === "mouse") && 
+                                           !userSelectedTab &&
+                                           activeDevice.config?.trackpad?.default_speed > 0);
+                    
+                    if (shouldSwitchTab) {
                         // Current tab is not supported by this device type, or switch from layer to mouse for TP devices (only if not manually selected)
                         const preferredTab = supportedTabs.find(tab => tab.id === "mouse") || supportedTabs[0];
                         setActiveSettingTab(preferredTab?.id || "layer");
@@ -165,6 +191,38 @@ const SettingsContainer = () => {
 
         checkDevices();
     }, [connectedDevices, activeDeviceId, activeSettingTab, userSelectedTab, t, DeviceType]);
+
+    // Monitor trackpad config changes to update tab visibility with enhanced debouncing
+    useEffect(() => {
+        const activeDevice = connectedDevices.find(d => d.id === activeDeviceId);
+        if (!activeDevice || !activeDevice.deviceType) return;
+
+        // Enhanced debounce with longer delay to handle unstable device communication
+        const timeoutId = setTimeout(() => {
+            const supportedTabs = getSupportedSettingTabs(activeDevice, t, DeviceType);
+            const currentTabSupported = supportedTabs.some(tab => tab.id === activeSettingTab);
+            
+            if (!currentTabSupported) {
+                // Current tab is no longer supported due to trackpad config changes
+                const preferredTab = supportedTabs.find(tab => tab.id === "mouse") || supportedTabs[0];
+                setActiveSettingTab(preferredTab?.id || "layer");
+                if (preferredTab) {
+                    window.api.setActiveTab(activeDevice, preferredTab.id);
+                }
+            }
+        }, 5000); // Increased to 5000ms debounce delay to handle unstable device communication
+
+        return () => clearTimeout(timeoutId);
+    }, [
+        connectedDevices.find(d => d.id === activeDeviceId)?.config?.trackpad?.default_speed, 
+        connectedDevices.find(d => d.id === activeDeviceId)?.connected,
+        connectedDevices.find(d => d.id === activeDeviceId)?.initialized,
+        connectedDevices.find(d => d.id === activeDeviceId)?.deviceType, // Add deviceType to dependencies
+        activeDeviceId, 
+        activeSettingTab, 
+        t, 
+        DeviceType
+    ]);
 
     // Setup API event listeners
     useEffect(() => {
@@ -327,8 +385,15 @@ const SettingsContainer = () => {
                                 // When switching devices, select the first available settings tab for that device
                                 const supportedTabs = getSupportedSettingTabs(device, t, DeviceType);
                                 if (supportedTabs.length > 0) {
-                                    // For TP devices, prioritize mouse tab if available, otherwise use first tab
-                                    const preferredTab = supportedTabs.find(tab => tab.id === "mouse") || supportedTabs[0];
+                                    // For TP devices, only prioritize mouse tab if trackpad config is available
+                                    const isTPDevice = device.deviceType === 'macropad_tp' || 
+                                                     device.deviceType === 'macropad_tp_btns' || 
+                                                     device.deviceType === 'keyboard_tp';
+                                    const hasTrackpadConfig = device.config?.trackpad?.default_speed > 0;
+                                    
+                                    const preferredTab = (isTPDevice && hasTrackpadConfig && supportedTabs.find(tab => tab.id === "mouse")) 
+                                                       ? supportedTabs.find(tab => tab.id === "mouse")
+                                                       : supportedTabs[0];
                                     setActiveSettingTab(preferredTab.id);
                                     window.api.setActiveTab(device, preferredTab.id);
                                 }
@@ -486,6 +551,20 @@ const SettingsContainer = () => {
                             <p className="text-sm">
                                 {t('header.pleaseConnect')}
                             </p>
+                        </div>
+                    ) : getSettingTabs().length === 0 ? (
+                        <div className="text-center text-gray-600 dark:text-gray-400">
+                            <p className="text-lg mb-2">{t('header.initializingDevice')}</p>
+                            <p className="text-sm mb-4">
+                                {t('header.deviceConfigLoading')}
+                            </p>
+                            <div className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"/>
+                                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                                </svg>
+                                {t('header.deviceCommunicationProgress')}
+                            </div>
                         </div>
                     ) : (
                         connectedDevices.map((device, index) => (

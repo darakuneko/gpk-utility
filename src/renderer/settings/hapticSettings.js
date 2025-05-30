@@ -11,7 +11,7 @@ const HapticSettings = ({ device, handleChange, handleSliderStart, handleSliderE
   
   return (
     <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
         <div className="pt-2 w-[45%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
             <span>{t('haptic.mode')}</span>
@@ -24,7 +24,7 @@ const HapticSettings = ({ device, handleChange, handleSliderStart, handleSliderE
           />
         </div>
         {/* Description section - full width and outside the constrained div */}
-        <div className="w-full mt-1">
+        <div className="w-full">
           <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line opacity-75">
             {t('haptic.description')}
           </p>

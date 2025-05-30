@@ -25,7 +25,10 @@ export default {
     connecting: '接続中...',
     connectionMessage: '互換性のあるデバイスを接続し、システムに認識されていることを確認してください。',
     pleaseConnect: '設定を構成するには互換性のあるデバイスを接続してください。',
-    noSettingsAvailable: '設定が利用できません'
+    noSettingsAvailable: '設定が利用できません',
+    initializingDevice: 'デバイスを初期化中...',
+    deviceConfigLoading: 'デバイス設定の読み込み中です。しばらくお待ちください。',
+    deviceCommunicationProgress: 'デバイスと通信中...'
   },
   tabs: {
     mouse: 'マウス',

@@ -25,7 +25,10 @@ export default {
     connecting: 'Connecting...',
     connectionMessage: 'Please connect a compatible device and ensure it is recognized by your system.',
     pleaseConnect: 'Please connect a compatible device to configure settings.',
-    noSettingsAvailable: 'No settings available'
+    noSettingsAvailable: 'No settings available',
+    initializingDevice: 'Initializing Device...',
+    deviceConfigLoading: 'Please wait while the device configuration is being loaded.',
+    deviceCommunicationProgress: 'Device communication in progress...'
   },
   tabs: {
     mouse: 'Mouse',
