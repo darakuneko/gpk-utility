@@ -11,9 +11,6 @@ if(process.platform==='linux') {
     app.commandLine.appendArgument("--no-sandbox");
 }
 
-// Set app version to eliminate warning
-app.setVersion('1.1.0');
-
 // Import translation utilities
 import enTranslations from './src/i18n/locales/en.js';
 import {
