@@ -97,7 +97,6 @@ Long Break - BLUE
 - **Swipe Term**: 次のスワイプが使用できるまでの間隔（0-500ms）
 - **Pinch Term**: 次のピンチジェスチャーが使用できるまでの間隔（0-500ms）
 - **Pinch Distance**: 次のピンチジェスチャーが使用できるまでの間隔（0-500）
-- **Gesture Term**: 次のジェスチャーが使用できるまでの間隔（0-500ms）
 
 ### Keyboard Features
 
