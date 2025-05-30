@@ -23,7 +23,8 @@ export default {
     noDevices: 'デバイスが接続されていません',
     connecting: '接続中...',
     connectionMessage: '互換性のあるデバイスを接続し、システムに認識されていることを確認してください。',
-    pleaseConnect: '設定を構成するには互換性のあるデバイスを接続してください。'
+    pleaseConnect: '設定を構成するには互換性のあるデバイスを接続してください。',
+    noSettingsAvailable: '設定が利用できません'
   },
   tabs: {
     mouse: 'マウス',
@@ -32,7 +33,8 @@ export default {
     layer: 'レイヤー',
     timer: 'タイマー',
     oled: 'OLED',
-    gesture: 'ジェスチャー'
+    gesture: 'ジェスチャー',
+    haptic: '振動'
   },
   mouse: {
     speed: '速度',
@@ -48,7 +50,6 @@ export default {
     tapTerm: 'タップ間隔',
     swipeTerm: 'スワイプ間隔',
     pinchTerm: 'ピンチ間隔',
-    gestureTerm: 'ジェスチャー間隔',
     pinchDistance: 'ピンチ距離'
   },
   dragDrop: {
@@ -109,8 +110,9 @@ export default {
   },
   haptic: {
     title: '振動フィードバック',
-    mode: '振動モード',
-    layerMoving: 'レイヤー移動時の振動フィードバック'
+    mode: '入力アクションのハプティクス',
+    layerMoving: 'レイヤー移動時の振動フィードバック',
+    description: 'ハプティックフィードバックは、タップ、スクロール、速度調整などの特定の入力アクションに対して発生します。\nレイヤー切り替え時のフィードバックは個別に有効/無効にできます。\nすべてのハプティクスを無効にするには「none」を選択してください。\nポモドーロタイマーのハプティクスは、タイマータブで個別に設定されます。'
   },
   pomodoroNotification: {
     workTitle: '集中セッション開始',

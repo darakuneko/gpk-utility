@@ -94,28 +94,6 @@ const GestureSettings = ({ device, handleChange, handleSliderStart, handleSlider
           />
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-6 mb-6">
-        <div className="pt-2 w-[45%]">
-          <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
-            <span>{t('gesture.gestureTerm')}</span>
-            <span className="text-sm font-bold ml-2 mr-2">{trackpadConfig.gesture_term ? trackpadConfig.gesture_term : 0} ms</span>
-          </label>
-          <CustomSlider
-            id="config-gesture_term"
-            value={trackpadConfig.gesture_term ? trackpadConfig.gesture_term : 0}
-            min={0}
-            step={10}
-            max={500}
-            marks={[
-              {value: 0, label: '0'},
-              {value: 500, label: '500 ms'}
-            ]}
-            onChange={handleChange("gesture_term", device.id)}
-            onChangeStart={handleSliderStart}
-            onChangeEnd={handleSliderEnd}
-          />
-        </div>
-      </div>
     </div>
   );
 };

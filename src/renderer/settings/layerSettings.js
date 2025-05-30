@@ -4,7 +4,6 @@ import {
   CustomSwitch,
   CustomSelect
 } from "../../components/CustomComponents.js";
-import { fullHapticOptions } from "../../data/hapticOptions.js";
 import { useLanguage } from "../../i18n/LanguageContext.js";
 
 const { api } = window;
@@ -307,33 +306,6 @@ const LayerSettings = ({ device, handleChange }) => {
                             onChange={handleToggleTrackpadLayer}
                             checked={trackpadLayerEnabled}
                         />
-                    </div>
-                </div>
-            )}
-            
-            {/* Haptic Settings Section */}
-            {(device.deviceType === DeviceType.KEYBOARD_TP || device.deviceType === DeviceType.MACROPAD_TP)  && (
-                <div className={`${device.deviceType === DeviceType.KEYBOARD_TP ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
-                    <div className="flex flex-col gap-3 mb-4">
-                        <div className="pt-2 w-[45%]">
-                            <label className="block mb-1 text-gray-900 dark:text-white">{t('haptic.layerMoving')}</label>
-                            <CustomSwitch
-                                id="config-can_hf_for_layer"
-                                onChange={handleChange("can_hf_for_layer", device.id)}
-                                checked={trackpadConfig.can_hf_for_layer === 1}
-                            />
-                        </div>
-                        <div className="pt-2 w-[45%]">
-                            <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
-                                <span>{t('haptic.mode')}</span>
-                            </label>
-                            <CustomSelect
-                                id="config-hf_waveform_number"
-                                value={trackpadConfig.hf_waveform_number && trackpadConfig.hf_waveform_number !== 0 ? trackpadConfig.hf_waveform_number : ''}
-                                onChange={handleChange("hf_waveform_number", device.id)}
-                                options={fullHapticOptions}
-                            />
-                        </div>
                     </div>
                 </div>
             )}

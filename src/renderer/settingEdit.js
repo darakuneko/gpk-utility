@@ -9,6 +9,7 @@ import TimerSettings from "./settings/timerSettings.js";
 import LayerSettings from "./settings/layerSettings.js";
 import OLEDSettings from "./settings/OLEDSettings.js";
 import GestureSettings from "./settings/gestureSettings.js";
+import HapticSettings from "./settings/hapticSettings.js";
 
 const { api } = window;
 
@@ -256,6 +257,14 @@ const SettingEdit = ((props) => {
                                 handleChange={handleChange}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
+                            />
+                        )}
+
+                        {/* Haptic Settings */}
+                        {activeTab === "haptic" && (
+                            <HapticSettings
+                                device={device}
+                                handleChange={handleChange}
                             />
                         )}
                     </div>

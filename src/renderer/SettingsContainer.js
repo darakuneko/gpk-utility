@@ -54,17 +54,18 @@ const getSupportedSettingTabs = (device, t, DeviceType) => {
         scroll: { id: "scroll", label: t('tabs.scroll') },
         dragdrop: { id: "dragdrop", label: t('tabs.dragDrop') },
         gesture: { id: "gesture", label: t('tabs.gesture') },
-        timer: { id: "timer", label: t('tabs.timer') }
+        timer: { id: "timer", label: t('tabs.timer') },
+        haptic: { id: "haptic", label: t('tabs.haptic') }
     };
 
     // 共通セット
     const tpTabs = [
-        tabs.mouse, tabs.scroll, tabs.dragdrop, tabs.gesture, tabs.layer, tabs.timer
+        tabs.mouse, tabs.scroll, tabs.dragdrop, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer
     ];
 
     const tabDefinitions = {
         [DeviceType.MACROPAD_TP]: tpTabs,
-        [DeviceType.MACROPAD_TP_BTNS]: [...tpTabs.slice(0, 2), tabs.dragdrop, ...tpTabs.slice(2)],
+        [DeviceType.MACROPAD_TP_BTNS]: [tabs.mouse, tabs.scroll, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer],
         [DeviceType.KEYBOARD_TP]: tpTabs,
         [DeviceType.KEYBOARD_OLED]: [tabs.layer, tabs.oled]
     };
@@ -304,36 +305,8 @@ const SettingsContainer = () => {
         }
     }
 
-    if (!state.devices || state.devices.length === 0) {
-        return (
-            <div className="bg-card-bg dark:bg-card-bg rounded-lg shadow-sm p-8">
-                <div className="text-center text-gray-600 dark:text-gray-400">
-                    <p className="text-lg mb-2">
-                        {isLoading 
-                            ? "No devices connected" 
-                            : t('header.noDevices')
-                        }
-                    </p>
-                    <p className="text-sm">
-                        {t('header.connectionMessage')}
-                    </p>
-                </div>
-            </div>
-        )
-    }
-
-    if (connectedDevices.length === 0) {
-        return (
-            <div className="bg-card-bg dark:bg-card-bg rounded-lg shadow-sm p-8">
-                <div className="text-center text-gray-600 dark:text-gray-400">
-                    <p className="text-lg mb-2">{t('header.connecting')}</p>
-                    <p className="text-sm">
-                        {t('header.pleaseConnect')}
-                    </p>
-                </div>
-            </div>
-        )
-    }
+    // Check if no devices at all (not even attempting to connect)
+    const hasNoDevicesAtAll = !state.devices || state.devices.length === 0;
 
     return (
         <div className="bg-card-bg dark:bg-card-bg rounded-lg shadow-sm">
@@ -384,7 +357,7 @@ const SettingsContainer = () => {
                                 <MenuItem onClick={toggleLanguageMenu}>
                                     <div className="flex justify-between items-center w-full">
                                         <span className="mr-2">{t('settings.language')}</span>
-                                        <span className="text-sm text-gray-500 ml-auto">{availableLanguages[locale]}</span>
+                                        <span className="text-sm text-gray-900 dark:text-gray-100 ml-auto font-medium">{availableLanguages[locale]}</span>
                                     </div>
                                 </MenuItem>
                                 
@@ -480,32 +453,54 @@ const SettingsContainer = () => {
             <div className="flex">            {/* Left navigation menu */}
             <div className="w-64 p-4 border-r border-gray-200 dark:border-gray-700">
                 <div className="space-y-1">
-                    {getSettingTabs().map((tab) => (
-                        <LeftMenuItem 
-                            key={tab.id}
-                            active={activeSettingTab === tab.id}
-                            onClick={() => handleSettingTabChange(tab.id)}
-                        >
-                            {tab.label}
-                        </LeftMenuItem>
-                    ))}
+                    {connectedDevices.length > 0 ? (
+                        getSettingTabs().map((tab) => (
+                            <LeftMenuItem 
+                                key={tab.id}
+                                active={activeSettingTab === tab.id}
+                                onClick={() => handleSettingTabChange(tab.id)}
+                            >
+                                {tab.label}
+                            </LeftMenuItem>
+                        ))
+                    ) : (
+                        <div className="text-sm text-gray-500 dark:text-gray-400 px-4 py-3">
+                            {t('header.noSettingsAvailable')}
+                        </div>
+                    )}
                 </div>
             </div>
                 
                 {/* Right settings content area */}
                 <div className="flex-1 p-4">
-                    {connectedDevices.map((device, index) => (
-                        <div 
-                            key={`${device.id}-content-${index}`} 
-                            className={activeDeviceId === device.id ? "block" : "hidden"}
-                        >
-                            <SettingEdit 
-                                device={device} 
-                                activeTab={activeSettingTab}
-                                setActiveTab={handleSettingTabChange}
-                            />
+                    {hasNoDevicesAtAll ? (
+                        <div className="text-center text-gray-600 dark:text-gray-400">
+                            <p className="text-lg mb-2">{t('header.noDevices')}</p>
+                            <p className="text-sm">
+                                {t('header.connectionMessage')}
+                            </p>
                         </div>
-                    ))}
+                    ) : connectedDevices.length === 0 ? (
+                        <div className="text-center text-gray-600 dark:text-gray-400">
+                            <p className="text-lg mb-2">{t('header.connecting')}</p>
+                            <p className="text-sm">
+                                {t('header.pleaseConnect')}
+                            </p>
+                        </div>
+                    ) : (
+                        connectedDevices.map((device, index) => (
+                            <div 
+                                key={`${device.id}-content-${index}`} 
+                                className={activeDeviceId === device.id ? "block" : "hidden"}
+                            >
+                                <SettingEdit 
+                                    device={device} 
+                                    activeTab={activeSettingTab}
+                                    setActiveTab={handleSettingTabChange}
+                                />
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
             

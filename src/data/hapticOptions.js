@@ -1,4 +1,5 @@
 export const fullHapticOptions = [
+  { value: "0", label: "none" },
   { value: "1", label: "strong_click" },
   { value: "2", label: "strong_click_60" },
   { value: "3", label: "strong_click_30" },

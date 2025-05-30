@@ -1,0 +1,45 @@
+import React from "react";
+import { CustomSwitch, CustomSelect } from "../../components/CustomComponents.js";
+import { useLanguage } from "../../i18n/LanguageContext.js";
+import { fullHapticOptions } from "../../data/hapticOptions.js";
+
+const HapticSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
+  const { t } = useLanguage();
+  
+  // Get trackpad configuration or empty object if not defined
+  const trackpadConfig = device.config?.trackpad || {};
+  
+  return (
+    <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+      <div className="flex flex-col gap-6">
+        <div className="pt-2 w-[45%]">
+          <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
+            <span>{t('haptic.mode')}</span>
+          </label>
+          <CustomSelect
+            id="config-hf_waveform_number"
+            value={trackpadConfig.hf_waveform_number && trackpadConfig.hf_waveform_number !== 0 ? trackpadConfig.hf_waveform_number : ''}
+            onChange={handleChange("hf_waveform_number", device.id)}
+            options={fullHapticOptions}
+          />
+        </div>
+        {/* Description section - full width and outside the constrained div */}
+        <div className="w-full mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line opacity-75">
+            {t('haptic.description')}
+          </p>
+        </div>
+        <div className="pt-2 w-[45%]">
+          <label className="block mb-1 text-gray-900 dark:text-white">{t('haptic.layerMoving')}</label>
+          <CustomSwitch
+            id="config-can_hf_for_layer"
+            onChange={handleChange("can_hf_for_layer", device.id)}
+            checked={trackpadConfig.can_hf_for_layer === 1}
+          />
+        </div>        
+      </div>
+    </div>
+  );
+};
+
+export default HapticSettings;

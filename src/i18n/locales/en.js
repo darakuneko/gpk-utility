@@ -23,7 +23,8 @@ export default {
     noDevices: 'No devices connected',
     connecting: 'Connecting...',
     connectionMessage: 'Please connect a compatible device and ensure it is recognized by your system.',
-    pleaseConnect: 'Please connect a compatible device to configure settings.'
+    pleaseConnect: 'Please connect a compatible device to configure settings.',
+    noSettingsAvailable: 'No settings available'
   },
   tabs: {
     mouse: 'Mouse',
@@ -32,7 +33,8 @@ export default {
     layer: 'Layer',
     timer: 'Timer',
     oled: 'OLED',
-    gesture: 'Gesture'
+    gesture: 'Gesture',
+    haptic: 'Haptic'
   },
   mouse: {
     speed: 'Speed'
@@ -48,7 +50,6 @@ export default {
     tapTerm: 'Tap Term',
     swipeTerm: 'Swipe Term',
     pinchTerm: 'Pinch Term',
-    gestureTerm: 'Gesture Term',
     pinchDistance: 'Pinch Distance'
   },
   dragDrop: {
@@ -109,8 +110,9 @@ export default {
   },
   haptic: {
     title: 'Haptic Feedback',
-    mode: 'Haptic Mode',
-    layerMoving: 'Haptics when moving layers'
+    mode: 'Input Action Haptics',
+    layerMoving: 'Haptics when moving layers',
+    description: 'Haptic feedback is triggered for specific input actions such as taps, scrolling, and speed adjustments.\nLayer switching feedback can be enabled or disabled separately.\nTo disable all haptics, select \'none\'.\nPomodoro timer haptics are configured separately in the Timer tab.'
   },
   pomodoroNotification: {
     workTitle: 'Focus Session Started',
