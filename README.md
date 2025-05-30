@@ -110,7 +110,6 @@ Configure touchpad gesture settings
 - **Swipe Term**: Interval before the next swipe gesture can be recognized (0–500 ms)
 - **Pinch Term**: Interval before the next pinch gesture can be recognized (0–500 ms)
 - **Pinch Distance**: Minimum distance required to recognize the next pinch gesture (0–500)
-- **Gesture Term**: Interval before the next gesture can be recognized (0–500 ms)
 
 ### Application Settings
 
