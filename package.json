@@ -64,6 +64,8 @@
       "index.js",
       "preload.cjs",
       "gpkrc.js",
+      "ipcHandlers.js",
+      "ipcHandlers/**/*",
       "package.json",
       "src/i18n/locales/**/*"
     ],

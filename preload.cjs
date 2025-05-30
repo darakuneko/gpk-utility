@@ -277,7 +277,6 @@ const keyboardSendLoop = async () => {
         const results = await Promise.all(cachedDeviceRegistry.map(async (device) => {
             // Check device processing lock
             if (!lockDeviceProcessing(device.id)) {
-                console.log(`Device ${device.id} is already being processed, skipping...`);
                 return device; // Skip if already being processed
             }
 
@@ -286,7 +285,6 @@ const keyboardSendLoop = async () => {
 
             // Handle device that needs restart (typically after reconnection)
             if (device.needsRestart) {
-                console.log(`Starting restart process for device ${device.id}...`);
                 try {
                     await command.stop(device);
                     await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay before restart
@@ -300,7 +298,6 @@ const keyboardSendLoop = async () => {
                         try {
                             await command.start(device);
                             startSuccess = true;
-                            console.log(`Device ${device.id} successfully restarted on attempt ${startAttempts + 1}`);
                         } catch (startError) {
                             startAttempts++;
                             console.warn(`Failed to start device ${device.id} (attempt ${startAttempts}/${maxStartAttempts}):`, startError.message);
@@ -331,11 +328,9 @@ const keyboardSendLoop = async () => {
             
             // Handle device that needs initialization
             if (!connectKbd) {
-                console.log(`Starting new device ${device.id}...`);
                 await command.start(device);
                 // Add delay after starting new device (increased for reliability)
-                console.log(`Device ${device.id} started, waiting for stability...`);
-                await new Promise(resolve => setTimeout(resolve, 1500)); // Increased from 800ms
+                await new Promise(resolve => setTimeout(resolve, 800)); // Increased from 800ms
             } else {
                 const existConfingInit = device.config?.init;
                 const existConfingOledEnabled = device.config?.oled_enabled;
@@ -346,10 +341,7 @@ const keyboardSendLoop = async () => {
                     device.checkDevice = true;
                     try {
                         // Add a longer delay to ensure device is ready for communication
-                        console.log(`Waiting for device ${device.id} to be ready for config request...`);
-                        await new Promise(resolve => setTimeout(resolve, 2000)); // Increased from 800ms to 2000ms
-
-                        console.log(`Requesting device config for ${device.id}...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Increased 1000ms
                         await command.getDeviceConfig(device);
 
                     } catch (error) {

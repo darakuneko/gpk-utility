@@ -664,7 +664,6 @@ const start = async (device) => {
                     if (!hidDeviceInstances[newId].read) {
                         console.warn(`Device ${newId} HID instance not fully ready after timeout`);
                     } else {
-                        console.log(`Device ${newId} HID instance validated successfully`);
                     }
                 } catch (hidTestError) {
                     console.warn(`Device ${newId} HID instance validation failed:`, hidTestError);
@@ -802,9 +801,7 @@ const writeCommand = async (device, command, retryCount = 0) => {
                                    err.message.includes("HID device disconnected") ||
                                    err.message.includes("Device or resource busy");
         
-        if (isRecoverableError && retryCount < maxRetries) {
-            console.log(`Attempting to recover from HID error for ${id}, retry ${retryCount + 1}/${maxRetries}`);
-            
+        if (isRecoverableError && retryCount < maxRetries) {            
             // Clean up current HID instance
             if (hidDeviceInstances[id]) {
                 try {
@@ -821,11 +818,9 @@ const writeCommand = async (device, command, retryCount = 0) => {
             
             // Try to recreate HID instance
             try {
-                console.log(`Attempting to recreate HID instance for ${id}...`);
                 const newDeviceId = await addKbd(device);
                 
                 if (hidDeviceInstances[newDeviceId]) {
-                    console.log(`HID instance recreated for ${id}, retrying command...`);
                     // Restore connection status
                     if (deviceStatusMap[id]) {
                         deviceStatusMap[id].connected = true;
@@ -865,8 +860,6 @@ const getDeviceConfig = async (device, retryCount = 0) => {
     const id = encodeDeviceId(device);
     const maxRetries = 3; // Reduced retry count for faster feedback
     
-    console.log(`Getting device config for ${id} (attempt ${retryCount + 1}/${maxRetries + 1})`);
-    
     try {
         // Check if device has valid HID instance before attempting communication
         if (!hidDeviceInstances[id]) {
@@ -880,12 +873,9 @@ const getDeviceConfig = async (device, retryCount = 0) => {
         
         // Check if device is still initializing with more detailed logging
         if (deviceStatusMap[id] && deviceStatusMap[id].initializing === true) {
-            console.log(`Device ${id} status: initializing=true, waiting for initialization to complete...`);
             throw new Error(`Device ${id} still initializing`);
         }
-        
-        console.log(`Device ${id} status checks passed, proceeding with config request`);
-        
+                
         // Additional check: test if HID instance is actually usable
         try {
             // Verify HID instance has required methods
@@ -952,7 +942,6 @@ const getDeviceConfig = async (device, retryCount = 0) => {
              err.message.includes("is closed") ||
              err.message.includes("Write error after recovery attempt"))) {
 
-            console.log(`Retrying getDeviceConfig for ${id} in ${1500 * (retryCount + 1)}ms...`);
             await new Promise(resolve => setTimeout(resolve, 1500 * (retryCount + 1))); // Progressive retry delay
             return getDeviceConfig(device, retryCount + 1);
         }
