@@ -125,6 +125,16 @@ export const setupNotificationEvents = (activePomodoroDevices, tray, createTrayM
         // Remove the corresponding entry from activePomodoroDevices
         if (activePomodoroDevices.has(deviceId)) {
             activePomodoroDevices.delete(deviceId);
+            
+            // Update tray menu to reflect the device disconnection
+            if (tray) {
+                try {
+                    const contextMenu = Menu.buildFromTemplate(createTrayMenuTemplate());
+                    tray.setContextMenu(contextMenu);
+                } catch (error) {
+                    console.error(`Error updating tray menu after device disconnection:`, error);
+                }
+            }
         }
     });
 

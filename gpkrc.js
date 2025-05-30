@@ -253,16 +253,39 @@ const addKbd = (device) => {
         console.error(`Device not found or path not available for device: ${id}`);
         return id; // Still return id even if device is not connected
     }
-    if(!hidDeviceInstances[id]){ 
+    
+    // Clean up any existing instance before creating a new one
+    if (hidDeviceInstances[id]) {
         try {
-            hidDeviceInstances[id] = new HID.HID(d.path);
-            // Fetch device info using customGetValue and deviceGetValue action
-            hidDeviceInstances[id].write(commandToBytes({id: commandId.customGetValue, data: [actionId.deviceGetValue]}));
-        } catch (error) {
-            console.error(`Failed to initialize HID device ${id}:`, error);
-            return id;
+            hidDeviceInstances[id].removeAllListeners();
+            hidDeviceInstances[id].close();
+        } catch (closeError) {
+            console.error(`Error closing existing HID instance for ${id}:`, closeError);
         }
+        hidDeviceInstances[id] = null;
     }
+    
+    try {
+        hidDeviceInstances[id] = new HID.HID(d.path);
+        
+        // Fetch device info using customGetValue and deviceGetValue action
+        // Add a small delay before sending the first command
+        setTimeout(() => {
+            try {
+                if (hidDeviceInstances[id]) {
+                    hidDeviceInstances[id].write(commandToBytes({id: commandId.customGetValue, data: [actionId.deviceGetValue]}));
+
+                }
+            } catch (writeError) {
+                console.error(`Failed to send initial command to ${id}:`, writeError);
+            }
+        }, 50);
+    } catch (error) {
+        console.error(`Failed to initialize HID device ${id}:`, error);
+        hidDeviceInstances[id] = null; // Ensure we don't leave a broken instance
+        return id;
+    }
+    
     return id;
 };
 
@@ -272,166 +295,255 @@ const start = async (device) => {
     }
     
     try {
-        const id = addKbd(device);
-        if (!deviceStatusMap[id]) {
-            deviceStatusMap[id] = {
+        const id = encodeDeviceId(device);
+
+        
+        // Reset device status first
+        deviceStatusMap[id] = {
+            config: {},
+            deviceType: DeviceType.KEYBOARD,
+            gpkRCVersion: 0,
+            connected: true,
+            initializing: true, // Track initialization state
+        };
+        
+        // Add device and create HID instance (addKbd will handle cleanup)
+        const newId = addKbd(device);
+        
+        // Ensure device status exists for the returned ID
+        if (!deviceStatusMap[newId]) {
+            deviceStatusMap[newId] = {
                 config: {},
                 deviceType: DeviceType.KEYBOARD,
                 gpkRCVersion: 0,
                 connected: true,
+                initializing: true,
             };
+        }
+        
+        activeTabPerDevice[newId] = "mouse";
+        
+        if (hidDeviceInstances[newId]) {
+            let initializationComplete = false;
             
-            activeTabPerDevice[id] = "mouse";
+            hidDeviceInstances[newId].on('error', (err) => {
+                console.error(`Device error: ${newId}`, err);
+                stop(device);
+            });
             
-            if (hidDeviceInstances[id]) {
-                hidDeviceInstances[id].on('error', (err) => {
-                    console.error(`Device error: ${id}`, err);
-                    stop(device);
-                });
-                
-                hidDeviceInstances[id].on('data', buffer => {
-                    try {
-                        if (buffer[0] === commandId.gpkRCPrefix) {
-                            const receivedCmdId = buffer[1];
-                            const receivedActionId = buffer[2];
-                            const actualData = buffer.slice(3);
+            hidDeviceInstances[newId].on('data', buffer => {
+                try {
+                    if (buffer[0] === commandId.gpkRCPrefix) {
+                        const receivedCmdId = buffer[1];
+                        const receivedActionId = buffer[2];
+                        const actualData = buffer.slice(3);
 
-                            deviceStatusMap[id].connected = true;
-                            if (receivedCmdId === commandId.customSetValue) {
-                                if(receivedActionId === actionId.setValueComplete) {
-                                    // Notify UI that data saving is complete
-                                    global.mainWindow.webContents.send("configSaveComplete", {
-                                        deviceId: id,
-                                        success: true,
-                                        timestamp: Date.now()
-                                    });
-                                }
-                            }
-                            if (receivedCmdId === commandId.customGetValue) {
-                                if (receivedActionId === actionId.deviceGetValue) {
-                                    deviceStatusMap[id].config = { 
-                                        init: undefined,
-                                        pomodoro: {
-                                            phase: undefined
-                                        }, 
-                                        trackpad: {}, 
-                                        oled_enabled: undefined 
-                                    };
-                                    
-                                    deviceStatusMap[id].gpkRCVersion = actualData[0];
-                                    deviceStatusMap[id].init = actualData[1];
-                                    const deviceTypeStr = actualData.toString('utf8', 2).split('\0')[0];
-                                    deviceStatusMap[id].deviceType = stringToDeviceType(deviceTypeStr);
- 
-                                    if (settingsStore) {
-                                        const oledSettings = settingsStore.get('oledSettings');
-                                        if (oledSettings && oledSettings[id] !== undefined) {
-                                            if(oledSettings[id].enabled) {
-                                                writeTimeToOled(device); 
-                                            }
-                                            deviceStatusMap[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
-                                        }
-                                    }
-
-                                    global.mainWindow.webContents.send("deviceConnectionStateChanged", {
-                                        deviceId: id,
-                                        connected: deviceStatusMap[id].connected,
-                                        gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
-                                        deviceType: deviceTypeToString(deviceStatusMap[id].deviceType),
-                                        config: deviceStatusMap[id].config 
-                                    });
-                                } else if (receivedActionId === actionId.trackpadGetValue) {
-                                    deviceStatusMap[id].config.trackpad = receiveTrackpadSpecificConfig(actualData);
-
-                                    global.mainWindow.webContents.send("deviceConnectionStateChanged", {
-                                        deviceId: id,
-                                        connected: deviceStatusMap[id].connected,
-                                        gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
-                                        deviceType: deviceTypeToString(deviceStatusMap[id].deviceType),
-                                        config: deviceStatusMap[id].config
-                                    });
-                                } else if (receivedActionId === actionId.pomodoroGetValue) {
-                                    const receivedPomoConfig = receivePomodoroConfig(actualData); // Parses only pomodoro settings
-                                
-                                    const oldPhase = deviceStatusMap[id].config.pomodoro.phase;
-                                    const newPhase = receivedPomoConfig.pomodoro.phase;
-                                    const oldTimerActive = deviceStatusMap[id].config.pomodoro.timer_active;
-                                    const newTimerActive = receivedPomoConfig.pomodoro.timer_active;
-                                    const notificationsEnabled = deviceStatusMap[id].config.pomodoro.notifications_enabled; // Preserve existing UI-side setting
-                                    
-                                    // Update the pomodoro part of the config
-                                    deviceStatusMap[id].config.pomodoro = {
-                                        ...deviceStatusMap[id].config.pomodoro, // Preserve other pomodoro settings not in receivedPomoConfig
-                                        ...receivedPomoConfig.pomodoro
-                                    };
-                                    
-                                    if (notificationsEnabled !== undefined) {
-                                        deviceStatusMap[id].config.pomodoro.notifications_enabled = notificationsEnabled;
-                                    }
-                                    
-                                    const phaseChanged = oldPhase !== newPhase || oldTimerActive !== newTimerActive;
-                                    global.mainWindow.webContents.send("deviceConnectionPomodoroPhaseChanged", {
-                                        deviceId: id,
-                                        pomodoroConfig: deviceStatusMap[id].config.pomodoro,
-                                        phaseChanged: phaseChanged,
-                                    });
-                                } else if (receivedActionId === actionId.pomodoroActiveGetValue) {
-                                    const pomodoroActiveUpdate = receivePomodoroActiveStatus(actualData);
-                                    const oldPhase = deviceStatusMap[id].config.pomodoro.phase;
-                                    const oldTimerActive = deviceStatusMap[id].config.pomodoro.timer_active;
-                                    
-                                    const preservedPomodoroConfig = { ...deviceStatusMap[id].config.pomodoro };
-
-                                    preservedPomodoroConfig.timer_active = pomodoroActiveUpdate.timer_active;
-                                    preservedPomodoroConfig.phase = pomodoroActiveUpdate.phase;
-                                    preservedPomodoroConfig.minutes = pomodoroActiveUpdate.minutes;
-                                    preservedPomodoroConfig.seconds = pomodoroActiveUpdate.seconds;
-                                    preservedPomodoroConfig.current_work_Interval = pomodoroActiveUpdate.current_work_Interval;
-                                    preservedPomodoroConfig.current_pomodoro_cycle = pomodoroActiveUpdate.current_pomodoro_cycle;
-
-                                    deviceStatusMap[id].config.pomodoro = preservedPomodoroConfig;
-
-                                    const phaseChanged = oldPhase !== pomodoroActiveUpdate.phase || oldTimerActive !== pomodoroActiveUpdate.timer_active;
-
-                                    global.mainWindow.webContents.send("deviceConnectionPomodoroPhaseChanged", {
-                                        deviceId: id,
-                                        pomodoroConfig: deviceStatusMap[id].config.pomodoro,
-                                        phaseChanged: phaseChanged,
-                                    });
-                                }
+                        deviceStatusMap[id].connected = true;
+                        if (receivedCmdId === commandId.customSetValue) {
+                            if(receivedActionId === actionId.setValueComplete) {
+                                // Notify UI that data saving is complete
+                                global.mainWindow.webContents.send("configSaveComplete", {
+                                    deviceId: id,
+                                    success: true,
+                                    timestamp: Date.now()
+                                });
                             }
                         }
-                    } catch (err) {
-                        console.error(`Error processing device data: ${id}`, err);
+                        if (receivedCmdId === commandId.customGetValue) {
+                            if (receivedActionId === actionId.deviceGetValue) {
+                                deviceStatusMap[id].config = { 
+                                    init: undefined,
+                                    pomodoro: {
+                                        phase: undefined
+                                    }, 
+                                    trackpad: {}, 
+                                    oled_enabled: undefined 
+                                };
+                                
+                                deviceStatusMap[id].gpkRCVersion = actualData[0];
+                                deviceStatusMap[id].init = actualData[1];
+                                const deviceTypeStr = actualData.toString('utf8', 2).split('\0')[0];
+                                deviceStatusMap[id].deviceType = stringToDeviceType(deviceTypeStr);
+
+                                if (settingsStore) {
+                                    const oledSettings = settingsStore.get('oledSettings');
+                                    if (oledSettings && oledSettings[id] !== undefined) {
+                                        if(oledSettings[id].enabled) {
+                                            writeTimeToOled(device); 
+                                        }
+                                        deviceStatusMap[id].config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
+                                    }
+                                }
+
+                                // Mark initialization as complete
+                                deviceStatusMap[id].initializing = false;
+                                initializationComplete = true;
+
+
+                                global.mainWindow.webContents.send("deviceConnectionStateChanged", {
+                                    deviceId: id,
+                                    connected: deviceStatusMap[id].connected,
+                                    gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
+                                    deviceType: deviceTypeToString(deviceStatusMap[id].deviceType),
+                                    config: deviceStatusMap[id].config 
+                                });
+                            } else if (receivedActionId === actionId.trackpadGetValue) {
+                                deviceStatusMap[id].config.trackpad = receiveTrackpadSpecificConfig(actualData);
+
+                                global.mainWindow.webContents.send("deviceConnectionStateChanged", {
+                                    deviceId: id,
+                                    connected: deviceStatusMap[id].connected,
+                                    gpkRCVersion: deviceStatusMap[id].gpkRCVersion,
+                                    deviceType: deviceTypeToString(deviceStatusMap[id].deviceType),
+                                    config: deviceStatusMap[id].config
+                                });
+                            } else if (receivedActionId === actionId.pomodoroGetValue) {
+                                const receivedPomoConfig = receivePomodoroConfig(actualData); // Parses only pomodoro settings
+                            
+                                const oldPhase = deviceStatusMap[id].config.pomodoro.phase;
+                                const newPhase = receivedPomoConfig.pomodoro.phase;
+                                const oldTimerActive = deviceStatusMap[id].config.pomodoro.timer_active;
+                                const newTimerActive = receivedPomoConfig.pomodoro.timer_active;
+                                const notificationsEnabled = deviceStatusMap[id].config.pomodoro.notifications_enabled; // Preserve existing UI-side setting
+                                
+                                // Update the pomodoro part of the config
+                                deviceStatusMap[id].config.pomodoro = {
+                                    ...deviceStatusMap[id].config.pomodoro, // Preserve other pomodoro settings not in receivedPomoConfig
+                                    ...receivedPomoConfig.pomodoro
+                                };
+                                
+                                if (notificationsEnabled !== undefined) {
+                                    deviceStatusMap[id].config.pomodoro.notifications_enabled = notificationsEnabled;
+                                }
+                                
+                                const phaseChanged = oldPhase !== newPhase || oldTimerActive !== newTimerActive;
+                                global.mainWindow.webContents.send("deviceConnectionPomodoroPhaseChanged", {
+                                    deviceId: id,
+                                    pomodoroConfig: deviceStatusMap[id].config.pomodoro,
+                                    phaseChanged: phaseChanged,
+                                });
+                            } else if (receivedActionId === actionId.pomodoroActiveGetValue) {
+                                const pomodoroActiveUpdate = receivePomodoroActiveStatus(actualData);
+                                const oldPhase = deviceStatusMap[id].config.pomodoro.phase;
+                                const oldTimerActive = deviceStatusMap[id].config.pomodoro.timer_active;
+                                
+                                const preservedPomodoroConfig = { ...deviceStatusMap[id].config.pomodoro };
+
+                                preservedPomodoroConfig.timer_active = pomodoroActiveUpdate.timer_active;
+                                preservedPomodoroConfig.phase = pomodoroActiveUpdate.phase;
+                                preservedPomodoroConfig.minutes = pomodoroActiveUpdate.minutes;
+                                preservedPomodoroConfig.seconds = pomodoroActiveUpdate.seconds;
+                                preservedPomodoroConfig.current_work_Interval = pomodoroActiveUpdate.current_work_Interval;
+                                preservedPomodoroConfig.current_pomodoro_cycle = pomodoroActiveUpdate.current_pomodoro_cycle;
+
+                                deviceStatusMap[id].config.pomodoro = preservedPomodoroConfig;
+
+                                const phaseChanged = oldPhase !== pomodoroActiveUpdate.phase || oldTimerActive !== pomodoroActiveUpdate.timer_active;
+
+                                global.mainWindow.webContents.send("deviceConnectionPomodoroPhaseChanged", {
+                                    deviceId: id,
+                                    pomodoroConfig: deviceStatusMap[id].config.pomodoro,
+                                    phaseChanged: phaseChanged,
+                                });
+                            }
+                        }
                     }
-                });
+                } catch (err) {
+                    console.error(`Error processing device data: ${id}`, err);
+                }
+            });
+            
+            // Wait for device initialization to complete or timeout
+            const timeout = 5000; // 5 second timeout
+            const startTime = Date.now();
+            
+            while (!initializationComplete && (Date.now() - startTime) < timeout) {
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
-        } 
+            
+            if (initializationComplete) {
+
+            } else {
+                console.warn(`Device ${id} startup completed but initial response not received within timeout`);
+                // Clear initialization flag even if timeout occurred
+                if (deviceStatusMap[id]) {
+                    deviceStatusMap[id].initializing = false;
+                }
+            }
+            
+            // Additional validation: ensure HID instance is still valid after timeout
+            if (hidDeviceInstances[id]) {
+                try {
+                    // Test HID instance readiness
+                    if (!hidDeviceInstances[id].read) {
+                        console.warn(`Device ${id} HID instance not fully ready after timeout`);
+                    } else {
+
+                    }
+                } catch (hidTestError) {
+                    console.warn(`Device ${id} HID instance validation failed:`, hidTestError);
+                }
+            }
+        } else {
+            console.warn(`Device ${id} started but no HID instance available`);
+            // Ensure device status reflects the lack of HID instance
+            if (deviceStatusMap[id]) {
+                deviceStatusMap[id].initializing = false;
+                deviceStatusMap[id].connected = false;
+            }
+        }
         
-        return deviceStatusMap[id];
+        return newId;
     } catch (err) {
-        console.error("Error starting device:", err);
+        console.error(`Error starting device:`, err);
         throw err;
     }
 }
 
 const stop = (device) => {
-    const id = encodeDeviceId(device)
+    const id = encodeDeviceId(device);
+
+    
     if (hidDeviceInstances[id]) {
-        hidDeviceInstances[id].removeAllListeners("data")
-        _close(id)
-        hidDeviceInstances[id] = undefined
-        deviceStatusMap[id] = undefined
+        try {
+            hidDeviceInstances[id].removeAllListeners();
+            _close(id);
+        } catch (error) {
+            console.error(`Error during device stop for ${id}:`, error);
+        }
+        hidDeviceInstances[id] = null;
+    }
+    
+    // Clean up device status and related data
+    if (deviceStatusMap[id]) {
+        deviceStatusMap[id].connected = false;
+        deviceStatusMap[id] = undefined;
+    }
+    
+    // Clean up other related data
+    if (activeTabPerDevice[id]) {
+        delete activeTabPerDevice[id];
+    }
+    
+    if (isEditingPomodoroPerDevice[id]) {
+        delete isEditingPomodoroPerDevice[id];
+    }
+    
+    if (currentLayers[id]) {
+        delete currentLayers[id];
     }
 }
 
 const _close = (id) => {
     if (!hidDeviceInstances[id]) {
+
         return false;
     }
     
     try {
+
         hidDeviceInstances[id].close();
+
         return true;
     } catch (err) {
         console.error(`Error closing device ${id}:`, err);
@@ -450,34 +562,147 @@ const close = () => {
 }
 
 const writeCommand = async (device, command) => {
-    const id = addKbd(device);
+    const id = encodeDeviceId(device);
+    
     try {
+        // Check if device is connected and HID instance exists
         if (!hidDeviceInstances[id]) {
-            console.error(`Device ${id} is not connected or properly initialized`);
-            return { success: false, message: "Device not connected" };
+            console.error(`Device ${id} writeCommand failed: HID instance not found`);
+            return { success: false, message: "Device not connected - HID instance not found" };
+        }
+        
+        // Check if device status indicates it's connected
+        if (deviceStatusMap[id] && deviceStatusMap[id].connected === false) {
+            console.error(`Device ${id} writeCommand failed: marked as disconnected in status map`);
+            return { success: false, message: "Device marked as disconnected" };
         }
         
         const bytes = commandToBytes(command);
         await hidDeviceInstances[id].write(bytes);    
+
         return { success: true };
     } catch (err) {
-        console.error("Error writing command:", err);
-        throw err;
+        console.error(`Error writing command to device ${id}:`, err);
+        
+        // If write fails, mark device as potentially disconnected
+        if (deviceStatusMap[id]) {
+            deviceStatusMap[id].connected = false;
+        }
+        
+        // Clean up invalid HID instance
+        if (hidDeviceInstances[id] && err.message.includes("cannot write to hid device")) {
+
+            try {
+                hidDeviceInstances[id].removeAllListeners();
+                hidDeviceInstances[id].close();
+            } catch (closeError) {
+                console.error(`Error closing invalid HID instance for ${id}:`, closeError);
+            }
+            hidDeviceInstances[id] = null;
+        }
+        
+        return { success: false, message: `Write error: ${err.message}` };
     }
 }
 
 // Device config functions
-const getDeviceConfig = async (device) => {
-    await writeCommand(device, { id: commandId.customGetValue, data: [actionId.trackpadGetValue] });
-    await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroGetValue] });
+const getDeviceConfig = async (device, retryCount = 0) => {
+    const id = encodeDeviceId(device);
+    const maxRetries = 5; // Increased retry count
+    
+
+    
+    try {
+        // Check if device has valid HID instance before attempting communication
+        if (!hidDeviceInstances[id]) {
+            throw new Error(`No HID instance available for device ${id}`);
+        }
+        
+        // Additional validation: check if device status indicates it's connected
+        if (deviceStatusMap[id] && deviceStatusMap[id].connected === false) {
+            throw new Error(`Device ${id} marked as disconnected in status map`);
+        }
+        
+        // Check if device is still initializing
+        if (deviceStatusMap[id] && deviceStatusMap[id].initializing === true) {
+            throw new Error(`Device ${id} still initializing`);
+        }
+        
+        // Additional check: test if HID instance is actually usable
+        try {
+            // Try to access the HID device to ensure it's ready
+
+            if (!hidDeviceInstances[id].read) {
+                console.warn(`HID instance for ${id} missing read method`);
+                throw new Error(`HID instance for ${id} not fully initialized`);
+            }
+
+        } catch (hidCheckError) {
+            console.warn(`HID instance check failed for ${id}:`, hidCheckError);
+            // Clean up and throw error to trigger retry
+            if (hidDeviceInstances[id]) {
+                try {
+                    hidDeviceInstances[id].removeAllListeners();
+                    hidDeviceInstances[id].close();
+                } catch (e) {}
+                hidDeviceInstances[id] = null;
+            }
+            throw new Error(`HID instance not ready for ${id}`);
+        }
+        
+        // Wait a bit before attempting communication to ensure device is ready
+        await new Promise(resolve => setTimeout(resolve, 200)); // Increased initial delay
+        
+        const trackpadResult = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.trackpadGetValue] });
+
+        
+        if (!trackpadResult.success) {
+            throw new Error(`Failed to request trackpad config: ${trackpadResult.message}`);
+        }
+        
+        // Add delay between commands
+        await new Promise(resolve => setTimeout(resolve, 200)); // Increased delay between commands
+        
+        const pomodoroResult = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroGetValue] });
+
+        
+        if (!pomodoroResult.success) {
+            throw new Error(`Failed to request pomodoro config: ${pomodoroResult.message}`);
+        }
+        
+
+        return { success: true };
+    } catch (err) {
+        console.error(`Error getting device config for ${id} (attempt ${retryCount + 1}):`, err);
+        
+        // Retry if we haven't exceeded max retries and error indicates device might not be ready
+        if (retryCount < maxRetries && 
+            (err.message.includes("HID instance not found") || 
+             err.message.includes("Device not connected") ||
+             err.message.includes("cannot write to hid device") ||
+             err.message.includes("marked as disconnected") ||
+             err.message.includes("still initializing") ||
+             err.message.includes("not fully initialized") ||
+             err.message.includes("not ready"))) {
+
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Increased retry delay
+            return getDeviceConfig(device, retryCount + 1);
+        }
+        
+        throw err;
+    }
 }
 // Note: The following function to save device config is commented out.
 const saveTrackpadConfig = async (device, trackpadDataBytes) => {
     try {
         const result = await writeCommand(device, { id: commandId.customSetValue, data: [actionId.trackpadSetValue, ...trackpadDataBytes] });
+        if (!result.success) {
+            throw new Error(result.message || "Failed to save trackpad config");
+        }
         await new Promise(resolve => setTimeout(resolve, 500)); // Add 500ms delay
         return result;
     } catch (error) {
+        console.error("Error saving trackpad config:", error);
         throw error;
     }
 };
@@ -485,6 +710,9 @@ const saveTrackpadConfig = async (device, trackpadDataBytes) => {
 const savePomodoroConfigData = async (device, pomodoroDataBytes) => {
     try {
         const result = await writeCommand(device, { id: commandId.customSetValue, data: [actionId.pomodoroSetValue, ...pomodoroDataBytes] });
+        if (!result.success) {
+            throw new Error(result.message || "Failed to save pomodoro config");
+        }
         await new Promise(resolve => setTimeout(resolve, 500)); // Add 500ms delay
         return result;
     } catch (error) {
@@ -503,20 +731,46 @@ const writeTimeToOled = async (device, forceWrite = false) => {
         if (forceWrite || lastFormattedDateMap.get(deviceId) !== formattedDate) {
             lastFormattedDateMap.set(deviceId, formattedDate);
             const dataBytes = dataToBytes(formattedDate);
-            return await writeCommand(device, { id: commandId.gpkRCOperation, data: [actionId.oledWrite, ...dataBytes] });
+            const result = await writeCommand(device, { id: commandId.gpkRCOperation, data: [actionId.oledWrite, ...dataBytes] });
+            
+            if (!result.success) {
+                console.error("Failed to write time to OLED:", result.message);
+                return { success: false, error: result.message };
+            }
+            
+            return result;
         } else {
             return { success: true, skipped: true };
         }
    } catch (error) {
-        throw error;
+        console.error("Error writing time to OLED:", error);
+        return { success: false, error: error.message };
     }
 };
 
-const getPomodoroConfig = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroGetValue] });
+const getPomodoroConfig = async (device) => {
+    const result = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroGetValue] });
+    if (!result.success) {
+        throw new Error(result.message || "Failed to get pomodoro config");
+    }
+    return result;
+};
 
-const getPomodoroActiveStatus = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroActiveGetValue] });
+const getPomodoroActiveStatus = async (device) => {
+    const result = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroActiveGetValue] });
+    if (!result.success) {
+        throw new Error(result.message || "Failed to get pomodoro active status");
+    }
+    return result;
+};
 
-const getTrackpadConfigData = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.trackpadGetValue] });
+const getTrackpadConfigData = async (device) => {
+    const result = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.trackpadGetValue] });
+    if (!result.success) {
+        throw new Error(result.message || "Failed to get trackpad config");
+    }
+    return result;
+};
 
 
 // Function for monitoring active windows and switching layers
@@ -658,7 +912,13 @@ const updateAutoLayerSettings = (store) => {
 }
 
 // Function to get GPK RC info/version (now uses customGetValue with deviceGetValue action)
-const getDeviceInitConfig = async (device) => await writeCommand(device, { id: commandId.customGetValue, data: [actionId.deviceGetValue] });
+const getDeviceInitConfig = async (device) => {
+    const result = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.deviceGetValue] });
+    if (!result.success) {
+        throw new Error(result.message || "Failed to get device init config");
+    }
+    return result;
+};
 
 // Module exports
 export const getConnectKbd = (id) => deviceStatusMap[id]

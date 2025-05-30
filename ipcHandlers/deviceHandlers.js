@@ -48,7 +48,15 @@ export const setupDeviceHandlers = () => {
         mainWindow.webContents.send("changeConnectDevice", data)
     });
     
-    ipcMain.handle('getDeviceConfig', async (event, device) => await getDeviceConfig(device));
+    ipcMain.handle('getDeviceConfig', async (event, device) => {
+        try {
+            const result = await getDeviceConfig(device);
+            return { success: true };
+        } catch (error) {
+            console.error(`IPC handler: Error getting device config for ${device.id}:`, error);
+            return { success: false, error: error.message };
+        }
+    });
     ipcMain.handle('getPomodoroConfig', async (event, device) => await getPomodoroConfig(device));
     
     // Device config data handlers
@@ -81,9 +89,16 @@ export const setupDeviceHandlers = () => {
     // Write to OLED
     ipcMain.handle('dateTimeOledWrite', async (event, device, forceWrite) => {
         try {
-            await writeTimeToOled(device, forceWrite);        
+            const result = await writeTimeToOled(device, forceWrite);        
+            
+            if (!result.success) {
+                console.error(`Failed to write to OLED: ${result.error || 'Unknown error'}`);
+                return { success: false, error: result.error || 'Unknown error' };
+            }
+            
             return { success: true };
         } catch (error) {
+            console.error(`Error in dateTimeOledWrite handler:`, error);
             return { success: false, error: error.message };
         }
     });

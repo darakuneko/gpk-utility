@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect } from "react"
 import SettingEdit from "./settingEdit.js"
 import { useStateContext, useDeviceType } from "../context.js"
 import { useLanguage } from "../i18n/LanguageContext.js"
@@ -71,13 +71,14 @@ const getSupportedSettingTabs = (device, t, DeviceType) => {
     return tabDefinitions[device.deviceType] || [tabs.layer];
 };
 
-const SettingsContainer = (() => {
+const SettingsContainer = () => {
     const {state, dispatch} = useStateContext();
     const DeviceType = useDeviceType();
     const { t, locale, changeLocale, isLoading } = useLanguage();
     
     const [activeDeviceId, setActiveDeviceId] = useState(null)
     const [activeSettingTab, setActiveSettingTab] = useState("mouse")
+    const [userSelectedTab, setUserSelectedTab] = useState(false) // Flag to track manual tab selection
     const [menuOpen, setMenuOpen] = useState(false)
     const [languageMenuOpen, setLanguageMenuOpen] = useState(false)
     const [traySettings, setTraySettings] = useState({
@@ -85,7 +86,6 @@ const SettingsContainer = (() => {
         backgroundStart: false
     })
     const [pollingInterval, setPollingInterval] = useState(() => window.api.getStoreSetting('pollingInterval') || 1000)
-    const pollingIntervalRef = useRef(pollingInterval)
     const [isUpdatesNotificationModalOpen, setIsUpdatesNotificationModalOpen] = useState(false)
     const [isVersionModalOpen, setIsVersionModalOpen] = useState(false)
     const [updates, setUpdates] = useState([])
@@ -128,20 +128,45 @@ const SettingsContainer = (() => {
                 // If currently selected device is not connected or no device is selected, select the first device
                 if (!currentDeviceIsConnected) {
                     setActiveDeviceId(connectedDevices[0].id);
-                    setActiveSettingTab(getSupportedSettingTabs(connectedDevices[0], t)[0]?.id || "layer");
+                    setUserSelectedTab(false); // Reset flag when switching devices
+                    const supportedTabs = getSupportedSettingTabs(connectedDevices[0], t, DeviceType);
+                    // For TP devices, prioritize mouse tab if available, otherwise use first tab
+                    const preferredTab = supportedTabs.find(tab => tab.id === "mouse") || supportedTabs[0];
+                    setActiveSettingTab(preferredTab?.id || "layer");
+                }
+                
+                // Check if active device's deviceType has been updated and current tab is not appropriate
+                const activeDevice = connectedDevices.find(d => d.id === activeDeviceId);
+                if (activeDevice && activeDevice.deviceType) {
+                    const supportedTabs = getSupportedSettingTabs(activeDevice, t, DeviceType);
+                    const currentTabSupported = supportedTabs.some(tab => tab.id === activeSettingTab);
+                    
+                    // For TP devices, always prefer mouse tab even if current tab is supported
+                    const isTPDevice = activeDevice.deviceType === 'macropad_tp' || 
+                                     activeDevice.deviceType === 'macropad_tp_btns' || 
+                                     activeDevice.deviceType === 'keyboard_tp';
+                    
+                    // Only auto-switch to mouse tab if user hasn't manually selected a tab
+                    if (!currentTabSupported || (isTPDevice && activeSettingTab === "layer" && supportedTabs.find(tab => tab.id === "mouse") && !userSelectedTab)) {
+                        // Current tab is not supported by this device type, or switch from layer to mouse for TP devices (only if not manually selected)
+                        const preferredTab = supportedTabs.find(tab => tab.id === "mouse") || supportedTabs[0];
+                        setActiveSettingTab(preferredTab?.id || "layer");
+                        if (preferredTab) {
+                            window.api.setActiveTab(activeDevice, preferredTab.id);
+                        }
+                    }
                 }
             } else if (connectedDevices.length === 0 && activeDeviceId) {
                 // Reset activeDeviceId if there are no connected devices
                 setActiveDeviceId(null);
             }
         };
-        
-        checkDevices();
-    }, [connectedDevices, activeDeviceId, state.devices, dispatch, t]);
 
-    // Setup listeners for configUpdated event
+        checkDevices();
+    }, [connectedDevices, activeDeviceId, activeSettingTab, userSelectedTab, t, DeviceType]);
+
+    // Setup API event listeners
     useEffect(() => {
-        
         window.api.on("configUpdated", ({ deviceId, config }) => {
             dispatch({
                 type: "UPDATE_DEVICE_CONFIG",
@@ -272,6 +297,7 @@ const SettingsContainer = (() => {
     // Set active setting tab and notify API
     const handleSettingTabChange = (tabId) => {
         setActiveSettingTab(tabId);
+        setUserSelectedTab(true); // Mark that user has manually selected a tab
         const device = getActiveDevice();
         if (device) {
             window.api.setActiveTab(device, tabId);
@@ -324,11 +350,14 @@ const SettingsContainer = (() => {
                             }`}
                             onClick={() => {
                                 setActiveDeviceId(device.id);
+                                setUserSelectedTab(false); // Reset flag when switching devices
                                 // When switching devices, select the first available settings tab for that device
-                                const supportedTabs = getSupportedSettingTabs(device, t);
+                                const supportedTabs = getSupportedSettingTabs(device, t, DeviceType);
                                 if (supportedTabs.length > 0) {
-                                    setActiveSettingTab(supportedTabs[0].id);
-                                    window.api.setActiveTab(device, supportedTabs[0].id);
+                                    // For TP devices, prioritize mouse tab if available, otherwise use first tab
+                                    const preferredTab = supportedTabs.find(tab => tab.id === "mouse") || supportedTabs[0];
+                                    setActiveSettingTab(preferredTab.id);
+                                    window.api.setActiveTab(device, preferredTab.id);
                                 }
                             }}
                         >
@@ -408,7 +437,6 @@ const SettingsContainer = (() => {
                                             const value = parseInt(e.target.value, 10);
                                             // Immediately update local state
                                             setPollingInterval(value);
-                                            pollingIntervalRef.current = value;
                                             
                                             // Save settings to backend
                                             window.api.saveStoreSetting('pollingInterval', value);
@@ -495,6 +523,6 @@ const SettingsContainer = (() => {
             />
         </div>
     )
-})
+}
 
 export default SettingsContainer

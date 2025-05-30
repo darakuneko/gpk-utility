@@ -204,51 +204,127 @@ const keyboardSendLoop = async () => {
         const kbdList = await command.getKBDList();
         const connectedIds = new Set(kbdList.map(device => device.id));
 
+        // Update existing devices and add new ones
         kbdList.forEach(device => {
-            if (!cachedDeviceRegistry.find(cd => cd.id === device.id)) {
+            const existingDevice = cachedDeviceRegistry.find(cd => cd.id === device.id);
+            if (!existingDevice) {
+                // New device detected - mark as connected
+                device.connected = true;
                 cachedDeviceRegistry.push(device);
-            }
-        });       
 
-        // Filter out disconnected devices from cachedDeviceRegistry
+            } else {
+                // Check if device was previously disconnected and now reconnected
+                if (existingDevice.connected === false) {
+
+                    // Reset device state to force re-initialization
+                    existingDevice.checkDevice = false;
+                    existingDevice.config = null;
+                    // Mark for restart to ensure clean initialization
+                    existingDevice.needsRestart = true;
+                }
+                // Update device properties and mark as connected
+                Object.assign(existingDevice, device);
+                existingDevice.connected = true;
+            }
+        });
+
+        // Mark disconnected devices and collect their IDs
         const disconnectedDeviceIds = [];
         cachedDeviceRegistry.forEach(device => {
-            if (device.connected && !connectedIds.has(device.id)) {
-                ipcRenderer.send('deviceDisconnected', device.id);
-                disconnectedDeviceIds.push(device.id);
+            if (!connectedIds.has(device.id)) {
+                if (device.connected !== false) {
+
+                    ipcRenderer.send('deviceDisconnected', device.id);
+                    disconnectedDeviceIds.push(device.id);
+                    device.connected = false;
+                }
             }
         });
         
-        // Remove disconnected devices from cachedDeviceRegistry
+        // Remove disconnected devices from cachedDeviceRegistry after a delay
+        // This prevents UI flickering during temporary disconnections
         if (disconnectedDeviceIds.length > 0) {
-            cachedDeviceRegistry = cachedDeviceRegistry.filter(device => !disconnectedDeviceIds.includes(device.id));
-            // Notify UI of the updated device list
-            command.changeConnectDevice(cachedDeviceRegistry);
+            setTimeout(() => {
+                cachedDeviceRegistry = cachedDeviceRegistry.filter(device => 
+                    connectedIds.has(device.id) || device.connected !== false
+                );
+                command.changeConnectDevice(cachedDeviceRegistry);
+            }, 2000); // 2 second delay
         }
+        
+        // Always notify UI of current device states
+        command.changeConnectDevice(cachedDeviceRegistry);
         // Process each device
         const results = await Promise.all(cachedDeviceRegistry.map(async (device) => {
             const connectKbd = await command.getConnectKbd(device.id);
+
+            
+            // Handle device that needs restart (typically after reconnection)
+            if (device.needsRestart) {
+
+                try {
+                    await command.stop(device);
+                    await new Promise(resolve => setTimeout(resolve, 800)); // Increased delay before restart (was 500ms)
+
+                    await command.start(device);
+                    await new Promise(resolve => setTimeout(resolve, 1200)); // Increased delay after restart (was 1000ms)
+                    device.needsRestart = false;
+                    // Force config retrieval after restart
+                    device.checkDevice = false;
+                    device.config = null;
+
+                } catch (error) {
+                    console.error(`Failed to restart device ${device.id}:`, error);
+                }
+                return device;
+            }
+            
             // Handle device that needs initialization
             if (!connectKbd) {
                 await command.start(device);
+                // Add delay after starting new device (increased from 500ms)
+                await new Promise(resolve => setTimeout(resolve, 800));
             } else {
                 const existConfingInit = device.config?.init;
                 const existConfingOledEnabled = device.config?.oled_enabled;
                 const existCheckDevice = device.checkDevice
 
+                // Check if we need to get device config (for new devices or after restart)
                 if(!existConfingOledEnabled && !existConfingInit && !existCheckDevice) {
                     device.checkDevice = true;
-                    await command.getDeviceConfig(device);
+                    try {
+                        // Add a longer delay to ensure device is ready for communication
+                        await new Promise(resolve => setTimeout(resolve, 800)); // Increased from 500ms to 800ms
+
+                        await command.getDeviceConfig(device);
+
+                    } catch (error) {
+                        console.error(`Failed to get device config for ${device.id}:`, error);
+                        // Reset device state if config retrieval fails
+                        device.checkDevice = false;
+                        device.config = null;
+                        
+                        // Mark device for restart on next iteration
+                        device.needsRestart = true;
+                    }
                 }
                 // Handle connected device with configuration
                 if (device.config) {
                     const oled_enabled = device.config?.oled_enabled === 1;
                     const pomodoro_timer_active = device.config?.pomodoro?.timer_active === 1;
                     if (oled_enabled) {
-                        await command.dateTimeOledWrite(device);
+                        try {
+                            await command.dateTimeOledWrite(device);
+                        } catch (error) {
+                            console.error(`Failed to write OLED for device ${device.id}:`, error);
+                        }
                     }
                     if (pomodoro_timer_active) {
-                        await command.getPomodoroActiveStatus(device);
+                        try {
+                            await command.getPomodoroActiveStatus(device);
+                        } catch (error) {
+                            console.error(`Failed to get pomodoro status for device ${device.id}:`, error);
+                        }
                     }
                 }
             }
