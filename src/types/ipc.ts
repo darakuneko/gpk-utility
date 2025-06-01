@@ -36,3 +36,26 @@ export interface NotificationData {
     id?: string;
     [key: string]: any;
 }
+
+export interface NotificationQueryPayload {
+    deviceId: string;
+    type: string;
+}
+
+export interface PomodoroPhaseData {
+    deviceId: string;
+    phase: number;
+    minutes: number;
+}
+
+export interface DeviceConnectionPomodoroData {
+    deviceId: string;
+    pomodoroConfig: any;
+    phaseChanged: boolean;
+}
+
+export interface IpcResponse {
+    success: boolean;
+    error?: string;
+    data?: any;
+}

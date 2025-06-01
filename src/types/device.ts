@@ -26,12 +26,15 @@ export interface Device extends DeviceWithId {
     checkDevice?: boolean;
     needsRestart?: boolean;
     config?: DeviceConfig | null;
+    manufacturer?: string;  // Override to make optional
+    product?: string;       // Override to make optional
 }
 
 export interface CommandResult {
     success: boolean;
     data?: any;
     error?: string;
+    skipped?: boolean;
 }
 
 export interface PomodoroConfig {
@@ -46,6 +49,11 @@ export interface PomodoroConfig {
     break_time?: number;
     long_break_time?: number;
     work_interval_before_long_break?: number;
+    work_interval?: number;
+    work_hf_pattern?: number;
+    break_hf_pattern?: number;
+    notify_haptic_enable?: number;
+    pomodoro_cycle?: number;
     continuous_mode?: number;
 }
 
@@ -77,6 +85,13 @@ export interface TrackpadConfig {
     layerMovingHaptic?: number;
     auto_layer_enabled?: number;
     auto_layer_settings?: LayerSetting[];
+    hf_waveform_number?: number;
+    can_hf_for_layer?: number;
+    can_drag?: number;
+    scroll_term?: number;
+    default_speed?: number;
+    drag_term?: number;
+    can_trackpad_layer?: number;
 }
 
 export interface DeviceConfig {
@@ -103,6 +118,7 @@ export interface LayerSetting {
 export interface ActiveWindowResult {
     title: string;
     executableName: string;
+    application: string;
 }
 
 export interface AutoLayerSettings {

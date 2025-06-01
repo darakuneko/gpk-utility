@@ -8,7 +8,7 @@ export const injectPomodoroDependencies = (writeCommand: WriteCommandFunction): 
     writeCommandFunction = writeCommand;
 };
 
-export function receivePomodoroConfig(buffer: number[]): PomodoroConfig {
+export function receivePomodoroConfig(buffer: number[]): {pomodoro: PomodoroConfig} {
     return {
         pomodoro: {
             work_time: buffer[0],

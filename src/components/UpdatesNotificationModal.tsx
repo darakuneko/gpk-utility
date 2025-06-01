@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../i18n/LanguageContext.jsx';
+import { useLanguage } from '../i18n/LanguageContext';
 import { BaseModal } from './BaseModalComponents';
 import type { UpdatesNotificationModalProps } from '../types/react';
 

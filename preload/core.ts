@@ -2,7 +2,7 @@ import { ipcRenderer } from 'electron';
 import type { Device, StoreSettings, CommandResult } from './types';
 
 // Global state variables
-export const listeners = new Map<Function, Function>();
+export const listeners = new Map<(...args: any[]) => void, (...args: any[]) => void>();
 export let cachedDeviceRegistry: Device[] = [];
 export let keyboardPollingInterval: NodeJS.Timeout | null = null;
 export let windowMonitoringInterval: NodeJS.Timeout | null = null;
@@ -64,7 +64,7 @@ export const startKeyboardPolling = (keyboardSendLoop: () => Promise<void>): voi
 };
 
 // Function to start window monitoring at faster intervals
-export const startWindowMonitoring = (startWindowMonitoringCommand: () => Promise<void>): void => {
+export const startWindowMonitoring = (startWindowMonitoringCommand: () => Promise<any>): void => {
     if (windowMonitoringInterval) {
         clearInterval(windowMonitoringInterval);
     }

@@ -1,8 +1,8 @@
 // Type definitions for device and configuration structures
 export interface Device {
     id: string;
-    manufacturer: string;
-    product: string;
+    manufacturer?: string;
+    product?: string;
     productId: number;
     vendorId: number;
     path?: string;

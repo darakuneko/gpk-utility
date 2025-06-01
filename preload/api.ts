@@ -32,8 +32,9 @@ export const exposeAPI = (): void => {
         
         // Method to listen for config save completion events
         onConfigSaveComplete: (callback: (detail: ConfigSaveCompleteDetail) => void): void => {
-            window.addEventListener('configSaveComplete', (event: CustomEvent) => {
-                callback(event.detail);
+            window.addEventListener('configSaveComplete', (event: Event) => {
+                const customEvent = event as CustomEvent<ConfigSaveCompleteDetail>;
+                callback(customEvent.detail);
             });
         },
         
@@ -281,12 +282,12 @@ export const exposeAPI = (): void => {
         },
         
         // Event listeners
-        on: (channel: string, func: Function): void => {
+        on: (channel: string, func: (...args: any[]) => void): void => {
             const listener = (event: any, ...args: any[]) => func(...args);
             listeners.set(func, listener);
             ipcRenderer.on(channel, listener);
         },
-        off: (channel: string, func: Function): void => {
+        off: (channel: string, func: (...args: any[]) => void): void => {
             const listener = listeners.get(func);
             if (listener) {
                 ipcRenderer.removeListener(channel, listener);

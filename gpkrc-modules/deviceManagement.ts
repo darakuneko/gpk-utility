@@ -14,7 +14,7 @@ import { stopDeviceHealthMonitoring } from './deviceHealth';
 import type { 
     HIDDevice, 
     DeviceWithId, 
-    Device,
+    Device as GPKDevice,
     DeviceConfig, 
     DeviceStatus,
     CommandResult,
@@ -26,6 +26,15 @@ interface Command {
     id: number;
     data?: number[];
 }
+
+// Type conversion utilities
+const hidDeviceToGPKDevice = (hidDevice: HID.Device, id: string): GPKDevice => ({
+    ...hidDevice,
+    id,
+    manufacturer: hidDevice.manufacturer || '',
+    product: hidDevice.product || '',
+    connected: true
+});
 
 interface WriteCommandResult {
     success: boolean;
@@ -84,7 +93,7 @@ const getKBDList = (): DeviceWithId[] => HID.devices().filter(d =>
         d.usagePage === DEFAULT_USAGE.usagePage
     ).sort((a, b) => `${a.manufacturer}${a.product}` > `${b.manufacturer}${b.product}` ? 1 : -1)
     .map(device => {
-        const id = encodeDeviceId(device)        
+        const id = encodeDeviceId(device as any)        
         if (deviceStatusMap[id]) {
             return {...device, id: id, deviceType: deviceStatusMap[id]!.deviceType, gpkRCVersion: deviceStatusMap[id]!.gpkRCVersion}
         } else {
@@ -94,13 +103,13 @@ const getKBDList = (): DeviceWithId[] => HID.devices().filter(d =>
 
 // Function to set the active tab
 const setActiveTab = (device: HIDDevice, tabName: string): void => {
-    const id = encodeDeviceId(device)
+    const id = encodeDeviceId(device as any)
     activeTabPerDevice[id] = tabName
 }
 
 // Function to get the active tab
 const getActiveTab = (device: HIDDevice): string | undefined => {
-    const id = encodeDeviceId(device)
+    const id = encodeDeviceId(device as any)
     return activeTabPerDevice[id]
 }
 
@@ -111,7 +120,7 @@ const setMainWindow = (window: ElectronWindow): void => {
 
 const addKbd = async (device: HIDDevice): Promise<string> => { 
     const d = await getKBD(device);
-    const id = encodeDeviceId(device);
+    const id = encodeDeviceId(device as any);
     
     if (!d || !d.path) {
         console.error(`Device not found or path not available for device: ${id}`);
@@ -165,7 +174,7 @@ const start = async (device: HIDDevice): Promise<string> => {
     }
     
     try {
-        const id = encodeDeviceId(device);
+        const id = encodeDeviceId(device as any);
 
         
         // Reset device status first
@@ -323,7 +332,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                             } else if (receivedActionId === actionId.trackpadGetValue) {
                                 // Note: receiveTrackpadSpecificConfig function will be imported from trackpadConfig.js
                                 // Use imported receiveTrackpadSpecificConfig function
-                                deviceStatusMap[id]!.config.trackpad = receiveTrackpadSpecificConfig(actualData);
+                                deviceStatusMap[id]!.config.trackpad = receiveTrackpadSpecificConfig(Array.from(actualData));
 
                                 (global as any).mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
@@ -335,7 +344,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                             } else if (receivedActionId === actionId.pomodoroGetValue) {
                                 // Note: receivePomodoroConfig function will be imported from pomodoroConfig.js
                                 // Use imported receivePomodoroConfig function
-                                const receivedPomoConfig = receivePomodoroConfig(actualData); // Parses only pomodoro settings
+                                const receivedPomoConfig = receivePomodoroConfig(Array.from(actualData)); // Parses only pomodoro settings
                             
                                 const oldPhase = deviceStatusMap[id]!.config.pomodoro.phase;
                                 const newPhase = receivedPomoConfig.pomodoro.phase;
@@ -362,7 +371,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                             } else if (receivedActionId === actionId.pomodoroActiveGetValue) {
                                 // Note: receivePomodoroActiveStatus function will be imported from pomodoroConfig.js
                                 // Use imported receivePomodoroActiveStatus function
-                                const pomodoroActiveUpdate = receivePomodoroActiveStatus(actualData);
+                                const pomodoroActiveUpdate = receivePomodoroActiveStatus(Array.from(actualData));
                                 const oldPhase = deviceStatusMap[id]!.config.pomodoro.phase;
                                 const oldTimerActive = deviceStatusMap[id]!.config.pomodoro.timer_active;
                                 
@@ -445,7 +454,7 @@ const start = async (device: HIDDevice): Promise<string> => {
 }
 
 const stop = async (device: HIDDevice): Promise<void> => {
-    const id = encodeDeviceId(device);
+    const id = encodeDeviceId(device as any);
 
     if (hidDeviceInstances[id]) {
         try {
@@ -504,7 +513,7 @@ const close = async (): Promise<void> => {
 }
 
 const writeCommand = async (device: HIDDevice, command: number[], retryCount: number = 0): Promise<CommandResult> => {
-    const id = encodeDeviceId(device);
+    const id = encodeDeviceId(device as any);
     const maxRetries = 2; // Allow 2 retries for communication failures
     
     try {

@@ -44,7 +44,7 @@ const translate = (key: string, params: Record<string, any> = {}): string => {
     }
     
     // Replace parameters
-    return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? params[param] : match);
+    return text.replace(/\{\{(\w+)\}\}/g, (match: string, param: string) => params[param] !== undefined ? params[param] : match);
 };
 
 export const setupStoreHandlers = (): void => {
