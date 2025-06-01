@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import { useStateContext } from "../context.js";
+import { useStateContext } from "../context.jsx";
 import { fullHapticOptions } from "../data/hapticOptions.js";
 // Import setting components for each tab
-import MouseSettings from "./settings/mouseSettings.js";
-import ScrollSettings from "./settings/scrollSettings.js";
-import DragDropSettings from "./settings/dragDropSettings.js";
-import TimerSettings from "./settings/timerSettings.js";
-import LayerSettings from "./settings/layerSettings.js";
-import OLEDSettings from "./settings/OLEDSettings.js";
-import GestureSettings from "./settings/gestureSettings.js";
-import HapticSettings from "./settings/hapticSettings.js";
+import MouseSettings from "./settings/mouseSettings.jsx";
+import ScrollSettings from "./settings/scrollSettings.jsx";
+import DragDropSettings from "./settings/dragDropSettings.jsx";
+import TimerSettings from "./settings/timerSettings.jsx";
+import LayerSettings from "./settings/layerSettings.jsx";
+import OLEDSettings from "./settings/OLEDSettings.jsx";
+import GestureSettings from "./settings/gestureSettings.jsx";
+import HapticSettings from "./settings/hapticSettings.jsx";
 
 const { api } = window;
 

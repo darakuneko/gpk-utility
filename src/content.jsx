@@ -1,7 +1,7 @@
 import React, {useEffect, useState, useCallback, useRef} from 'react'
-import SettingsContainer from "./renderer/SettingsContainer.js"
-import {useStateContext} from "./context.js"
-import { useLanguage } from "./i18n/LanguageContext.js"
+import SettingsContainer from "./renderer/SettingsContainer.jsx"
+import {useStateContext} from "./context.jsx"
+import { useLanguage } from "./i18n/LanguageContext.jsx"
 
 const api = window.api;
 const hasApi = !!api;

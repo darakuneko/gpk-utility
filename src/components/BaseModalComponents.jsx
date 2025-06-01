@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../i18n/LanguageContext.js';
+import { useLanguage } from '../i18n/LanguageContext.jsx';
 
 /**
  * Base modal component

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { CustomSlider, CustomSelect, CustomSwitch } from "../../components/CustomComponents.js";
+import { CustomSlider, CustomSelect, CustomSwitch } from "../../components/CustomComponents.jsx";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
-import { useLanguage } from "../../i18n/LanguageContext.js";
+import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 // Pomodoro active state display component
 const PomodoroActiveDisplay = ({ device, formatTime, desktopNotificationsEnabled }) => {

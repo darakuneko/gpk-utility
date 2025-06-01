@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
-import { CustomSwitch } from "../../components/CustomComponents.js";
-import { useLanguage } from "../../i18n/LanguageContext.js";
+import { CustomSwitch } from "../../components/CustomComponents.jsx";
+import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 const OLEDSettings = memo(({ device, handleChange }) => {
   const [oledEnabled, setOledEnabled] = useState(device.config && device.config.oled_enabled === 1);

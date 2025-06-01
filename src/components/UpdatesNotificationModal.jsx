@@ -1,5 +1,5 @@
-import { useLanguage } from '../i18n/LanguageContext.js';
-import { BaseModal } from './BaseModalComponents.js';
+import { useLanguage } from '../i18n/LanguageContext.jsx';
+import { BaseModal } from './BaseModalComponents.jsx';
 
 const UpdatesNotificationModal = ({ isOpen, onClose, updates }) => {
   const { t } = useLanguage();

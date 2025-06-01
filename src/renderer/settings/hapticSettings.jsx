@@ -1,6 +1,6 @@
 import React from "react";
-import { CustomSwitch, CustomSelect } from "../../components/CustomComponents.js";
-import { useLanguage } from "../../i18n/LanguageContext.js";
+import { CustomSwitch, CustomSelect } from "../../components/CustomComponents.jsx";
+import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
 
 const HapticSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {

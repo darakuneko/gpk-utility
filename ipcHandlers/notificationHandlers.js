@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 import { encodeDeviceId, getKBDList } from '../gpkrc.js';
+import enTranslations from '../src/i18n/locales/en.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,25 +22,22 @@ export const setMainWindow = (window) => {
 // Translation utility function
 const translate = (key, params = {}) => {
     const locale = store.get('locale') || 'en';
-    // Import translation utilities
-    import('../src/i18n/locales/en.js').then(enTranslations => {
-        let translations = enTranslations.default;
-        
-        // Get nested value from translations using key path
-        const getValue = (obj, path) => {
-            return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
-        };
-        
-        let text = getValue(translations, key);
-        
-        // If still undefined, return key
-        if (text === undefined) {
-            return key;
-        }
-        
-        // Replace parameters
-        return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? params[param] : match);
-    });
+    let translations = enTranslations;
+    
+    // Get nested value from translations using key path
+    const getValue = (obj, path) => {
+        return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
+    };
+    
+    let text = getValue(translations, key);
+    
+    // If still undefined, return key
+    if (text === undefined) {
+        return key;
+    }
+    
+    // Replace parameters
+    return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? params[param] : match);
 };
 
 export const setupNotificationHandlers = () => {

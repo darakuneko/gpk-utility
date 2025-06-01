@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useStateContext, useDeviceType } from "../../context.js";
+import { useStateContext, useDeviceType } from "../../context.jsx";
 import { 
   CustomSwitch,
   CustomSelect
-} from "../../components/CustomComponents.js";
-import { useLanguage } from "../../i18n/LanguageContext.js";
+} from "../../components/CustomComponents.jsx";
+import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 const { api } = window;
 

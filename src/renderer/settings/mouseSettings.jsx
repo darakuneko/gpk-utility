@@ -1,6 +1,6 @@
 import React from "react";
-import { CustomSlider } from "../../components/CustomComponents.js";
-import { useLanguage } from "../../i18n/LanguageContext.js";
+import { CustomSlider } from "../../components/CustomComponents.jsx";
+import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 const MouseSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
   const { t } = useLanguage();

@@ -1,6 +1,6 @@
-import { useLanguage } from '../i18n/LanguageContext.js';
+import { useLanguage } from '../i18n/LanguageContext.jsx';
 import { useState, useEffect } from 'react';
-import { BaseModal } from './BaseModalComponents.js';
+import { BaseModal } from './BaseModalComponents.jsx';
 
 const VersionModal = ({ isOpen, onClose }) => {
   const { t } = useLanguage();

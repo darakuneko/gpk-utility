@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react"
 import { createRoot } from 'react-dom/client'
-import Content from "./content.js"
-import { AppProvider } from "./context.js"
-import { LanguageProvider } from "./i18n/LanguageContext.js"
-import UpdatesNotificationModal from "./components/UpdatesNotificationModal.js"
+import Content from "./content.jsx"
+import { AppProvider } from "./context.jsx"
+import { LanguageProvider } from "./i18n/LanguageContext.jsx"
+import UpdatesNotificationModal from "./components/UpdatesNotificationModal.jsx"
 import "./styles.css"
 
 // Set initial background color immediately
@@ -13,8 +13,8 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
     document.documentElement.classList.add('dark')
 }
 
-// Initialize API check
-const {api} = window
+// Initialize API check - wait for preload script
+const api = window.api
 
 const App = () => {
     const [isUpdatesNotificationModalOpen, setIsUpdatesNotificationModalOpen] = useState(false)

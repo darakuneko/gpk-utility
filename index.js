@@ -142,7 +142,7 @@ const createTrayMenuTemplate = () => {
 }
 
 const createTray = () => {
-    const iconPath = path.join(__dirname, 'icons', '16x16.png');
+    const iconPath = path.join(__dirname, '..', 'icons', '16x16.png');
     const icon = nativeImage.createFromPath(iconPath);
     tray = new Tray(icon);
     
@@ -178,15 +178,17 @@ const createWindow = () => {
         y: windowBounds.y,
         minWidth: minWidth,
         minHeight: minHeight,
-        icon: `${__dirname}/icons/256x256.png`,
+        icon: `${__dirname}/../icons/256x256.png`,
         webPreferences: {
-            preload: __dirname + '/preload.cjs',
+            preload: path.join(__dirname, 'preload.js'),
             backgroundThrottling: false,
+            nodeIntegration: false,
+            contextIsolation: true,
         },
         show: !store.get('backgroundStart'),
     })
 
-    mainWindow.loadURL(`file://${__dirname}/public/index.html`)
+    mainWindow.loadURL(`file://${__dirname}/../dist/public/index.html`)
     mainWindow.setMenu(null)
 
     // Pass the main window reference to modules

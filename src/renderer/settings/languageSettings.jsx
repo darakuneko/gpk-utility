@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../../i18n/LanguageContext.js';
+import { useLanguage } from '../../i18n/LanguageContext.jsx';
 
 export default function LanguageSettings() {
   const { locale, changeLocale, t } = useLanguage();
