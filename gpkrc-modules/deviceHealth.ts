@@ -1,9 +1,26 @@
 import { DeviceType } from './deviceTypes';
 import { encodeDeviceId, parseDeviceId } from './communication';
+import type { Device, DeviceStatus, CommandResult } from '../src/types/device';
 
 // Device health monitoring variables
 let deviceHealthMonitor: NodeJS.Timeout | null = null;
 let deviceHealthCheckInterval = 10000; // Check every 10 seconds
+
+// Dependency injection interfaces
+interface DeviceHealthDependencies {
+    deviceStatusMap: Record<string, DeviceStatus>;
+    hidDeviceInstances: Record<string, any>;
+    getKBD: (deviceInfo: any) => Promise<any>;
+    addKbd: (deviceInfo: any) => Promise<string>;
+    mainWindow?: any;
+}
+
+let dependencies: DeviceHealthDependencies | null = null;
+
+// Function to inject dependencies
+export const injectDeviceHealthDependencies = (deps: DeviceHealthDependencies): void => {
+    dependencies = deps;
+};
 
 // Function to start device health monitoring
 export const startDeviceHealthMonitoring = (): void => {
@@ -26,9 +43,12 @@ export const stopDeviceHealthMonitoring = (): void => {
 
 // Function to check device health and attempt recovery
 export const checkDeviceHealth = async (): Promise<void> => {
-    // Note: This function needs access to deviceStatusMap, hidDeviceInstances, getKBD, and addKbd
-    // These will be injected via dependency injection pattern when this module is used
-    const { deviceStatusMap, hidDeviceInstances, getKBD, addKbd } = await import('../gpkrc');
+    if (!dependencies) {
+        console.warn('Device health dependencies not injected');
+        return;
+    }
+    
+    const { deviceStatusMap, hidDeviceInstances, getKBD, addKbd, mainWindow } = dependencies;
     
     try {
         const deviceIds = Object.keys(deviceStatusMap);
@@ -57,8 +77,8 @@ export const checkDeviceHealth = async (): Promise<void> => {
                 hidDeviceInstances[deviceId] = null;
                 
                 // Notify UI about disconnection
-                if ((global as any).mainWindow) {
-                    (global as any).mainWindow.webContents.send("deviceConnectionStateChanged", {
+                if (mainWindow) {
+                    mainWindow.webContents.send("deviceConnectionStateChanged", {
                         deviceId: deviceId,
                         connected: false,
                         gpkRCVersion: deviceStatus.gpkRCVersion || 0,
@@ -87,8 +107,8 @@ export const checkDeviceHealth = async (): Promise<void> => {
                             deviceStatus.connected = false;
                             
                             // Notify UI about disconnection
-                            if ((global as any).mainWindow) {
-                                (global as any).mainWindow.webContents.send("deviceConnectionStateChanged", {
+                            if (mainWindow) {
+                                mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: deviceId,
                                     connected: false,
                                     gpkRCVersion: deviceStatus.gpkRCVersion || 0,

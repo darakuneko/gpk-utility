@@ -80,6 +80,12 @@ const config: UserConfig = defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'public/index.html')
+      },
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          utils: ['dayjs']
+        }
       }
     }
   },

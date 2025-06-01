@@ -1,53 +1,26 @@
 import HID from 'node-hid'
 import { DeviceType, stringToDeviceType } from './deviceTypes';
-import { commandId, actionId, commandToBytes, encodeDeviceId, parseDeviceId, DEFAULT_USAGE } from './communication';
-import { startDeviceHealthMonitoring, isDeviceHealthMonitoringActive } from './deviceHealth';
-
-// Type definitions
-interface HIDDevice {
-    vendorId: number;
-    productId: number;
-    path?: string;
-    serialNumber?: string;
-    manufacturer?: string;
-    product?: string;
-    release?: number;
-    interface?: number;
-    usagePage?: number;
-    usage?: number;
-}
-
-interface DeviceWithId extends HIDDevice {
-    id: string;
-    deviceType?: DeviceType;
-    gpkRCVersion?: number;
-}
-
-interface PomodoroConfig {
-    phase?: number;
-    timer_active?: boolean;
-    notifications_enabled?: boolean;
-    minutes?: number;
-    seconds?: number;
-    current_work_Interval?: number;
-    current_pomodoro_cycle?: number;
-}
-
-interface DeviceConfig {
-    init?: number;
-    pomodoro: PomodoroConfig;
-    trackpad: Record<string, any>;
-    oled_enabled?: number;
-}
-
-interface DeviceStatus {
-    config: DeviceConfig;
-    deviceType: DeviceType;
-    gpkRCVersion: number;
-    connected: boolean;
-    initializing?: boolean;
-    init?: number;
-}
+import { commandId, actionId, commandToBytes, encodeDeviceId, parseDeviceId, DEFAULT_USAGE, PACKET_PADDING } from './communication';
+import { 
+    startDeviceHealthMonitoring, 
+    isDeviceHealthMonitoringActive,
+    injectDeviceHealthDependencies
+} from './deviceHealth';
+import { injectOledDependencies, writeTimeToOled } from './oledDisplay';
+import { injectPomodoroDependencies, receivePomodoroConfig, receivePomodoroActiveStatus } from './pomodoroConfig';
+import { injectTrackpadDependencies, receiveTrackpadSpecificConfig } from './trackpadConfig';
+import { injectWindowMonitoringDependencies, cleanupDeviceLayerTracking } from './windowMonitoring';
+import { stopDeviceHealthMonitoring } from './deviceHealth';
+import type { 
+    HIDDevice, 
+    DeviceWithId, 
+    Device,
+    DeviceConfig, 
+    DeviceStatus,
+    CommandResult,
+    PomodoroConfig,
+    WriteCommandFunction
+} from '../src/types/device';
 
 interface Command {
     id: number;
@@ -169,7 +142,9 @@ const addKbd = async (device: HIDDevice): Promise<string> => {
         setTimeout(() => {
             try {
                 if (hidDeviceInstances[id]) {
-                    hidDeviceInstances[id]!.write(commandToBytes({id: commandId.customGetValue, data: [actionId.deviceGetValue]}));
+                    const bytes = [0, commandId.gpkRCPrefix, commandId.customGetValue, actionId.deviceGetValue];
+                    const padding = Array(PACKET_PADDING - (bytes.length % PACKET_PADDING)).fill(0);
+                    hidDeviceInstances[id]!.write(bytes.concat(padding));
                 }
             } catch (writeError) {
                 console.error(`Failed to send initial command to ${id}:`, writeError);
@@ -326,7 +301,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                                     if (oledSettings && oledSettings[id] !== undefined) {
                                         if(oledSettings[id].enabled) {
                                             // Note: writeTimeToOled function will be imported from oledDisplay.js
-                                            const { writeTimeToOled } = await import('./oledDisplay');
+                                            // Use imported writeTimeToOled function
                                             writeTimeToOled(device); 
                                         }
                                         deviceStatusMap[id]!.config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
@@ -347,7 +322,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                                 });
                             } else if (receivedActionId === actionId.trackpadGetValue) {
                                 // Note: receiveTrackpadSpecificConfig function will be imported from trackpadConfig.js
-                                const { receiveTrackpadSpecificConfig } = await import('./trackpadConfig');
+                                // Use imported receiveTrackpadSpecificConfig function
                                 deviceStatusMap[id]!.config.trackpad = receiveTrackpadSpecificConfig(actualData);
 
                                 (global as any).mainWindow.webContents.send("deviceConnectionStateChanged", {
@@ -359,7 +334,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                                 });
                             } else if (receivedActionId === actionId.pomodoroGetValue) {
                                 // Note: receivePomodoroConfig function will be imported from pomodoroConfig.js
-                                const { receivePomodoroConfig } = await import('./pomodoroConfig');
+                                // Use imported receivePomodoroConfig function
                                 const receivedPomoConfig = receivePomodoroConfig(actualData); // Parses only pomodoro settings
                             
                                 const oldPhase = deviceStatusMap[id]!.config.pomodoro.phase;
@@ -386,7 +361,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                                 });
                             } else if (receivedActionId === actionId.pomodoroActiveGetValue) {
                                 // Note: receivePomodoroActiveStatus function will be imported from pomodoroConfig.js
-                                const { receivePomodoroActiveStatus } = await import('./pomodoroConfig');
+                                // Use imported receivePomodoroActiveStatus function
                                 const pomodoroActiveUpdate = receivePomodoroActiveStatus(actualData);
                                 const oldPhase = deviceStatusMap[id]!.config.pomodoro.phase;
                                 const oldTimerActive = deviceStatusMap[id]!.config.pomodoro.timer_active;
@@ -497,7 +472,7 @@ const stop = async (device: HIDDevice): Promise<void> => {
     }
     
     // Clean up layer tracking
-    const { cleanupDeviceLayerTracking } = await import('./windowMonitoring');
+    // Use imported cleanupDeviceLayerTracking function
     cleanupDeviceLayerTracking(id);
 }
 
@@ -516,7 +491,7 @@ const _close = (id: string): boolean => {
 
 const close = async (): Promise<void> => {
     // Note: stopDeviceHealthMonitoring will be called from deviceHealth.js
-    const { stopDeviceHealthMonitoring } = await import('./deviceHealth');
+    // Use imported stopDeviceHealthMonitoring function
     stopDeviceHealthMonitoring();
     
     if (!hidDeviceInstances) {
@@ -528,7 +503,7 @@ const close = async (): Promise<void> => {
     });
 }
 
-const writeCommand = async (device: HIDDevice, command: Command, retryCount: number = 0): Promise<WriteCommandResult> => {
+const writeCommand = async (device: HIDDevice, command: number[], retryCount: number = 0): Promise<CommandResult> => {
     const id = encodeDeviceId(device);
     const maxRetries = 2; // Allow 2 retries for communication failures
     
@@ -536,13 +511,13 @@ const writeCommand = async (device: HIDDevice, command: Command, retryCount: num
         // Check if device is connected and HID instance exists
         if (!hidDeviceInstances[id]) {
             console.error(`Device ${id} writeCommand failed: HID instance not found`);
-            return { success: false, message: "Device not connected - HID instance not found" };
+            return { success: false, error: "Device not connected - HID instance not found" };
         }
         
         // Check if device status indicates it's connected
         if (deviceStatusMap[id] && deviceStatusMap[id]!.connected === false) {
             console.error(`Device ${id} writeCommand failed: marked as disconnected in status map`);
-            return { success: false, message: "Device marked as disconnected" };
+            return { success: false, error: "Device marked as disconnected" };
         }
         
         // Additional check: verify HID instance hasn't been closed
@@ -554,10 +529,17 @@ const writeCommand = async (device: HIDDevice, command: Command, retryCount: num
                 deviceStatusMap[id]!.connected = false;
             }
             
-            return { success: false, message: "Device connection lost - HID instance closed" };
+            return { success: false, error: "Device connection lost - HID instance closed" };
         }
         
-        const bytes = commandToBytes(command);
+        // Ensure all array elements are integers
+        const validatedCommand = command.map(val => Math.floor(Number(val)) || 0);
+        
+        // Add padding if needed
+        const unpadded = [0, commandId.gpkRCPrefix, ...validatedCommand];
+        const padding = Array(PACKET_PADDING - (unpadded.length % PACKET_PADDING)).fill(0);
+        const bytes = unpadded.concat(padding);
+        
         await hidDeviceInstances[id]!.write(bytes);    
 
         return { success: true };
@@ -610,7 +592,7 @@ const writeCommand = async (device: HIDDevice, command: Command, retryCount: num
                 }
             } catch (recreateError) {
                 console.error(`Failed to recreate HID instance for ${id}:`, recreateError);
-                return { success: false, message: `Write error after recovery attempt: ${err.message}` };
+                return { success: false, error: `Write error after recovery attempt: ${err.message}` };
             }
         } else {
             // Clean up invalid HID instance for non-recoverable errors or after max retries
@@ -625,7 +607,7 @@ const writeCommand = async (device: HIDDevice, command: Command, retryCount: num
             }
         }
         
-        return { success: false, message: `Write error: ${err.message}` };
+        return { success: false, error: `Write error: ${err.message}` };
     }
 }
 
@@ -638,12 +620,42 @@ const updateAutoLayerSettings = (store: any): boolean => {
     return true;
 }
 
+// Initialize dependency injection
+export const initializeDependencies = (): void => {
+    // Inject dependencies for device health monitoring
+    injectDeviceHealthDependencies({
+        deviceStatusMap,
+        hidDeviceInstances,
+        getKBD,
+        addKbd,
+        mainWindow
+    });
+
+    // Inject dependencies for OLED display
+    injectOledDependencies(writeCommand);
+
+    // Inject dependencies for pomodoro config
+    injectPomodoroDependencies(writeCommand);
+
+    // Inject dependencies for trackpad config
+    injectTrackpadDependencies(writeCommand);
+
+    // Inject dependencies for window monitoring
+    injectWindowMonitoringDependencies({
+        deviceStatusMap,
+        settingsStore,
+        writeCommand,
+        mainWindow
+    });
+};
+
 export { 
     deviceStatusMap, 
     hidDeviceInstances, 
     activeTabPerDevice, 
     isEditingPomodoroPerDevice,
     settingsStore,
+    mainWindow,
     getKBD, 
     getKBDList, 
     setActiveTab, 

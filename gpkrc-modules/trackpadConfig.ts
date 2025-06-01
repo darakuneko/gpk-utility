@@ -1,43 +1,12 @@
 import { commandId, actionId } from './communication';
+import type { Device, CommandResult, WriteCommandFunction, TrackpadConfig } from '../src/types/device';
 
-// Types
-interface Device {
-    path: string;
-    vendorId: number;
-    productId: number;
-    manufacturer?: string;
-    product?: string;
-    serialNumber?: string;
-    usage?: number;
-    usagePage?: number;
-}
+// Dependency injection
+let writeCommandFunction: WriteCommandFunction | null = null;
 
-interface TrackpadConfig {
-    hf_waveform_number: number;
-    can_hf_for_layer: number;
-    can_drag: number;
-    scroll_term: number;
-    drag_term: number;
-    can_trackpad_layer: number;
-    can_reverse_scrolling_direction: number;
-    drag_strength_mode: number;
-    drag_strength: number;
-    default_speed: number;
-    scroll_step: number;
-    can_short_scroll: number;
-    tap_term: number;
-    swipe_term: number;
-    pinch_term: number;
-    gesture_term: number;
-    short_scroll_term: number;
-    pinch_distance: number;
-}
-
-interface CommandResult {
-    success: boolean;
-    message?: string;
-    error?: string;
-}
+export const injectTrackpadDependencies = (writeCommand: WriteCommandFunction): void => {
+    writeCommandFunction = writeCommand;
+};
 
 export function joinScrollTerm(a: number, b: number): number {
     const lower6Bits = a & 0b00111111;
@@ -81,13 +50,14 @@ export function receiveTrackpadSpecificConfig(buffer: number[]): TrackpadConfig 
 }
 
 export const saveTrackpadConfig = async (device: Device, trackpadDataBytes: number[]): Promise<CommandResult> => {
-    // Note: writeCommand function will be imported from deviceManagement.js
-    const { writeCommand } = await import('./deviceManagement.js');
+    if (!writeCommandFunction) {
+        throw new Error("WriteCommand function not injected in trackpadConfig");
+    }
     
     try {
-        const result = await writeCommand(device, { id: commandId.customSetValue, data: [actionId.trackpadSetValue, ...trackpadDataBytes] });
+        const result = await writeCommandFunction(device, [commandId.customSetValue, actionId.trackpadSetValue, ...trackpadDataBytes]);
         if (!result.success) {
-            throw new Error(result.message || "Failed to save trackpad config");
+            throw new Error(result.error || "Failed to save trackpad config");
         }
         await new Promise(resolve => setTimeout(resolve, 500)); // Add 500ms delay
         return result;
@@ -98,12 +68,13 @@ export const saveTrackpadConfig = async (device: Device, trackpadDataBytes: numb
 };
 
 export const getTrackpadConfigData = async (device: Device): Promise<CommandResult> => {
-    // Note: writeCommand function will be imported from deviceManagement.js
-    const { writeCommand } = await import('./deviceManagement.js');
+    if (!writeCommandFunction) {
+        throw new Error("WriteCommand function not injected in trackpadConfig");
+    }
     
-    const result = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.trackpadGetValue] });
+    const result = await writeCommandFunction(device, [commandId.customGetValue, actionId.trackpadGetValue]);
     if (!result.success) {
-        throw new Error(result.message || "Failed to get trackpad config");
+        throw new Error(result.error || "Failed to get trackpad config");
     }
     return result;
 };

@@ -1,47 +1,12 @@
 import { commandId, actionId } from './communication';
+import type { Device, CommandResult, WriteCommandFunction, PomodoroConfig, PomodoroActiveStatus } from '../src/types/device';
 
-// Types
-interface Device {
-    path: string;
-    vendorId: number;
-    productId: number;
-    manufacturer?: string;
-    product?: string;
-    serialNumber?: string;
-    usage?: number;
-    usagePage?: number;
-}
+// Dependency injection
+let writeCommandFunction: WriteCommandFunction | null = null;
 
-interface PomodoroConfig {
-    pomodoro: {
-        work_time: number;
-        break_time: number;
-        long_break_time: number;
-        work_interval: number;
-        work_hf_pattern: number;
-        break_hf_pattern: number;
-        timer_active: number;
-        notify_haptic_enable: number;
-        continuous_mode: number;
-        phase: number;
-        pomodoro_cycle: number;
-    };
-}
-
-interface PomodoroActiveStatus {
-    timer_active: number;
-    phase: number;
-    minutes: number;
-    seconds: number;
-    current_work_Interval: number;
-    current_pomodoro_cycle: number;
-}
-
-interface CommandResult {
-    success: boolean;
-    message?: string;
-    error?: string;
-}
+export const injectPomodoroDependencies = (writeCommand: WriteCommandFunction): void => {
+    writeCommandFunction = writeCommand;
+};
 
 export function receivePomodoroConfig(buffer: number[]): PomodoroConfig {
     return {
@@ -73,13 +38,14 @@ export function receivePomodoroActiveStatus(buffer: number[]): PomodoroActiveSta
 }
 
 export const savePomodoroConfigData = async (device: Device, pomodoroDataBytes: number[]): Promise<CommandResult> => {
-    // Note: writeCommand function will be imported from deviceManagement.js
-    const { writeCommand } = await import('./deviceManagement.js');
+    if (!writeCommandFunction) {
+        throw new Error("WriteCommand function not injected in pomodoroConfig");
+    }
     
     try {
-        const result = await writeCommand(device, { id: commandId.customSetValue, data: [actionId.pomodoroSetValue, ...pomodoroDataBytes] });
+        const result = await writeCommandFunction(device, [commandId.customSetValue, actionId.pomodoroSetValue, ...pomodoroDataBytes]);
         if (!result.success) {
-            throw new Error(result.message || "Failed to save pomodoro config");
+            throw new Error(result.error || "Failed to save pomodoro config");
         }
         await new Promise(resolve => setTimeout(resolve, 500)); // Add 500ms delay
         return result;
@@ -90,23 +56,25 @@ export const savePomodoroConfigData = async (device: Device, pomodoroDataBytes: 
 };
 
 export const getPomodoroConfig = async (device: Device): Promise<CommandResult> => {
-    // Note: writeCommand function will be imported from deviceManagement.js
-    const { writeCommand } = await import('./deviceManagement.js');
+    if (!writeCommandFunction) {
+        throw new Error("WriteCommand function not injected in pomodoroConfig");
+    }
     
-    const result = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroGetValue] });
+    const result = await writeCommandFunction(device, [commandId.customGetValue, actionId.pomodoroGetValue]);
     if (!result.success) {
-        throw new Error(result.message || "Failed to get pomodoro config");
+        throw new Error(result.error || "Failed to get pomodoro config");
     }
     return result;
 };
 
 export const getPomodoroActiveStatus = async (device: Device): Promise<CommandResult> => {
-    // Note: writeCommand function will be imported from deviceManagement.js
-    const { writeCommand } = await import('./deviceManagement.js');
+    if (!writeCommandFunction) {
+        throw new Error("WriteCommand function not injected in pomodoroConfig");
+    }
     
-    const result = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroActiveGetValue] });
+    const result = await writeCommandFunction(device, [commandId.customGetValue, actionId.pomodoroActiveGetValue]);
     if (!result.success) {
-        throw new Error(result.message || "Failed to get pomodoro active status");
+        throw new Error(result.error || "Failed to get pomodoro active status");
     }
     return result;
 };

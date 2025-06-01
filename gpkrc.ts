@@ -32,6 +32,7 @@ import {
     close, 
     writeCommand, 
     getConnectKbd,
+    initializeDependencies,
     updateAutoLayerSettings
 } from './gpkrc-modules/deviceManagement';
 import { 
@@ -130,21 +131,21 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
         // Wait a bit before attempting communication to ensure device is ready
         await new Promise(resolve => setTimeout(resolve, 300)); // Increased initial delay
         
-        const trackpadResult = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.trackpadGetValue] });
+        const trackpadResult = await writeCommand(device, [commandId.customGetValue, actionId.trackpadGetValue]);
 
         
         if (!trackpadResult.success) {
-            throw new Error(`Failed to request trackpad config: ${trackpadResult.message}`);
+            throw new Error(`Failed to request trackpad config: ${trackpadResult.error}`);
         }
         
         // Add delay between commands
         await new Promise(resolve => setTimeout(resolve, 300)); // Increased delay between commands
         
-        const pomodoroResult = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.pomodoroGetValue] });
+        const pomodoroResult = await writeCommand(device, [commandId.customGetValue, actionId.pomodoroGetValue]);
 
         
         if (!pomodoroResult.success) {
-            throw new Error(`Failed to request pomodoro config: ${pomodoroResult.message}`);
+            throw new Error(`Failed to request pomodoro config: ${pomodoroResult.error}`);
         }
         
 
@@ -182,9 +183,9 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
 
 // Function to get GPK RC info/version (now uses customGetValue with deviceGetValue action)
 const getDeviceInitConfig = async (device: Device): Promise<CommandResult> => {
-    const result = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.deviceGetValue] });
+    const result = await writeCommand(device, [commandId.customGetValue, actionId.deviceGetValue]);
     if (!result.success) {
-        throw new Error(result.message || "Failed to get device init config");
+        throw new Error(result.error || "Failed to get device init config");
     }
     return result;
 };
@@ -230,3 +231,6 @@ export { writeCommand, addKbd };
 export { startDeviceHealthMonitoring, stopDeviceHealthMonitoring, checkDeviceHealth, isDeviceHealthMonitoringActive };
 export { checkAndSwitchLayer, cleanupDeviceLayerTracking };
 export { lastFormattedDateMap };
+
+// Initialize dependencies on module load
+initializeDependencies();
