@@ -40,7 +40,7 @@
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6"
   },
-  "main": "./index.js",
+  "main": "./dist-electron/index.js",
   "dependencies": {
     "@babel/core": "7.25.2",
     "@babel/preset-env": "7.25.4",
@@ -62,16 +62,11 @@
   "build": {
     "productName": "GPK Utility",
     "appId": "app.darakuneko.gpk_utility",
-    "afterSign": "notarize.cjs",
+    "afterSign": "./dist-electron/notarize.cjs",
     "npmRebuild": false,
     "files": [
-      "dist/**/*",
+      "dist-electron/**/*",
       "icons/*",
-      "index.js",
-      "dist-electron/preload.js",
-      "gpkrc.js",
-      "ipcHandlers.js",
-      "ipcHandlers/**/*",
       "package.json",
       "src/i18n/locales/**/*"
     ],

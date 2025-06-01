@@ -34,6 +34,30 @@ const config: UserConfig = defineConfig({
         }
       },
       {
+        entry: 'notarize.ts',
+        vite: {
+          build: {
+            sourcemap: true,
+            minify: false,
+            outDir: 'dist-electron',
+            lib: {
+              entry: 'notarize.ts',
+              formats: ['cjs'],
+              fileName: () => 'notarize.cjs'
+            },
+            rollupOptions: {
+              external: [
+                '@electron/notarize',
+                'dotenv'
+              ],
+              output: {
+                format: 'cjs'
+              }
+            }
+          }
+        }
+      },
+      {
         entry: 'preload.ts',
         onstart(options) {
           // Notify the Renderer-Process to reload the page when the Preload-Scripts build is complete
