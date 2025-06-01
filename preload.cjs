@@ -11,6 +11,10 @@ const deviceProcessingLocks = new Map();
 // Flag to prevent duplicate event listener registration
 let eventListenersRegistered = false;
 
+// Slider activity tracking variables
+let isSliderActive = false;
+let activeSliderDeviceId = null;
+
 // Store settings cache
 let cachedStoreSettings = {
     autoLayerSettings: {},
@@ -214,6 +218,9 @@ const command = {
         if (active) {
             activeSliderDeviceId = null;
         }
+    },
+    getSliderActive: () => {
+        return { isSliderActive, activeSliderDeviceId };
     },
     exportFile: async (data) => await ipcRenderer.invoke('exportFile', data),
     importFile: async (filename) => await ipcRenderer.invoke('importFile', filename),
@@ -840,7 +847,7 @@ contextBridge.exposeInMainWorld("api", {
     saveOledSettings: async (deviceId, enabled) => {
         const current = cachedStoreSettings.oledSettings || {};
         if(!current[deviceId]?.enabled && enabled) {
-            await command.dateTimeOledWrite(cachedDeviceRegistry.find(d => d.id === deviceId), forceWrite = true);
+            await command.dateTimeOledWrite(cachedDeviceRegistry.find(d => d.id === deviceId), true);
         }
         current[deviceId] = { enabled };
         return await saveStoreSetting('oledSettings', current, deviceId);

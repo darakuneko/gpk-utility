@@ -11,7 +11,7 @@ export default defineConfig({
     }),
     electron([
       {
-        entry: 'index.js',
+        entry: 'index.ts',
         vite: {
           build: {
             sourcemap: true,

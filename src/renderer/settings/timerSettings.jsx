@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CustomSlider, CustomSelect, CustomSwitch } from "../../components/CustomComponents.jsx";
+import { CustomSlider, CustomSelect, CustomSwitch } from "../../components/CustomComponents.tsx";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 

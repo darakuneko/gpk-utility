@@ -1,4 +1,6 @@
-export default {
+import type { LocaleMessages } from '../../types/i18n';
+
+const enMessages: LocaleMessages = {
   common: {
     import: 'Import',
     export: 'Export',
@@ -131,3 +133,5 @@ export default {
     enableHapticNotifications: 'Haptic Feedback Notifications'
   }
 };
+
+export default enMessages;

@@ -1,4 +1,6 @@
-export const fullHapticOptions = [
+import type { HapticOption } from '../types/haptic';
+
+export const fullHapticOptions: HapticOption[] = [
   { value: "0", label: "none" },
   { value: "1", label: "strong_click" },
   { value: "2", label: "strong_click_60" },

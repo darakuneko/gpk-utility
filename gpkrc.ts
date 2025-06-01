@@ -1,8 +1,8 @@
-import HID from 'node-hid'
+import HID from 'node-hid';
 import dayjs from 'dayjs';
 
 // Import all modules
-import { DeviceType, getDeviceType, stringToDeviceType } from './gpkrc-modules/deviceTypes.js';
+import { DeviceType, getDeviceType, stringToDeviceType } from './gpkrc-modules/deviceTypes';
 import { 
     commandId, 
     actionId, 
@@ -13,8 +13,8 @@ import {
     commandToBytes, 
     encodeDeviceId, 
     parseDeviceId 
-} from './gpkrc-modules/communication.js';
-import { startDeviceHealthMonitoring, stopDeviceHealthMonitoring, checkDeviceHealth, isDeviceHealthMonitoringActive } from './gpkrc-modules/deviceHealth.js';
+} from './gpkrc-modules/communication';
+import { startDeviceHealthMonitoring, stopDeviceHealthMonitoring, checkDeviceHealth, isDeviceHealthMonitoringActive } from './gpkrc-modules/deviceHealth';
 import { 
     deviceStatusMap, 
     hidDeviceInstances, 
@@ -33,7 +33,7 @@ import {
     writeCommand, 
     getConnectKbd,
     updateAutoLayerSettings
-} from './gpkrc-modules/deviceManagement.js';
+} from './gpkrc-modules/deviceManagement';
 import { 
     joinScrollTerm, 
     joinDragTerm, 
@@ -41,15 +41,15 @@ import {
     receiveTrackpadSpecificConfig, 
     saveTrackpadConfig, 
     getTrackpadConfigData 
-} from './gpkrc-modules/trackpadConfig.js';
+} from './gpkrc-modules/trackpadConfig';
 import { 
     receivePomodoroConfig, 
     receivePomodoroActiveStatus, 
     savePomodoroConfigData, 
     getPomodoroConfig, 
     getPomodoroActiveStatus 
-} from './gpkrc-modules/pomodoroConfig.js';
-import { writeTimeToOled, lastFormattedDateMap } from './gpkrc-modules/oledDisplay.js';
+} from './gpkrc-modules/pomodoroConfig';
+import { writeTimeToOled, lastFormattedDateMap } from './gpkrc-modules/oledDisplay';
 import { 
     activeWindows, 
     currentLayers, 
@@ -59,10 +59,28 @@ import {
     getSelectedAppSettings, 
     addNewAppToAutoLayerSettings,
     cleanupDeviceLayerTracking
-} from './gpkrc-modules/windowMonitoring.js';
+} from './gpkrc-modules/windowMonitoring';
+
+// Types
+interface Device {
+    path: string;
+    vendorId: number;
+    productId: number;
+    manufacturer?: string;
+    product?: string;
+    serialNumber?: string;
+    usage?: number;
+    usagePage?: number;
+}
+
+interface CommandResult {
+    success: boolean;
+    message?: string;
+    data?: any;
+}
 
 // Device config functions
-const getDeviceConfig = async (device, retryCount = 0) => {
+const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<CommandResult> => {
     const id = encodeDeviceId(device);
     const maxRetries = 3; // Reduced retry count for faster feedback
     
@@ -91,7 +109,7 @@ const getDeviceConfig = async (device, retryCount = 0) => {
             }
             
             // Test if HID instance is responsive
-            if (hidDeviceInstances[id].closed) {
+            if ((hidDeviceInstances[id] as any).closed) {
                 console.warn(`HID instance for ${id} is marked as closed`);
                 throw new Error(`HID instance for ${id} is closed`);
             }
@@ -106,7 +124,7 @@ const getDeviceConfig = async (device, retryCount = 0) => {
                 } catch (e) {}
                 hidDeviceInstances[id] = null;
             }
-            throw new Error(`HID instance not ready for ${id}: ${hidCheckError.message}`);
+            throw new Error(`HID instance not ready for ${id}: ${(hidCheckError as Error).message}`);
         }
         
         // Wait a bit before attempting communication to ensure device is ready
@@ -136,17 +154,17 @@ const getDeviceConfig = async (device, retryCount = 0) => {
         
         // Retry if we haven't exceeded max retries and error indicates device might not be ready
         if (retryCount < maxRetries && 
-            (err.message.includes("HID instance not found") || 
-             err.message.includes("Device not connected") ||
-             err.message.includes("cannot write to hid device") ||
-             err.message.includes("could not read from HID device") ||
-             err.message.includes("marked as disconnected") ||
-             err.message.includes("still initializing") ||
-             err.message.includes("not fully initialized") ||
-             err.message.includes("not ready") ||
-             err.message.includes("No HID instance available") ||
-             err.message.includes("is closed") ||
-             err.message.includes("Write error after recovery attempt"))) {
+            ((err as Error).message.includes("HID instance not found") || 
+             (err as Error).message.includes("Device not connected") ||
+             (err as Error).message.includes("cannot write to hid device") ||
+             (err as Error).message.includes("could not read from HID device") ||
+             (err as Error).message.includes("marked as disconnected") ||
+             (err as Error).message.includes("still initializing") ||
+             (err as Error).message.includes("not fully initialized") ||
+             (err as Error).message.includes("not ready") ||
+             (err as Error).message.includes("No HID instance available") ||
+             (err as Error).message.includes("is closed") ||
+             (err as Error).message.includes("Write error after recovery attempt"))) {
 
             await new Promise(resolve => setTimeout(resolve, 1500 * (retryCount + 1))); // Progressive retry delay
             return getDeviceConfig(device, retryCount + 1);
@@ -160,10 +178,10 @@ const getDeviceConfig = async (device, retryCount = 0) => {
         
         throw err;
     }
-}
+};
 
 // Function to get GPK RC info/version (now uses customGetValue with deviceGetValue action)
-const getDeviceInitConfig = async (device) => {
+const getDeviceInitConfig = async (device: Device): Promise<CommandResult> => {
     const result = await writeCommand(device, { id: commandId.customGetValue, data: [actionId.deviceGetValue] });
     if (!result.success) {
         throw new Error(result.message || "Failed to get device init config");
@@ -172,22 +190,22 @@ const getDeviceInitConfig = async (device) => {
 };
 
 // Module exports - re-export everything from modules
-export { getConnectKbd }
-export { getKBD, getKBDList }
-export { start, stop, close }
-export { setActiveTab, getActiveTab }
-export { setMainWindow }
-export { startWindowMonitoring, getActiveWindows }
-export { updateAutoLayerSettings }
-export { getSelectedAppSettings, addNewAppToAutoLayerSettings }
-export { encodeDeviceId, parseDeviceId }
-export { getDeviceInitConfig, getDeviceConfig, writeTimeToOled, getPomodoroConfig } 
-export { getDeviceType }
-export { saveTrackpadConfig, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData }
+export { getConnectKbd };
+export { getKBD, getKBDList };
+export { start, stop, close };
+export { setActiveTab, getActiveTab };
+export { setMainWindow };
+export { startWindowMonitoring, getActiveWindows };
+export { updateAutoLayerSettings };
+export { getSelectedAppSettings, addNewAppToAutoLayerSettings };
+export { encodeDeviceId, parseDeviceId };
+export { getDeviceInitConfig, getDeviceConfig, writeTimeToOled, getPomodoroConfig };
+export { getDeviceType };
+export { saveTrackpadConfig, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData };
 
 // Export additional functions and variables that were in the original file
-export { deviceStatusMap, hidDeviceInstances, activeTabPerDevice, isEditingPomodoroPerDevice, settingsStore }
-export { activeWindows, currentLayers }
+export { deviceStatusMap, hidDeviceInstances, activeTabPerDevice, isEditingPomodoroPerDevice, settingsStore };
+export { activeWindows, currentLayers };
 export { 
     commandId, 
     actionId, 
@@ -196,19 +214,19 @@ export {
     DEFAULT_USAGE,
     dataToBytes, 
     commandToBytes
-}
-export { DeviceType, stringToDeviceType }
+};
+export { DeviceType, stringToDeviceType };
 export { 
     joinScrollTerm, 
     joinDragTerm, 
     joinDefaultSpeed, 
     receiveTrackpadSpecificConfig
-}
+};
 export { 
     receivePomodoroConfig, 
     receivePomodoroActiveStatus
-}
-export { writeCommand, addKbd }
-export { startDeviceHealthMonitoring, stopDeviceHealthMonitoring, checkDeviceHealth, isDeviceHealthMonitoringActive }
-export { checkAndSwitchLayer, cleanupDeviceLayerTracking }
-export { lastFormattedDateMap }
+};
+export { writeCommand, addKbd };
+export { startDeviceHealthMonitoring, stopDeviceHealthMonitoring, checkDeviceHealth, isDeviceHealthMonitoringActive };
+export { checkAndSwitchLayer, cleanupDeviceLayerTracking };
+export { lastFormattedDateMap };

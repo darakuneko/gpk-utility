@@ -1,7 +1,13 @@
+import React from 'react';
 import { useLanguage } from '../i18n/LanguageContext.jsx';
-import { BaseModal } from './BaseModalComponents.jsx';
+import { BaseModal } from './BaseModalComponents';
+import type { UpdatesNotificationModalProps } from '../types/react';
 
-const UpdatesNotificationModal = ({ isOpen, onClose, updates }) => {
+const UpdatesNotificationModal: React.FC<UpdatesNotificationModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  updates 
+}) => {
   const { t } = useLanguage();
   
   if (!isOpen || !updates || updates.length === 0) {
@@ -9,7 +15,7 @@ const UpdatesNotificationModal = ({ isOpen, onClose, updates }) => {
   }
   
   // Format timestamp to readable date
-  const formatDate = (timestamp) => {
+  const formatDate = (timestamp: { _seconds: number }): string => {
     if (!timestamp) return '';    
       const date = new Date(timestamp._seconds * 1000);
       const year = date.getFullYear();

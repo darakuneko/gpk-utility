@@ -1,8 +1,19 @@
 import React, { useEffect, useRef } from "react";
+import type { CustomSliderProps, CustomSwitchProps, CustomSelectProps } from '../types/react';
 
 // Custom slider component
-export const CustomSlider = ({ id, value = 0, min, max, step, marks = [], onChange, onChangeStart, onChangeEnd }) => {
-  const sliderRef = useRef(null);
+export const CustomSlider: React.FC<CustomSliderProps> = ({ 
+  id, 
+  value = 0, 
+  min, 
+  max, 
+  step, 
+  marks = [], 
+  onChange, 
+  onChangeStart, 
+  onChangeEnd 
+}) => {
+  const sliderRef = useRef<HTMLInputElement>(null);
   
   // Ensure value is a valid number
   const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
@@ -43,7 +54,7 @@ export const CustomSlider = ({ id, value = 0, min, max, step, marks = [], onChan
         onMouseUp={onChangeEnd}
         onTouchEnd={onChangeEnd}
         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-        style={{ '--thumb-position': thumbPosition }}
+        style={{ '--thumb-position': thumbPosition } as React.CSSProperties}
       />
       {marks && marks.length > 0 && (
         <div className="absolute flex justify-between w-full px-2 mt-1 text-xs text-gray-600 dark:text-gray-300">
@@ -59,8 +70,13 @@ export const CustomSlider = ({ id, value = 0, min, max, step, marks = [], onChan
 };
 
 // Custom switch component
-export const CustomSwitch = ({ id, checked = false, onChange, label }) => {
-  const switchRef = useRef(null);
+export const CustomSwitch: React.FC<CustomSwitchProps> = ({ 
+  id, 
+  checked = false, 
+  onChange, 
+  label 
+}) => {
+  const switchRef = useRef<HTMLInputElement>(null);
   
   // Ensure checked is a boolean
   const safeChecked = checked === true;
@@ -82,7 +98,7 @@ export const CustomSwitch = ({ id, checked = false, onChange, label }) => {
     };
   }, [safeChecked, id]);
   
-  const handleOnChange = (e) => {
+  const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onChange) {
       onChange(e);
       
@@ -106,15 +122,22 @@ export const CustomSwitch = ({ id, checked = false, onChange, label }) => {
         onChange={handleOnChange}
         className="sr-only peer"
       />
-      <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+      <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
       {label && <span className="ms-3 text-sm font-medium text-gray-900 dark:text-gray-100">{label}</span>}
     </label>
   );
 };
 
 // Custom select component
-export const CustomSelect = ({ id, value = '', onChange, children, label, options }) => {
-  const selectRef = useRef(null);
+export const CustomSelect: React.FC<CustomSelectProps> = ({ 
+  id, 
+  value = '', 
+  onChange, 
+  children, 
+  label, 
+  options 
+}) => {
+  const selectRef = useRef<HTMLSelectElement>(null);
   
   // Ensure value is a valid string
   const safeValue = value !== undefined && value !== null ? String(value) : '';
@@ -157,7 +180,7 @@ export const CustomSelect = ({ id, value = '', onChange, children, label, option
 };
 
 // Hamburger menu icon component
-export const HamburgerIcon = () => (
+export const HamburgerIcon: React.FC = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="3" y1="12" x2="21" y2="12"></line>
     <line x1="3" y1="6" x2="21" y2="6"></line>

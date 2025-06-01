@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage } from "electron"
+import { app, BrowserWindow, Tray, Menu, nativeImage, Event, Rectangle, NativeImage } from "electron";
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,24 +12,49 @@ if(process.platform==='linux') {
 }
 
 // Import translation utilities
-import enTranslations from './src/i18n/locales/en.js';
+import enTranslations from './src/i18n/locales/en';
 import {
     close, 
     setMainWindow, 
     updateAutoLayerSettings,
-} from './gpkrc.js'
-import ActiveWindow from '@paymoapp/active-window'
-import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, setStore as setIpcStore } from './ipcHandlers.js';
+} from './gpkrc';
+import ActiveWindow from '@paymoapp/active-window';
+import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, setStore as setIpcStore } from './ipcHandlers';
 
 // Initialize ActiveWindow
-ActiveWindow.default.initialize()
+ActiveWindow.default.initialize();
+
+// Types
+interface WindowBounds {
+    width: number;
+    height: number;
+    x?: number;
+    y?: number;
+}
+
+interface StoreSchema {
+    autoLayerSettings: Record<string, any>;
+    oledSettings: Record<string, any>;
+    pomodoroDesktopNotificationsSettings: Record<string, any>;
+    savedNotifications: any[];
+    minimizeToTray: boolean;
+    backgroundStart: boolean;
+    windowBounds: WindowBounds;
+    locale: string;
+    notificationApiEndpoint: string;
+}
+
+interface PomodoroDeviceInfo {
+    name: string;
+    phase: number;
+}
 
 // Global variables
-let mainWindow;
-let tray = null;
+let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
 
 // Initialize electron-store
-const store = new Store({
+const store = new Store<StoreSchema>({
     name: 'gpk-utility',
     defaults: {
         autoLayerSettings: {},
@@ -45,12 +70,12 @@ const store = new Store({
 });
 
 // Translation utility function
-const translate = (key, params = {}) => {
+const translate = (key: string, params: Record<string, any> = {}): string => {
     const locale = store.get('locale') || 'en';
-    let translations = enTranslations;
+    let translations: any = enTranslations;
     
     // Get nested value from translations using key path
-    const getValue = (obj, path) => {
+    const getValue = (obj: any, path: string): any => {
         return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
     };
     
@@ -69,19 +94,20 @@ const translate = (key, params = {}) => {
     // Replace parameters
     return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? params[param] : match);
 };
-// Store active pomodoro devices
-const activePomodoroDevices = new Map();
 
-const handleDeviceDisconnect = (deviceId) => {
+// Store active pomodoro devices
+const activePomodoroDevices = new Map<string, PomodoroDeviceInfo>();
+
+const handleDeviceDisconnect = (deviceId: string): void => {
     if (activePomodoroDevices.has(deviceId)) {
         activePomodoroDevices.delete(deviceId);
     }
 };
 
 // Create a menu template for tray based on current pomodoro status
-const createTrayMenuTemplate = () => {
+const createTrayMenuTemplate = (): Electron.MenuItemConstructorOptions[] => {
     // Base menu items
-    const menuItems = [
+    const menuItems: Electron.MenuItemConstructorOptions[] = [
         { 
             label: 'Show Window', 
             click: () => {
@@ -139,9 +165,9 @@ const createTrayMenuTemplate = () => {
     });
     
     return menuItems;
-}
+};
 
-const createTray = () => {
+const createTray = (): void => {
     const iconPath = path.join(__dirname, '..', 'icons', '16x16.png');
     const icon = nativeImage.createFromPath(iconPath);
     tray = new Tray(icon);
@@ -164,9 +190,9 @@ const createTray = () => {
             createWindow();
         }
     });
-}
+};
 
-const createWindow = () => {
+const createWindow = (): void => {
     // Get window position and size from store
     const windowBounds = store.get('windowBounds');
     const minWidth = 800;
@@ -186,10 +212,10 @@ const createWindow = () => {
             contextIsolation: true,
         },
         show: !store.get('backgroundStart'),
-    })
+    });
 
-    mainWindow.loadURL(`file://${__dirname}/../dist/public/index.html`)
-    mainWindow.setMenu(null)
+    mainWindow.loadURL(`file://${__dirname}/../dist/public/index.html`);
+    mainWindow.setMenu(null);
 
     // Pass the main window reference to modules
     setMainWindow(mainWindow);
@@ -200,10 +226,10 @@ const createWindow = () => {
     setIpcStore(store);
     
     // Monitor window size and position changes
-    ['resize', 'move'].forEach(eventName => {
-        mainWindow.on(eventName, () => {
-            if (!mainWindow.isMinimized() && !mainWindow.isMaximized()) {
-                const bounds = mainWindow.getBounds();
+    (['resize', 'move'] as const).forEach(eventName => {
+        mainWindow!.on(eventName as any, () => {
+            if (!mainWindow!.isMinimized() && !mainWindow!.isMaximized()) {
+                const bounds = mainWindow!.getBounds();
                 store.set('windowBounds', bounds);
             }
         });
@@ -212,29 +238,29 @@ const createWindow = () => {
     mainWindow.on('close', (event) => {
         if (store.get('minimizeToTray')) {
             event.preventDefault();
-            mainWindow.hide();
+            mainWindow!.hide();
             return;
         }
         
         try {
-            close()
+            close();
         } catch (e) {
             // Ignored
         }
-    })
+    });
     
     mainWindow.on('minimize', (event) => {
         if (store.get('minimizeToTray')) {
             event.preventDefault();
-            mainWindow.hide();
+            mainWindow!.hide();
         }
     });
-}
+};
 
-const doubleBoot = app.requestSingleInstanceLock()
-if (!doubleBoot) app.quit()
+const doubleBoot = app.requestSingleInstanceLock();
+if (!doubleBoot) app.quit();
 
-app.setName(translate('header.title'))
+app.setName(translate('header.title'));
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
@@ -243,13 +269,13 @@ app.on('window-all-closed', () => {
         }
         
         try{
-            close()
+            close();
         } catch (e) {
             // Ignored
         }
-        app.quit()
+        app.quit();
     }
-})
+});
 
 app.on('ready', () => {
     createTray();
@@ -260,10 +286,13 @@ app.on('ready', () => {
     setupIpcEvents(activePomodoroDevices, tray, createTrayMenuTemplate);
     
     if (process.env.NODE_ENV === 'development') {
-        mainWindow.webContents.openDevTools();
+        mainWindow!.webContents.openDevTools();
     }
-})
+});
 
 app.on('activate', () => {
-    if (mainWindow === null) createWindow()
-})
+    if (mainWindow === null) createWindow();
+});
+
+// Export handleDeviceDisconnect for use by IPC handlers
+export { handleDeviceDisconnect };

@@ -1,11 +1,30 @@
 import dayjs from 'dayjs';
-import { commandId, actionId, dataToBytes, encodeDeviceId } from './communication.js';
+import { commandId, actionId, dataToBytes, encodeDeviceId } from './communication';
+
+// Types
+interface Device {
+    path: string;
+    vendorId: number;
+    productId: number;
+    manufacturer?: string;
+    product?: string;
+    serialNumber?: string;
+    usage?: number;
+    usagePage?: number;
+}
+
+interface CommandResult {
+    success: boolean;
+    message?: string;
+    error?: string;
+    skipped?: boolean;
+}
 
 // Store last formatted date for each device
-const lastFormattedDateMap = new Map();
+export const lastFormattedDateMap = new Map<string, string>();
 
 // OLED functions
-const writeTimeToOled = async (device, forceWrite = false) => {
+export const writeTimeToOled = async (device: Device, forceWrite: boolean = false): Promise<CommandResult> => {
     // Note: writeCommand function will be imported from deviceManagement.js
     const { writeCommand } = await import('./deviceManagement.js');
     
@@ -30,8 +49,6 @@ const writeTimeToOled = async (device, forceWrite = false) => {
         }
    } catch (error) {
         console.error("Error writing time to OLED:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error as Error).message };
     }
 };
-
-export { writeTimeToOled, lastFormattedDateMap };

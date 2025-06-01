@@ -2,7 +2,7 @@ import { ipcMain, dialog } from "electron";
 import { promises as fs } from 'fs';
 
 // File operations
-const exportFile = (data) => {
+const exportFile = (data: any): void => {
     dialog.showSaveDialog({
         title: 'Export Config File',
         defaultPath: 'gpk_utility.json',
@@ -11,7 +11,7 @@ const exportFile = (data) => {
             { name: 'JSON Files', extensions: ['json'] },
             { name: 'All Files', extensions: ['*'] }
         ]
-    }).then(async result  => {
+    }).then(async result => {
         if (!result.canceled) {
             await fs.writeFile(result.filePath, JSON.stringify(data, null, 2))
         }
@@ -20,7 +20,7 @@ const exportFile = (data) => {
     });
 };
 
-const importFile = async () => {
+const importFile = async (): Promise<string | null> => {
     try {
         const result = await dialog.showOpenDialog({
             title: 'Import Config File',
@@ -40,7 +40,7 @@ const importFile = async () => {
         try {
             const fileContent = await fs.readFile(filePath, 'utf-8');
             return fileContent;
-        } catch (readErr) {
+        } catch (readErr: any) {
             console.error(`Error reading file ${filePath}:`, readErr);
             throw new Error(`Failed to read file: ${readErr.message}`);
         }
@@ -50,8 +50,8 @@ const importFile = async () => {
     }
 };
 
-export const setupFileHandlers = () => {
+export const setupFileHandlers = (): void => {
     // File operations
-    ipcMain.handle('exportFile', async (event, data) => await exportFile(data));
-    ipcMain.handle('importFile', async (event, fn) => await importFile(fn));
+    ipcMain.handle('exportFile', async (event, data: any) => await exportFile(data));
+    ipcMain.handle('importFile', async (event, fn?: any) => await importFile());
 };

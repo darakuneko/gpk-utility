@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { ipcMain, BrowserWindow } from "electron";
 import ActiveWindow from '@paymoapp/active-window';
 import {
     start, 
@@ -17,21 +17,26 @@ import {
     writeTimeToOled,
     getPomodoroActiveStatus,
     getTrackpadConfigData
-} from '../gpkrc.js';
+} from '../gpkrc';
 
-let mainWindow;
+let mainWindow: BrowserWindow;
 
-export const setMainWindow = (window) => {
+interface Device {
+    id: string;
+    [key: string]: any;
+}
+
+export const setMainWindow = (window: BrowserWindow): void => {
     mainWindow = window;
 };
 
-export const setupDeviceHandlers = () => {
+export const setupDeviceHandlers = (): void => {
     // Device control handlers
-    ipcMain.handle('start', async (event, device) => {
+    ipcMain.handle('start', async (event, device: Device) => {
         await start(device)
     });
     
-    ipcMain.handle('stop', async (event, device) => {
+    ipcMain.handle('stop', async (event, device: Device) => {
         await stop(device)
     });
     
@@ -39,20 +44,20 @@ export const setupDeviceHandlers = () => {
         await close()
     });
     
-    ipcMain.handle('encodeDeviceId', async (event, device) => await encodeDeviceId(device));
+    ipcMain.handle('encodeDeviceId', async (event, device: Device) => await encodeDeviceId(device));
     ipcMain.handle('getKBDList', async (event) => await getKBDList());
     ipcMain.handle('getDeviceType', (event) => getDeviceType());
-    ipcMain.handle('getConnectKbd', async (event, id) => await getConnectKbd(id));
+    ipcMain.handle('getConnectKbd', async (event, id: string) => await getConnectKbd(id));
     
-    ipcMain.on("changeConnectDevice", (e, data) => {
+    ipcMain.on("changeConnectDevice", (e, data: any) => {
         mainWindow.webContents.send("changeConnectDevice", data)
     });
     
-    ipcMain.handle('getDeviceConfig', async (event, device) => {
+    ipcMain.handle('getDeviceConfig', async (event, device: Device) => {
         try {
             const result = await getDeviceConfig(device);
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             console.error(`IPC handler: Error getting device config for ${device.id}:`, error);
             
             // If the error is related to HID instance unavailability, suggest reconnection
@@ -69,14 +74,14 @@ export const setupDeviceHandlers = () => {
             return { success: false, error: error.message };
         }
     });
-    ipcMain.handle('getPomodoroConfig', async (event, device) => await getPomodoroConfig(device));
+    ipcMain.handle('getPomodoroConfig', async (event, device: Device) => await getPomodoroConfig(device));
     
     // Device config data handlers
-    ipcMain.handle('getPomodoroActiveStatus', async (event, device) => await getPomodoroActiveStatus(device));
-    ipcMain.handle('getTrackpadConfigData', async (event, device) => await getTrackpadConfigData(device));
+    ipcMain.handle('getPomodoroActiveStatus', async (event, device: Device) => await getPomodoroActiveStatus(device));
+    ipcMain.handle('getTrackpadConfigData', async (event, device: Device) => await getTrackpadConfigData(device));
 
     // Tab switch handler
-    ipcMain.handle('setActiveTab', async (event, device, tabName) => {
+    ipcMain.handle('setActiveTab', async (event, device: Device, tabName: string) => {
         setActiveTab(device, tabName)
     });
 
@@ -90,16 +95,16 @@ export const setupDeviceHandlers = () => {
         return getActiveWindows();
     });
 
-    ipcMain.handle('getDeviceInitConfig', async (event, device) => {
+    ipcMain.handle('getDeviceInitConfig', async (event, device: Device) => {
         try {
             return await getDeviceInitConfig(device);
-        } catch (error) {
+        } catch (error: any) {
             return { success: false, error: error.message };
         }
     });
 
     // Write to OLED
-    ipcMain.handle('dateTimeOledWrite', async (event, device, forceWrite) => {
+    ipcMain.handle('dateTimeOledWrite', async (event, device: Device, forceWrite?: boolean) => {
         try {
             const result = await writeTimeToOled(device, forceWrite);        
             
@@ -109,15 +114,15 @@ export const setupDeviceHandlers = () => {
             }
             
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Error in dateTimeOledWrite handler:`, error);
             return { success: false, error: error.message };
         }
     });
 };
 
-export const setupDeviceEvents = () => {
-    ipcMain.on("connectDevice", (e, data) => {
+export const setupDeviceEvents = (): void => {
+    ipcMain.on("connectDevice", (e, data: any) => {
         mainWindow.webContents.send("isConnectDevice", data)
     });
 };

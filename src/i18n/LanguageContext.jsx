@@ -20,7 +20,7 @@ export function LanguageProvider({ children }) {
     setIsLoading(true);
     
     // Update language files
-    import(`./locales/${locale}.js`)
+    import(`./locales/${locale}.ts`)
       .then(module => {
         setTranslations(module.default);
         localStorage.setItem('locale', locale);

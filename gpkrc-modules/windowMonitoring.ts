@@ -1,13 +1,36 @@
-import { commandId, actionId, parseDeviceId } from './communication.js';
+import { commandId, actionId, parseDeviceId } from './communication';
+
+// Types
+interface ActiveWindowResult {
+    application: string;
+    [key: string]: any;
+}
+
+interface AutoLayerSettings {
+    [deviceId: string]: {
+        enabled: boolean;
+        layerSettings: LayerSetting[];
+    };
+}
+
+interface LayerSetting {
+    appName: string;
+    layer: number;
+}
+
+interface DeviceStatus {
+    connected: boolean;
+    [key: string]: any;
+}
 
 // Store active windows history
-let activeWindows = []
-let currentLayers = {} // Track current layer for each device
+export let activeWindows: string[] = [];
+export let currentLayers: { [deviceId: string]: number } = {}; // Track current layer for each device
 
 // Function for monitoring active windows and switching layers
-const startWindowMonitoring = async (ActiveWindow) => {    
+export const startWindowMonitoring = async (ActiveWindow: any): Promise<void> => {    
     try {
-        const result = await ActiveWindow.default.getActiveWindow();
+        const result: ActiveWindowResult = await ActiveWindow.default.getActiveWindow();
         if (!result) return;
         const appName = result.application;
 
@@ -33,7 +56,7 @@ const startWindowMonitoring = async (ActiveWindow) => {
 };
 
 // Switch layers based on active application
-const checkAndSwitchLayer = async (appName) => {
+export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
     if (!appName) return;
     
     // Note: deviceStatusMap, settingsStore, and writeCommand will be accessed from deviceManagement.js
@@ -42,10 +65,10 @@ const checkAndSwitchLayer = async (appName) => {
     if (!settingsStore) return;
     
     Object.keys(deviceStatusMap).forEach(id => {
-        const device = deviceStatusMap[id];
+        const device = deviceStatusMap[id] as DeviceStatus;
         if (!device || !device.connected) return;
     
-        const autoLayerSettings = settingsStore.get('autoLayerSettings') || {};
+        const autoLayerSettings: AutoLayerSettings = settingsStore.get('autoLayerSettings') || {};
         const settings = autoLayerSettings[id];
         
         if (!settings || !settings.enabled || !Array.isArray(settings.layerSettings) || !settings.layerSettings.length) {
@@ -75,7 +98,7 @@ const checkAndSwitchLayer = async (appName) => {
                 }).then(() => {
                     // Update current layer after successful switch
                     currentLayers[id] = targetLayer;
-                }).catch(err => {
+                }).catch((err: Error) => {
                     console.error(`Error switching layer for device ${id}:`, err);
                 });
             } catch (err) {
@@ -86,35 +109,35 @@ const checkAndSwitchLayer = async (appName) => {
 };
 
 // Get current active window list
-const getActiveWindows = () => {
+export const getActiveWindows = (): string[] => {
     return activeWindows;
 };
 
 // Function to get settings for selected application
-const getSelectedAppSettings = async (deviceId, appName) => {
+export const getSelectedAppSettings = async (deviceId: string, appName: string): Promise<LayerSetting | null> => {
     // Note: settingsStore will be accessed from deviceManagement.js
     const { settingsStore } = await import('./deviceManagement.js');
     
     if (!settingsStore) return null;
     
-    const autoLayerSettings = settingsStore.get('autoLayerSettings') || {};
+    const autoLayerSettings: AutoLayerSettings = settingsStore.get('autoLayerSettings') || {};
     const settings = autoLayerSettings[deviceId];
     
     if (!settings || !settings.layerSettings || !Array.isArray(settings.layerSettings)) {
         return null;
     }
     
-    return settings.layerSettings.find(setting => setting.appName === appName);
-}
+    return settings.layerSettings.find(setting => setting.appName === appName) || null;
+};
 
 // Function to add new application to settings that isn't in the list
-const addNewAppToAutoLayerSettings = async (deviceId, appName, layer) => {
+export const addNewAppToAutoLayerSettings = async (deviceId: string, appName: string, layer: number): Promise<any> => {
     // Note: settingsStore will be accessed from deviceManagement.js
     const { settingsStore } = await import('./deviceManagement.js');
     
     if (!settingsStore) return null;
     
-    const autoLayerSettings = settingsStore.get('autoLayerSettings') || {};
+    const autoLayerSettings: AutoLayerSettings = settingsStore.get('autoLayerSettings') || {};
     
     if (!autoLayerSettings[deviceId]) {
         autoLayerSettings[deviceId] = {
@@ -145,22 +168,11 @@ const addNewAppToAutoLayerSettings = async (deviceId, appName, layer) => {
     settingsStore.set('autoLayerSettings', autoLayerSettings);
     
     return autoLayerSettings[deviceId];
-}
+};
 
 // Function to clean up layer tracking for a device
-const cleanupDeviceLayerTracking = (deviceId) => {
+export const cleanupDeviceLayerTracking = (deviceId: string): void => {
     if (currentLayers[deviceId] !== undefined) {
         delete currentLayers[deviceId];
     }
-};
-
-export { 
-    activeWindows, 
-    currentLayers, 
-    startWindowMonitoring, 
-    checkAndSwitchLayer, 
-    getActiveWindows, 
-    getSelectedAppSettings, 
-    addNewAppToAutoLayerSettings,
-    cleanupDeviceLayerTracking
 };

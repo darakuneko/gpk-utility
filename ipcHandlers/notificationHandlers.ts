@@ -1,31 +1,37 @@
-import { ipcMain, Notification, Menu } from "electron";
+import { ipcMain, Notification, Menu, IpcMainEvent, BrowserWindow, Tray } from "electron";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
-import { encodeDeviceId, getKBDList } from '../gpkrc.js';
-import enTranslations from '../src/i18n/locales/en.js';
+import { encodeDeviceId, getKBDList } from '../gpkrc';
+import enTranslations from '../src/i18n/locales/en';
+import type { 
+  NotificationQueryPayload, 
+  PomodoroPhaseData, 
+  DeviceConnectionPomodoroData 
+} from '../src/types/ipc';
+import type { LocaleMessages } from '../src/types/i18n';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let store;
-let mainWindow;
+let store: any;
+let mainWindow: BrowserWindow | null;
 
-export const setStore = (storeInstance) => {
+export const setStore = (storeInstance: any): void => {
     store = storeInstance;
 };
 
-export const setMainWindow = (window) => {
+export const setMainWindow = (window: BrowserWindow): void => {
     mainWindow = window;
 };
 
 // Translation utility function
-const translate = (key, params = {}) => {
+const translate = (key: string, params: Record<string, any> = {}): string => {
     const locale = store.get('locale') || 'en';
-    let translations = enTranslations;
+    let translations: LocaleMessages = enTranslations;
     
     // Get nested value from translations using key path
-    const getValue = (obj, path) => {
+    const getValue = (obj: any, path: string): string | undefined => {
         return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
     };
     
@@ -40,11 +46,11 @@ const translate = (key, params = {}) => {
     return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? params[param] : match);
 };
 
-export const setupNotificationHandlers = () => {
+export const setupNotificationHandlers = (): void => {
     ipcMain.handle('getNotifications', async () => {
         try {
             const now = Date.now();
-            const queryPayload = {
+            const queryPayload: NotificationQueryPayload = {
                 collection: 'notification',
                 filters: [
                     { field: "publishedAt", op: "<=", value: now }
@@ -53,7 +59,7 @@ export const setupNotificationHandlers = () => {
                 limit: 10,
             };
 
-            const endpoint = store.get('notificationApiEndpoint')
+            const endpoint = store.get('notificationApiEndpoint');
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -68,9 +74,13 @@ export const setupNotificationHandlers = () => {
 };
 
 // Setup notification event handlers
-export const setupNotificationEvents = (activePomodoroDevices, tray, createTrayMenuTemplate) => {
+export const setupNotificationEvents = (
+    activePomodoroDevices: Map<string, { name: string; phase: number }>, 
+    tray: Tray | null, 
+    createTrayMenuTemplate: () => any[]
+): void => {
     // Handle pomodoro phase notifications
-    ipcMain.on('pomodoroActiveChanged', (event, { deviceName, deviceId, phase, minutes }) => {
+    ipcMain.on('pomodoroActiveChanged', (event: IpcMainEvent, { deviceName, deviceId, phase, minutes }: PomodoroPhaseData) => {
         // Do not show notifications if the app is focused
         if (mainWindow && mainWindow.isFocused()) {
             return;
@@ -119,7 +129,7 @@ export const setupNotificationEvents = (activePomodoroDevices, tray, createTrayM
     });
 
     // Device disconnection handler
-    ipcMain.on('deviceDisconnected', (event, deviceId) => {
+    ipcMain.on('deviceDisconnected', (event: IpcMainEvent, deviceId: string) => {
         // Remove the corresponding entry from activePomodoroDevices
         if (activePomodoroDevices.has(deviceId)) {
             activePomodoroDevices.delete(deviceId);
@@ -137,7 +147,7 @@ export const setupNotificationEvents = (activePomodoroDevices, tray, createTrayM
     });
 
     // Handle pomodoro phase changes
-    ipcMain.on('deviceConnectionPomodoroPhaseChanged', (event, { deviceId, pomodoroConfig, phaseChanged }) => {
+    ipcMain.on('deviceConnectionPomodoroPhaseChanged', (event: IpcMainEvent, { deviceId, pomodoroConfig, phaseChanged }: DeviceConnectionPomodoroData) => {
         // Convert timer_active to boolean explicitly
         const isTimerActive = pomodoroConfig.timer_active === 1;
         
@@ -149,7 +159,7 @@ export const setupNotificationEvents = (activePomodoroDevices, tray, createTrayM
             // Get device name
             const devices = getKBDList();
             const device = devices.find(d => d.id === deviceId);
-            const deviceName = device?.product || device?.name || 'Device';
+            const deviceName = (device as any)?.product || (device as any)?.name || 'Device';
             
             // Add to active devices
             activePomodoroDevices.set(deviceId, {

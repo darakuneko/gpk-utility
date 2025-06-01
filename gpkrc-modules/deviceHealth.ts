@@ -1,12 +1,12 @@
-import { DeviceType } from './deviceTypes.js';
-import { encodeDeviceId, parseDeviceId } from './communication.js';
+import { DeviceType } from './deviceTypes';
+import { encodeDeviceId, parseDeviceId } from './communication';
 
 // Device health monitoring variables
-let deviceHealthMonitor = null;
+let deviceHealthMonitor: NodeJS.Timeout | null = null;
 let deviceHealthCheckInterval = 10000; // Check every 10 seconds
 
 // Function to start device health monitoring
-const startDeviceHealthMonitoring = () => {
+export const startDeviceHealthMonitoring = (): void => {
     if (deviceHealthMonitor) {
         clearInterval(deviceHealthMonitor);
     }
@@ -17,7 +17,7 @@ const startDeviceHealthMonitoring = () => {
 };
 
 // Function to stop device health monitoring
-const stopDeviceHealthMonitoring = () => {
+export const stopDeviceHealthMonitoring = (): void => {
     if (deviceHealthMonitor) {
         clearInterval(deviceHealthMonitor);
         deviceHealthMonitor = null;
@@ -25,10 +25,10 @@ const stopDeviceHealthMonitoring = () => {
 };
 
 // Function to check device health and attempt recovery
-const checkDeviceHealth = async () => {
+export const checkDeviceHealth = async (): Promise<void> => {
     // Note: This function needs access to deviceStatusMap, hidDeviceInstances, getKBD, and addKbd
     // These will be injected via dependency injection pattern when this module is used
-    const { deviceStatusMap, hidDeviceInstances, getKBD, addKbd } = await import('../gpkrc.js');
+    const { deviceStatusMap, hidDeviceInstances, getKBD, addKbd } = await import('../gpkrc');
     
     try {
         const deviceIds = Object.keys(deviceStatusMap);
@@ -43,7 +43,7 @@ const checkDeviceHealth = async () => {
             }
             
             // Check if HID instance exists but is marked as closed
-            if (hidInstance && hidInstance.closed) {
+            if (hidInstance && (hidInstance as any).closed) {
                 console.warn(`Device ${deviceId} HID instance is closed, attempting recovery...`);
                 
                 // Mark device as disconnected
@@ -57,8 +57,8 @@ const checkDeviceHealth = async () => {
                 hidDeviceInstances[deviceId] = null;
                 
                 // Notify UI about disconnection
-                if (global.mainWindow) {
-                    global.mainWindow.webContents.send("deviceConnectionStateChanged", {
+                if ((global as any).mainWindow) {
+                    (global as any).mainWindow.webContents.send("deviceConnectionStateChanged", {
                         deviceId: deviceId,
                         connected: false,
                         gpkRCVersion: deviceStatus.gpkRCVersion || 0,
@@ -87,8 +87,8 @@ const checkDeviceHealth = async () => {
                             deviceStatus.connected = false;
                             
                             // Notify UI about disconnection
-                            if (global.mainWindow) {
-                                global.mainWindow.webContents.send("deviceConnectionStateChanged", {
+                            if ((global as any).mainWindow) {
+                                (global as any).mainWindow.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: deviceId,
                                     connected: false,
                                     gpkRCVersion: deviceStatus.gpkRCVersion || 0,
@@ -110,8 +110,6 @@ const checkDeviceHealth = async () => {
 };
 
 // Function to check if device health monitoring is running
-const isDeviceHealthMonitoringActive = () => {
+export const isDeviceHealthMonitoringActive = (): boolean => {
     return deviceHealthMonitor !== null;
 };
-
-export { startDeviceHealthMonitoring, stopDeviceHealthMonitoring, checkDeviceHealth, isDeviceHealthMonitoringActive };

@@ -1,5 +1,5 @@
 import React from "react";
-import { CustomSwitch, CustomSelect, CustomSlider } from "../../components/CustomComponents.jsx";
+import { CustomSwitch, CustomSelect, CustomSlider } from "../../components/CustomComponents.tsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 const DragDropSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {

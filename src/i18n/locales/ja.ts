@@ -1,4 +1,6 @@
-export default {
+import type { LocaleMessages } from '../../types/i18n';
+
+const jaMessages: LocaleMessages = {
   common: {
     import: 'インポート',
     export: 'エクスポート',
@@ -131,3 +133,5 @@ export default {
     enableHapticNotifications: '振動フィードバック通知'
   }
 };
+
+export default jaMessages;

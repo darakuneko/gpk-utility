@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react"
 import SettingEdit from "./settingEdit.jsx"
 import { useStateContext, useDeviceType } from "../context.jsx"
 import { useLanguage } from "../i18n/LanguageContext.jsx"
-import { CustomSlider } from "../components/CustomComponents.jsx"
-import UpdatesNotificationModal from "../components/UpdatesNotificationModal.jsx"
-import VersionModal from "../components/VersionModal.jsx"
+import { CustomSlider } from "../components/CustomComponents.tsx"
+import UpdatesNotificationModal from "../components/UpdatesNotificationModal.tsx"
+import VersionModal from "../components/VersionModal.tsx"
 import { HamburgerIcon, MenuItem, LeftMenuItem } from "./SettingsUIComponents.jsx"
-import { getSupportedSettingTabs } from "./SettingsDeviceUtils.js"
+import { getSupportedSettingTabs } from "./SettingsDeviceUtils.ts"
 
 const SettingsContainer = () => {
     const {state, dispatch} = useStateContext();

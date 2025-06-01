@@ -1,6 +1,49 @@
-import { commandId, actionId } from './communication.js';
+import { commandId, actionId } from './communication';
 
-function receivePomodoroConfig(buffer) {
+// Types
+interface Device {
+    path: string;
+    vendorId: number;
+    productId: number;
+    manufacturer?: string;
+    product?: string;
+    serialNumber?: string;
+    usage?: number;
+    usagePage?: number;
+}
+
+interface PomodoroConfig {
+    pomodoro: {
+        work_time: number;
+        break_time: number;
+        long_break_time: number;
+        work_interval: number;
+        work_hf_pattern: number;
+        break_hf_pattern: number;
+        timer_active: number;
+        notify_haptic_enable: number;
+        continuous_mode: number;
+        phase: number;
+        pomodoro_cycle: number;
+    };
+}
+
+interface PomodoroActiveStatus {
+    timer_active: number;
+    phase: number;
+    minutes: number;
+    seconds: number;
+    current_work_Interval: number;
+    current_pomodoro_cycle: number;
+}
+
+interface CommandResult {
+    success: boolean;
+    message?: string;
+    error?: string;
+}
+
+export function receivePomodoroConfig(buffer: number[]): PomodoroConfig {
     return {
         pomodoro: {
             work_time: buffer[0],
@@ -15,10 +58,10 @@ function receivePomodoroConfig(buffer) {
             phase: buffer[6] & 0b00000011,
             pomodoro_cycle: buffer[7]
         }
-    }
+    };
 }
 
-function receivePomodoroActiveStatus(buffer) {
+export function receivePomodoroActiveStatus(buffer: number[]): PomodoroActiveStatus {
     return {
         timer_active: (buffer[0] & 0b10000000) >> 7,
         phase: buffer[0] & 0b00000011,
@@ -29,7 +72,7 @@ function receivePomodoroActiveStatus(buffer) {
     };
 }
 
-const savePomodoroConfigData = async (device, pomodoroDataBytes) => {
+export const savePomodoroConfigData = async (device: Device, pomodoroDataBytes: number[]): Promise<CommandResult> => {
     // Note: writeCommand function will be imported from deviceManagement.js
     const { writeCommand } = await import('./deviceManagement.js');
     
@@ -42,11 +85,11 @@ const savePomodoroConfigData = async (device, pomodoroDataBytes) => {
         return result;
     } catch (error) {
         console.error("Error saving pomodoro config data:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: (error as Error).message };
     }
 };
 
-const getPomodoroConfig = async (device) => {
+export const getPomodoroConfig = async (device: Device): Promise<CommandResult> => {
     // Note: writeCommand function will be imported from deviceManagement.js
     const { writeCommand } = await import('./deviceManagement.js');
     
@@ -57,7 +100,7 @@ const getPomodoroConfig = async (device) => {
     return result;
 };
 
-const getPomodoroActiveStatus = async (device) => {
+export const getPomodoroActiveStatus = async (device: Device): Promise<CommandResult> => {
     // Note: writeCommand function will be imported from deviceManagement.js
     const { writeCommand } = await import('./deviceManagement.js');
     
@@ -66,12 +109,4 @@ const getPomodoroActiveStatus = async (device) => {
         throw new Error(result.message || "Failed to get pomodoro active status");
     }
     return result;
-};
-
-export { 
-    receivePomodoroConfig, 
-    receivePomodoroActiveStatus, 
-    savePomodoroConfigData, 
-    getPomodoroConfig, 
-    getPomodoroActiveStatus 
 };

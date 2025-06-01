@@ -1,24 +1,63 @@
-import { commandId, actionId } from './communication.js';
+import { commandId, actionId } from './communication';
 
-function joinScrollTerm(a, b) {
-    const lower6Bits = a & 0b00111111
-    const upper4Bits = (b & 0b11110000) >> 4
-    return (lower6Bits << 4) | upper4Bits
+// Types
+interface Device {
+    path: string;
+    vendorId: number;
+    productId: number;
+    manufacturer?: string;
+    product?: string;
+    serialNumber?: string;
+    usage?: number;
+    usagePage?: number;
 }
 
-function joinDragTerm(a, b) {
-    const lower4Bits = a & 0b00001111
-    const upper6Bits = (b & 0b11111100) >> 2
-    return (lower4Bits << 6) | upper6Bits
+interface TrackpadConfig {
+    hf_waveform_number: number;
+    can_hf_for_layer: number;
+    can_drag: number;
+    scroll_term: number;
+    drag_term: number;
+    can_trackpad_layer: number;
+    can_reverse_scrolling_direction: number;
+    drag_strength_mode: number;
+    drag_strength: number;
+    default_speed: number;
+    scroll_step: number;
+    can_short_scroll: number;
+    tap_term: number;
+    swipe_term: number;
+    pinch_term: number;
+    gesture_term: number;
+    short_scroll_term: number;
+    pinch_distance: number;
 }
 
-function joinDefaultSpeed(a, b) {
-    const lower2Bits = a & 0b00000011
-    const upper4Bits = (b & 0b11110000) >> 4
-    return (lower2Bits << 4) | upper4Bits
+interface CommandResult {
+    success: boolean;
+    message?: string;
+    error?: string;
 }
 
-function receiveTrackpadSpecificConfig(buffer) { // buffer here is actualData
+export function joinScrollTerm(a: number, b: number): number {
+    const lower6Bits = a & 0b00111111;
+    const upper4Bits = (b & 0b11110000) >> 4;
+    return (lower6Bits << 4) | upper4Bits;
+}
+
+export function joinDragTerm(a: number, b: number): number {
+    const lower4Bits = a & 0b00001111;
+    const upper6Bits = (b & 0b11111100) >> 2;
+    return (lower4Bits << 6) | upper6Bits;
+}
+
+export function joinDefaultSpeed(a: number, b: number): number {
+    const lower2Bits = a & 0b00000011;
+    const upper4Bits = (b & 0b11110000) >> 4;
+    return (lower2Bits << 4) | upper4Bits;
+}
+
+export function receiveTrackpadSpecificConfig(buffer: number[]): TrackpadConfig { // buffer here is actualData
     return {
         hf_waveform_number: buffer[0],
         can_hf_for_layer: (buffer[1] & 0b10000000) >> 7,
@@ -41,7 +80,7 @@ function receiveTrackpadSpecificConfig(buffer) { // buffer here is actualData
     };
 }
 
-const saveTrackpadConfig = async (device, trackpadDataBytes) => {
+export const saveTrackpadConfig = async (device: Device, trackpadDataBytes: number[]): Promise<CommandResult> => {
     // Note: writeCommand function will be imported from deviceManagement.js
     const { writeCommand } = await import('./deviceManagement.js');
     
@@ -58,7 +97,7 @@ const saveTrackpadConfig = async (device, trackpadDataBytes) => {
     }
 };
 
-const getTrackpadConfigData = async (device) => {
+export const getTrackpadConfigData = async (device: Device): Promise<CommandResult> => {
     // Note: writeCommand function will be imported from deviceManagement.js
     const { writeCommand } = await import('./deviceManagement.js');
     
@@ -67,13 +106,4 @@ const getTrackpadConfigData = async (device) => {
         throw new Error(result.message || "Failed to get trackpad config");
     }
     return result;
-};
-
-export { 
-    joinScrollTerm, 
-    joinDragTerm, 
-    joinDefaultSpeed, 
-    receiveTrackpadSpecificConfig, 
-    saveTrackpadConfig, 
-    getTrackpadConfigData 
 };

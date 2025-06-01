@@ -1,33 +1,33 @@
-import { ipcMain } from "electron";
+import { ipcMain, BrowserWindow } from "electron";
 import path from 'path';
 import { promises as fs } from 'fs';
 import { fileURLToPath } from 'url';
-import { updateAutoLayerSettings } from '../gpkrc.js';
+import { updateAutoLayerSettings } from '../gpkrc';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let store;
-let mainWindow;
+let store: any;
+let mainWindow: BrowserWindow;
 
 // Import translation utilities
-import enTranslations from '../src/i18n/locales/en.js';
+import enTranslations from '../src/i18n/locales/en.ts';
 
-export const setStore = (storeInstance) => {
+export const setStore = (storeInstance: any): void => {
     store = storeInstance;
 };
 
-export const setMainWindow = (window) => {
+export const setMainWindow = (window: BrowserWindow): void => {
     mainWindow = window;
 };
 
 // Translation utility function
-const translate = (key, params = {}) => {
+const translate = (key: string, params: Record<string, any> = {}): string => {
     const locale = store.get('locale') || 'en';
     let translations = enTranslations;
     
     // Get nested value from translations using key path
-    const getValue = (obj, path) => {
+    const getValue = (obj: any, path: string): any => {
         return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
     };
     
@@ -47,9 +47,9 @@ const translate = (key, params = {}) => {
     return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? params[param] : match);
 };
 
-export const setupStoreHandlers = () => {
+export const setupStoreHandlers = (): void => {
     // OLED settings saving
-    ipcMain.handle('saveOledSettings', async (event, deviceId, enabled) => {
+    ipcMain.handle('saveOledSettings', async (event, deviceId: string, enabled: boolean) => {
         try {
             // Get current settings
             const currentSettings = store.get('oledSettings') || {};
@@ -64,13 +64,13 @@ export const setupStoreHandlers = () => {
             mainWindow.webContents.send("oledSettingsChanged", { deviceId, enabled });
             
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             return { success: false, error: error.message };
         }
     });
 
     // OLED settings loading
-    ipcMain.handle('loadOledSettings', async (event, deviceId) => {
+    ipcMain.handle('loadOledSettings', async (event, deviceId: string) => {
         try {
             // Load settings from electron-store
             const settings = store.get('oledSettings') || {};
@@ -80,13 +80,13 @@ export const setupStoreHandlers = () => {
                 success: true, 
                 enabled: settings[deviceId]?.enabled
             };
-        } catch (error) {
+        } catch (error: any) {
             return { success: false, error: error.message };
         }
     });
 
     // Tray settings saving
-    ipcMain.handle('saveTraySettings', async (event, settings) => {
+    ipcMain.handle('saveTraySettings', async (event, settings: { minimizeToTray?: boolean; backgroundStart?: boolean }) => {
         try {
             // Save settings to electron-store
             if (settings.minimizeToTray !== undefined) {
@@ -98,7 +98,7 @@ export const setupStoreHandlers = () => {
             }
             
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             return { success: false, error: error.message };
         }
     });
@@ -112,19 +112,19 @@ export const setupStoreHandlers = () => {
                 minimizeToTray: store.get('minimizeToTray'),
                 backgroundStart: store.get('backgroundStart')
             };
-        } catch (error) {
+        } catch (error: any) {
             return { success: false, error: error.message };
         }
     });
 
     // Window position and size saving
-    ipcMain.handle('saveWindowBounds', async (event, bounds) => {
+    ipcMain.handle('saveWindowBounds', async (event, bounds: { width: number; height: number; x?: number; y?: number }) => {
         try {
             // Save window position and size to electron-store
             store.set('windowBounds', bounds);
             
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             return { success: false, error: error.message };
         }
     });
@@ -139,18 +139,18 @@ export const setupStoreHandlers = () => {
                 success: true, 
                 bounds: bounds || { width: 1280, height: 800, x: undefined, y: undefined }
             };
-        } catch (error) {
+        } catch (error: any) {
             return { success: false, error: error.message };
         }
     });
 
     // Set application locale
-    ipcMain.handle('setAppLocale', async (event, locale) => {
+    ipcMain.handle('setAppLocale', async (event, locale: string) => {
         try {
             // Save locale to electron-store
             store.set('locale', locale);
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             return { success: false, error: error.message };
         }
     });
@@ -160,23 +160,23 @@ export const setupStoreHandlers = () => {
         try {
             // Return current locale from electron-store
             return store.get('locale') || 'en';
-        } catch (error) {
+        } catch (error: any) {
             return 'en'; // Default to English on error
         }
     });
 
     // Translate a string using the current locale
-    ipcMain.handle('translate', async (event, key, params = {}) => {
+    ipcMain.handle('translate', async (event, key: string, params: Record<string, any> = {}) => {
         try {
             return translate(key, params);
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Error translating key ${key}:`, error);
             return key; // Return the key itself as fallback
         }
     });
 
     // Save pomodoro notification settings
-    ipcMain.handle('savePomodoroDesktopNotificationSettings', async (event, deviceId, enabled) => {
+    ipcMain.handle('savePomodoroDesktopNotificationSettings', async (event, deviceId: string, enabled: boolean) => {
         try {
             // Get current settings
             const currentSettings = store.get('pomodoroDesktopNotificationsSettings') || {};
@@ -188,14 +188,14 @@ export const setupStoreHandlers = () => {
             store.set('pomodoroDesktopNotificationsSettings', currentSettings);
             
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving pomodoro notification settings:", error);
             return { success: false, error: error.message };
         }
     });
 
     // Load pomodoro notification settings
-    ipcMain.handle('loadPomodoroDesktopNotificationSettings', async (event, deviceId) => {
+    ipcMain.handle('loadPomodoroDesktopNotificationSettings', async (event, deviceId: string) => {
         try {
             // Load settings from electron-store
             const settings = store.get('pomodoroDesktopNotificationsSettings') || {};
@@ -211,7 +211,7 @@ export const setupStoreHandlers = () => {
                 success: true, 
                 enabled: enabled
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error loading pomodoro notification settings:", error);
             return { success: false, error: error.message };
         }
@@ -234,14 +234,14 @@ export const setupStoreHandlers = () => {
             };
             
             return { success: true, settings };
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error getting all store settings:", error);
             return { success: false, error: error.message };
         }
     });
 
     // Save a specific setting by key
-    ipcMain.handle('saveStoreSetting', async (event, { key, value }) => {
+    ipcMain.handle('saveStoreSetting', async (event, { key, value }: { key: string; value: any }) => {
         try {
             if (!key) {
                 throw new Error("Setting key is required");
@@ -294,7 +294,7 @@ export const setupStoreHandlers = () => {
             }
             
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Error saving store setting ${key}:`, error);
             return { success: false, error: error.message };
         }
@@ -312,7 +312,7 @@ export const setupStoreHandlers = () => {
                 author: packageData.author,
                 homepage: packageData.homepage
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error reading package.json:', error);
             return {
                 name: translate('header.title'),
@@ -325,12 +325,12 @@ export const setupStoreHandlers = () => {
     });
 
     // Open external links
-    ipcMain.handle('openExternalLink', async (event, url) => {
+    ipcMain.handle('openExternalLink', async (event, url: string) => {
         const { shell } = await import('electron');
         try {
             await shell.openExternal(url);
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error opening external link:', error);
             return { success: false, error: error.message };
         }
@@ -341,7 +341,7 @@ export const setupStoreHandlers = () => {
         try {
             const storePath = store ? store.path : null;
             return { success: true, path: storePath };
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error getting store file path:', error);
             return { success: false, error: error.message };
         }

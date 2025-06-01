@@ -1,33 +1,34 @@
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext.jsx';
-import { useState, useEffect } from 'react';
-import { BaseModal } from './BaseModalComponents.jsx';
+import { BaseModal } from './BaseModalComponents';
+import type { VersionModalProps, AppInfo } from '../types/react';
 
-const VersionModal = ({ isOpen, onClose }) => {
+const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose }) => {
   const { t } = useLanguage();
-  const [appInfo, setAppInfo] = useState({
+  const [appInfo, setAppInfo] = useState<AppInfo>({
     name: '',
     version: '',
     description: '',
     author: {},
     homepage: ''
   });
-  const [storeFilePath, setStoreFilePath] = useState('');
+  const [storeFilePath, setStoreFilePath] = useState<string>('');
   
   useEffect(() => {
     if (isOpen) {
       // Get app information when modal is opened
-      window.api.getAppInfo().then(info => {
+      window.api.getAppInfo().then((info: AppInfo) => {
         setAppInfo(info);
-      }).catch(err => {
+      }).catch((err: any) => {
         console.error('Failed to get app info:', err);
       });
       
       // Get store file path
-      window.api.getStoreFilePath().then(result => {
+      window.api.getStoreFilePath().then((result: { success: boolean; path?: string }) => {
         if (result.success && result.path) {
           setStoreFilePath(result.path);
         }
-      }).catch(err => {
+      }).catch((err: any) => {
         console.error('Failed to get store file path:', err);
       });
     }

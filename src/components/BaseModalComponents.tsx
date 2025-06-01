@@ -1,17 +1,11 @@
 import React from 'react';
 import { useLanguage } from '../i18n/LanguageContext.jsx';
+import type { BaseModalProps } from '../types/react';
 
 /**
  * Base modal component
- * @param {Object} props
- * @param {boolean} props.isOpen - Whether the modal is open
- * @param {Function} props.onClose - Callback when the close button is clicked
- * @param {string} props.title - Modal title
- * @param {React.ReactNode} props.children - Modal content
- * @param {boolean} props.showCloseIcon - Whether to show the close icon in the top right
- * @param {string} props.okButtonText - Text for OK button (defaults to "OK" if not specified)
  */
-export const BaseModal = ({ 
+export const BaseModal: React.FC<BaseModalProps> = ({ 
   isOpen, 
   onClose, 
   title, 

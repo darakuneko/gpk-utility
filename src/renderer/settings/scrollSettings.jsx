@@ -1,5 +1,5 @@
 import React from "react";
-import { CustomSwitch, CustomSlider } from "../../components/CustomComponents.jsx";
+import { CustomSwitch, CustomSlider } from "../../components/CustomComponents.tsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 const ScrollSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {

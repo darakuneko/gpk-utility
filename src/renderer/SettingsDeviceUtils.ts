@@ -1,7 +1,32 @@
-export const getSupportedSettingTabs = (device, t, DeviceType) => {
+interface Tab {
+    id: string;
+    label: string;
+}
+
+interface Device {
+    deviceType: string;
+    config?: {
+        trackpad?: {
+            default_speed: number;
+        };
+    };
+    connected: boolean;
+    initialized?: boolean;
+}
+
+interface DeviceType {
+    MACROPAD_TP: string;
+    MACROPAD_TP_BTNS: string;
+    KEYBOARD_TP: string;
+    KEYBOARD_OLED: string;
+}
+
+type TranslationFunction = (key: string) => string;
+
+export const getSupportedSettingTabs = (device: Device, t: TranslationFunction, DeviceType: DeviceType): Tab[] => {
     if (!device || !DeviceType) return [];
 
-    const tabs = {
+    const tabs: Record<string, Tab> = {
         layer: { id: "layer", label: t('tabs.layer') },
         oled: { id: "oled", label: t('tabs.oled') },
         mouse: { id: "mouse", label: t('tabs.mouse') },
@@ -34,7 +59,7 @@ export const getSupportedSettingTabs = (device, t, DeviceType) => {
         ? [tabs.mouse, tabs.scroll, tabs.dragdrop, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer]
         : []; // Always show layer tab, even without trackpad config
 
-    const tabDefinitions = {
+    const tabDefinitions: Record<string, Tab[]> = {
         [DeviceType.MACROPAD_TP]: tpTabs,
         [DeviceType.MACROPAD_TP_BTNS]: hasTrackpadConfig 
             ? [tabs.mouse, tabs.scroll, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer]

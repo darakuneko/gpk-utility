@@ -1,23 +1,67 @@
-import { ipcMain } from "electron";
+import { ipcMain, BrowserWindow } from "electron";
 import {
     saveTrackpadConfig,
     savePomodoroConfigData,
     updateAutoLayerSettings
-} from '../gpkrc.js';
+} from '../gpkrc';
 
-let mainWindow;
-let store;
+let mainWindow: BrowserWindow;
+let store: any;
 
-export const setMainWindow = (window) => {
+export const setMainWindow = (window: BrowserWindow): void => {
     mainWindow = window;
 };
 
-export const setStore = (storeInstance) => {
+export const setStore = (storeInstance: any): void => {
     store = storeInstance;
 };
 
+interface TrackpadConfig {
+    hf_waveform_number: number;
+    can_hf_for_layer: number;
+    can_drag: number;
+    scroll_term: number;
+    drag_term: number;
+    can_trackpad_layer: number;
+    can_reverse_scrolling_direction: number;
+    drag_strength_mode: number;
+    drag_strength: number;
+    default_speed: number;
+    scroll_step: number;
+    can_short_scroll: number;
+    tap_term?: number;
+    swipe_term?: number;
+    pinch_term?: number;
+    gesture_term?: number;
+    short_scroll_term?: number;
+    pinch_distance?: number;
+}
+
+interface PomodoroConfig {
+    work_time: number;
+    break_time: number;
+    long_break_time: number;
+    work_interval: number;
+    work_hf_pattern: number;
+    break_hf_pattern: number;
+    timer_active?: number;
+    notify_haptic_enable?: number;
+    continuous_mode?: number;
+    phase?: number;
+    pomodoro_cycle?: number;
+}
+
+interface Device {
+    id: string;
+    config?: {
+        trackpad?: TrackpadConfig;
+        pomodoro?: PomodoroConfig;
+        init?: number;
+    };
+}
+
 // Convert trackpad config object to byte array for device communication
-const buildTrackpadConfigByteArray = (trackpadConfig) => {
+const buildTrackpadConfigByteArray = (trackpadConfig: TrackpadConfig): number[] => {
     const byteArray = new Array(19); // 19 bytes for updated trackpad config
     const upper_scroll_term = (trackpadConfig.scroll_term & 0b1111110000) >> 4;
     const lower_drag_term = (trackpadConfig.drag_term & 0b1111000000) >> 6;
@@ -60,7 +104,7 @@ const buildTrackpadConfigByteArray = (trackpadConfig) => {
 };
 
 // Convert pomodoro config object to byte array for device communication
-const buildPomodoroConfigByteArray = (pomodoroConfig) => {
+const buildPomodoroConfigByteArray = (pomodoroConfig: PomodoroConfig): number[] => {
     const byteArray = new Array(8); // 8 bytes for pomodoro config
     byteArray[0] = pomodoroConfig.work_time;
     byteArray[1] = pomodoroConfig.break_time;
@@ -78,8 +122,8 @@ const buildPomodoroConfigByteArray = (pomodoroConfig) => {
     return byteArray;
 };
 
-export const setupConfigHandlers = () => {
-    ipcMain.handle('saveTrackpadConfig', async (event, device) => {
+export const setupConfigHandlers = (): void => {
+    ipcMain.handle('saveTrackpadConfig', async (event, device: Device) => {
         try {
             // Get trackpad settings from device object
             if (!device || !device.config || !device.config.trackpad) {
@@ -87,29 +131,29 @@ export const setupConfigHandlers = () => {
             }
             
             // Generate byte array in the main process
-            const trackpadBytes = buildTrackpadConfigByteArray(device.config.trackpad, device.config.init || 0);
+            const trackpadBytes = buildTrackpadConfigByteArray(device.config.trackpad);
             
             // Call GPKRC to send settings to the device
             await saveTrackpadConfig(device, trackpadBytes);
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error in saveTrackpadConfig:", error);
             return { success: false, error: error.message };
         }
     });
     
-    ipcMain.handle('savePomodoroConfigData', async (event, device, pomodoroDataBytes) => {
+    ipcMain.handle('savePomodoroConfigData', async (event, device: Device, pomodoroDataBytes: number[]) => {
         try {
             await savePomodoroConfigData(device, pomodoroDataBytes);
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error in savePomodoroConfigData:", error);
             return { success: false, error: error.message };
         }
     });
 
     // Replace the old sendDeviceConfig handler with dispatchSaveDeviceConfig
-    ipcMain.handle('dispatchSaveDeviceConfig', async (event, deviceWithConfig, configTypes) => {
+    ipcMain.handle('dispatchSaveDeviceConfig', async (event, deviceWithConfig: Device, configTypes: string | string[]) => {
         try {
             if (!deviceWithConfig || !deviceWithConfig.config) {
                 throw new Error("Invalid device format: missing config");
@@ -154,14 +198,14 @@ export const setupConfigHandlers = () => {
                 return { success: false, message: "No config found to save for the specified types." };
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error in dispatchSaveDeviceConfig:", error);
             return { success: false, error: error.message };
         }
     });
 
     // Save auto layer settings
-    ipcMain.handle('saveAutoLayerSettings', async (event, settings) => {
+    ipcMain.handle('saveAutoLayerSettings', async (event, settings: any) => {
         try {
             // Save settings to electron-store
             store.set('autoLayerSettings', settings);
@@ -180,7 +224,7 @@ export const setupConfigHandlers = () => {
             }
             
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
             return { success: false, error: error.message };
         }
     });
@@ -195,7 +239,7 @@ export const setupConfigHandlers = () => {
             updateAutoLayerSettings(store);
             
             return { success: true, settings };
-        } catch (error) {
+        } catch (error: any) {
             return { success: false, error: error.message };
         }
     });

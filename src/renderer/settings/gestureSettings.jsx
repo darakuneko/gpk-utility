@@ -1,5 +1,5 @@
 import React from "react";
-import { CustomSlider } from "../../components/CustomComponents.jsx";
+import { CustomSlider } from "../../components/CustomComponents.tsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 const GestureSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {

@@ -3,7 +3,7 @@ import { useStateContext, useDeviceType } from "../../context.jsx";
 import { 
   CustomSwitch,
   CustomSelect
-} from "../../components/CustomComponents.jsx";
+} from "../../components/CustomComponents.tsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 const { api } = window;
