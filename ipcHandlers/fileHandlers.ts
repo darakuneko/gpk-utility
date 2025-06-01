@@ -2,22 +2,23 @@ import { ipcMain, dialog } from "electron";
 import { promises as fs } from 'fs';
 
 // File operations
-const exportFile = (data: any): void => {
-    dialog.showSaveDialog({
-        title: 'Export Config File',
-        defaultPath: 'gpk_utility.json',
-        buttonLabel: 'Save',
-        filters: [
-            { name: 'JSON Files', extensions: ['json'] },
-            { name: 'All Files', extensions: ['*'] }
-        ]
-    }).then(async result => {
-        if (!result.canceled) {
-            await fs.writeFile(result.filePath, JSON.stringify(data, null, 2))
+const exportFile = async (data: any): Promise<void> => {
+    try {
+        const result = await dialog.showSaveDialog({
+            title: 'Export Config File',
+            defaultPath: 'gpk_utility.json',
+            buttonLabel: 'Save',
+            filters: [
+                { name: 'JSON Files', extensions: ['json'] },
+                { name: 'All Files', extensions: ['*'] }
+            ]
+        });
+        if (!(result as any).canceled && (result as any).filePath) {
+            await fs.writeFile((result as any).filePath, JSON.stringify(data, null, 2))
         }
-    }).catch(err => {
+    } catch (err) {
         // Ignore errors
-    });
+    }
 };
 
 const importFile = async (): Promise<string | null> => {
@@ -32,11 +33,11 @@ const importFile = async (): Promise<string | null> => {
             properties: ['openFile']
         });
 
-        if (result.canceled || result.filePaths.length === 0) {
+        if ((result as any).canceled || (result as any).filePaths.length === 0) {
             return null;
         }
         
-        const filePath = result.filePaths[0];
+        const filePath = (result as any).filePaths[0];
         try {
             const fileContent = await fs.readFile(filePath, 'utf-8');
             return fileContent;

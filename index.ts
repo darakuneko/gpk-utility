@@ -21,8 +21,7 @@ import {
 import ActiveWindow from '@paymoapp/active-window';
 import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, setStore as setIpcStore } from './ipcHandlers';
 
-// Initialize ActiveWindow
-ActiveWindow.default.initialize();
+// ActiveWindow is already initialized as an instance, no need to call initialize()
 
 // Types
 interface WindowBounds {
@@ -249,7 +248,7 @@ const createWindow = (): void => {
         }
     });
     
-    mainWindow.on('minimize', (event) => {
+    mainWindow.on('minimize' as any, (event: Electron.Event) => {
         if (store.get('minimizeToTray')) {
             event.preventDefault();
             mainWindow!.hide();

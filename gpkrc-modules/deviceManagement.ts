@@ -311,7 +311,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                                         if(oledSettings[id].enabled) {
                                             // Note: writeTimeToOled function will be imported from oledDisplay.js
                                             // Use imported writeTimeToOled function
-                                            writeTimeToOled(device); 
+                                            writeTimeToOled(device as any); 
                                         }
                                         deviceStatusMap[id]!.config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
                                     }

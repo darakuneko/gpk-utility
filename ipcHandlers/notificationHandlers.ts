@@ -51,6 +51,8 @@ export const setupNotificationHandlers = (): void => {
         try {
             const now = Date.now();
             const queryPayload: NotificationQueryPayload = {
+                deviceId: 'all',
+                type: 'notification',
                 collection: 'notification',
                 filters: [
                     { field: "publishedAt", op: "<=", value: now }
@@ -77,7 +79,7 @@ export const setupNotificationHandlers = (): void => {
 export const setupNotificationEvents = (
     activePomodoroDevices: Map<string, { name: string; phase: number }>, 
     tray: Tray | null, 
-    createTrayMenuTemplate: () => any[]
+    createTrayMenuTemplate: () => Electron.MenuItemConstructorOptions[]
 ): void => {
     // Handle pomodoro phase notifications
     ipcMain.on('pomodoroActiveChanged', (event: IpcMainEvent, { deviceName, deviceId, phase, minutes }: PomodoroPhaseData) => {
@@ -90,7 +92,7 @@ export const setupNotificationEvents = (
         const pomodoroDesktopNotificationsSettings = store.get('pomodoroDesktopNotificationsSettings') || {};
         
         // Use provided deviceId directly if available, otherwise generate it from device name
-        const idToUse = deviceId || encodeDeviceId({ id: deviceName });
+        const idToUse = deviceId || encodeDeviceId({ id: deviceName } as any);
         
         // Skip notification if disabled for this device
         if (pomodoroDesktopNotificationsSettings[idToUse] === false) {

@@ -40,10 +40,15 @@ export interface NotificationData {
 export interface NotificationQueryPayload {
     deviceId: string;
     type: string;
+    collection?: string;
+    filters?: any;
+    orderBy?: string | { field: string; direction: string; };
+    limit?: number;
 }
 
 export interface PomodoroPhaseData {
     deviceId: string;
+    deviceName: string;
     phase: number;
     minutes: number;
 }

@@ -134,7 +134,7 @@ export const setupConfigHandlers = (): void => {
             const trackpadBytes = buildTrackpadConfigByteArray(device.config.trackpad);
             
             // Call GPKRC to send settings to the device
-            await saveTrackpadConfig(device, trackpadBytes);
+            await saveTrackpadConfig(device as any, trackpadBytes);
             return { success: true };
         } catch (error: any) {
             console.error("Error in saveTrackpadConfig:", error);
@@ -144,7 +144,7 @@ export const setupConfigHandlers = (): void => {
     
     ipcMain.handle('savePomodoroConfigData', async (event, device: Device, pomodoroDataBytes: number[]) => {
         try {
-            await savePomodoroConfigData(device, pomodoroDataBytes);
+            await savePomodoroConfigData(device as any, pomodoroDataBytes);
             return { success: true };
         } catch (error: any) {
             console.error("Error in savePomodoroConfigData:", error);
@@ -169,14 +169,14 @@ export const setupConfigHandlers = (): void => {
             if ((updateAll || typesToUpdate.includes('trackpad')) && deviceWithConfig.config.trackpad) {
                 // Use the existing local function
                 const trackpadBytes = buildTrackpadConfigByteArray(deviceWithConfig.config.trackpad);
-                saveTrackpadConfig(deviceWithConfig, trackpadBytes); // Deliberately not awaiting to prevent UI sluggishness
+                saveTrackpadConfig(deviceWithConfig as any, trackpadBytes); // Deliberately not awaiting to prevent UI sluggishness
                 trackpadSaved = true;
             }
 
             // Handle pomodoro config
             if ((updateAll || typesToUpdate.includes('pomodoro')) && deviceWithConfig.config.pomodoro) {
                 const pomodoroBytes = buildPomodoroConfigByteArray(deviceWithConfig.config.pomodoro);
-                savePomodoroConfigData(deviceWithConfig, pomodoroBytes); // Deliberately not awaiting to prevent UI sluggishness
+                savePomodoroConfigData(deviceWithConfig as any, pomodoroBytes); // Deliberately not awaiting to prevent UI sluggishness
                 pomodoroSaved = true;
             }
 

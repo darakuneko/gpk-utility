@@ -33,18 +33,18 @@ export const setMainWindow = (window: BrowserWindow): void => {
 export const setupDeviceHandlers = (): void => {
     // Device control handlers
     ipcMain.handle('start', async (event, device: Device) => {
-        await start(device)
+        await start(device as any)
     });
     
     ipcMain.handle('stop', async (event, device: Device) => {
-        await stop(device)
+        await stop(device as any)
     });
     
     ipcMain.handle('close', async (event) => {
         await close()
     });
     
-    ipcMain.handle('encodeDeviceId', async (event, device: Device) => await encodeDeviceId(device));
+    ipcMain.handle('encodeDeviceId', async (event, device: Device) => await encodeDeviceId(device as any));
     ipcMain.handle('getKBDList', async (event) => await getKBDList());
     ipcMain.handle('getDeviceType', (event) => getDeviceType());
     ipcMain.handle('getConnectKbd', async (event, id: string) => await getConnectKbd(id));
@@ -55,7 +55,7 @@ export const setupDeviceHandlers = (): void => {
     
     ipcMain.handle('getDeviceConfig', async (event, device: Device) => {
         try {
-            const result = await getDeviceConfig(device);
+            const result = await getDeviceConfig(device as any);
             return { success: true };
         } catch (error: any) {
             console.error(`IPC handler: Error getting device config for ${device.id}:`, error);
@@ -74,15 +74,15 @@ export const setupDeviceHandlers = (): void => {
             return { success: false, error: error.message };
         }
     });
-    ipcMain.handle('getPomodoroConfig', async (event, device: Device) => await getPomodoroConfig(device));
+    ipcMain.handle('getPomodoroConfig', async (event, device: Device) => await getPomodoroConfig(device as any));
     
     // Device config data handlers
-    ipcMain.handle('getPomodoroActiveStatus', async (event, device: Device) => await getPomodoroActiveStatus(device));
-    ipcMain.handle('getTrackpadConfigData', async (event, device: Device) => await getTrackpadConfigData(device));
+    ipcMain.handle('getPomodoroActiveStatus', async (event, device: Device) => await getPomodoroActiveStatus(device as any));
+    ipcMain.handle('getTrackpadConfigData', async (event, device: Device) => await getTrackpadConfigData(device as any));
 
     // Tab switch handler
     ipcMain.handle('setActiveTab', async (event, device: Device, tabName: string) => {
-        setActiveTab(device, tabName)
+        setActiveTab(device as any, tabName)
     });
 
     // Window monitoring control
@@ -97,7 +97,7 @@ export const setupDeviceHandlers = (): void => {
 
     ipcMain.handle('getDeviceInitConfig', async (event, device: Device) => {
         try {
-            return await getDeviceInitConfig(device);
+            return await getDeviceInitConfig(device as any);
         } catch (error: any) {
             return { success: false, error: error.message };
         }
@@ -106,7 +106,7 @@ export const setupDeviceHandlers = (): void => {
     // Write to OLED
     ipcMain.handle('dateTimeOledWrite', async (event, device: Device, forceWrite?: boolean) => {
         try {
-            const result = await writeTimeToOled(device, forceWrite);        
+            const result = await writeTimeToOled(device as any, forceWrite);        
             
             if (!result.success) {
                 console.error(`Failed to write to OLED: ${result.error || 'Unknown error'}`);

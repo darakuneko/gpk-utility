@@ -21,6 +21,7 @@ export interface DeviceWithId extends HIDDevice {
 }
 
 export interface Device extends DeviceWithId {
+    id: string;             // Ensure id is always present
     connected?: boolean;
     initializing?: boolean;
     checkDevice?: boolean;
@@ -92,6 +93,17 @@ export interface TrackpadConfig {
     default_speed?: number;
     drag_term?: number;
     can_trackpad_layer?: number;
+    can_reverse_scrolling_direction?: number;
+    drag_strength_mode?: number;
+    drag_strength?: number;
+    scroll_step?: number;
+    can_short_scroll?: number;
+    tap_term?: number;
+    swipe_term?: number;
+    pinch_term?: number;
+    gesture_term?: number;
+    short_scroll_term?: number;
+    pinch_distance?: number;
 }
 
 export interface DeviceConfig {

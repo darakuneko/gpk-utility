@@ -55,7 +55,7 @@ interface TrayMenuTemplate {
 }
 
 // Setup event handlers (non-handle IPC events)
-export const setupIpcEvents = (activePomodoroDevices: Map<string, any>, tray: any, createTrayMenuTemplate: () => TrayMenuTemplate): void => {
+export const setupIpcEvents = (activePomodoroDevices: Map<string, any>, tray: any, createTrayMenuTemplate: () => Electron.MenuItemConstructorOptions[]): void => {
     // Setup device events
     setupDeviceEvents();
     

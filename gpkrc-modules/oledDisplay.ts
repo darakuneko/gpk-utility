@@ -22,7 +22,7 @@ export const writeTimeToOled = async (device: Device, forceWrite: boolean = fals
     try {
         // Format date using dayjs
         const formattedDate = dayjs().format('YYYY/MM/DD ddd HH:mm ');
-        const deviceId = encodeDeviceId(device);
+        const deviceId = encodeDeviceId(device as any);
         
         if (forceWrite || lastFormattedDateMap.get(deviceId) !== formattedDate) {
             lastFormattedDateMap.set(deviceId, formattedDate);

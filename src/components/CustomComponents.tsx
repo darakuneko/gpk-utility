@@ -25,7 +25,7 @@ export const CustomSlider: React.FC<CustomSliderProps> = ({
   
   useEffect(() => {
     const slider = sliderRef.current;
-    if (!slider) return;
+    if (!slider) return undefined;
     
     const handleUpdate = () => {
       // Force re-render on update event
@@ -83,7 +83,7 @@ export const CustomSwitch: React.FC<CustomSwitchProps> = ({
   
   useEffect(() => {
     const switchEl = switchRef.current;
-    if (!switchEl) return;
+    if (!switchEl) return undefined;
     
     const handleUpdate = () => {
       // Force immediate visual feedback
@@ -144,7 +144,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   
   useEffect(() => {
     const select = selectRef.current;
-    if (!select) return;
+    if (!select) return undefined;
     
     const handleUpdate = () => {
       // Ensure UI is updated

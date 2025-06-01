@@ -76,7 +76,7 @@ export const exposeAPI = (): void => {
                 const exportData: ExportData = {
                     devices: devicesToExport,
                     appSettings: {
-                        traySettings: cachedStoreSettings.traySettings || {},
+                        traySettings: cachedStoreSettings.traySettings || { minimizeToTray: true, backgroundStart: false },
                         locale: cachedStoreSettings.locale || 'en'
                     }
                 };

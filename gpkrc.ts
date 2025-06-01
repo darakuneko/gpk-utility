@@ -82,7 +82,7 @@ interface CommandResult {
 
 // Device config functions
 const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<CommandResult> => {
-    const id = encodeDeviceId(device);
+    const id = encodeDeviceId(device as any);
     const maxRetries = 3; // Reduced retry count for faster feedback
     
     try {

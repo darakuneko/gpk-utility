@@ -29,7 +29,7 @@ export let currentLayers: { [deviceId: string]: number } = {}; // Track current 
 // Function for monitoring active windows and switching layers
 export const startWindowMonitoring = async (ActiveWindow: any): Promise<void> => {    
     try {
-        const result: ActiveWindowResult = await ActiveWindow.default.getActiveWindow();
+        const result: ActiveWindowResult = await ActiveWindow.getActiveWindow();
         if (!result) return;
         const appName = result.application;
 
