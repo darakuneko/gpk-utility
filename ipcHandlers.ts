@@ -17,7 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
-let store: Store<any> | null = null;
+let store: Store<Record<string, unknown>> | null = null;
 
 // Set references from main process
 export const setMainWindow = (window: BrowserWindow | null): void => {
@@ -30,7 +30,7 @@ export const setMainWindow = (window: BrowserWindow | null): void => {
     setNotificationMainWindow(window);
 };
 
-export const setStore = (storeInstance: Store<any>): void => {
+export const setStore = (storeInstance: Store<Record<string, unknown>>): void => {
     store = storeInstance;
     
     // Pass store to modules that need it
@@ -51,11 +51,11 @@ export const setupIpcHandlers = (): void => {
 
 interface TrayMenuTemplate {
     // Define the interface based on your actual menu template structure
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 // Setup event handlers (non-handle IPC events)
-export const setupIpcEvents = (activePomodoroDevices: Map<string, any>, tray: any, createTrayMenuTemplate: () => Electron.MenuItemConstructorOptions[]): void => {
+export const setupIpcEvents = (activePomodoroDevices: Map<string, unknown>, tray: Electron.Tray, createTrayMenuTemplate: () => Electron.MenuItemConstructorOptions[]): void => {
     // Setup device events
     setupDeviceEvents();
     

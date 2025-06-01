@@ -62,27 +62,18 @@ import {
     cleanupDeviceLayerTracking
 } from './gpkrc-modules/windowMonitoring';
 
-// Types
-interface Device {
-    path: string;
-    vendorId: number;
-    productId: number;
-    manufacturer?: string;
-    product?: string;
-    serialNumber?: string;
-    usage?: number;
-    usagePage?: number;
-}
+// Re-export Device type from types/device.ts
+import type { Device } from './src/types/device';
 
 interface CommandResult {
     success: boolean;
     message?: string;
-    data?: any;
+    data?: unknown;
 }
 
 // Device config functions
 const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<CommandResult> => {
-    const id = encodeDeviceId(device as any);
+    const id = encodeDeviceId(device);
     const maxRetries = 3; // Reduced retry count for faster feedback
     
     try {
@@ -110,7 +101,7 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
             }
             
             // Test if HID instance is responsive
-            if ((hidDeviceInstances[id] as any).closed) {
+            if ((hidDeviceInstances[id] as HID.HID & { closed?: boolean }).closed) {
                 console.warn(`HID instance for ${id} is marked as closed`);
                 throw new Error(`HID instance for ${id} is closed`);
             }

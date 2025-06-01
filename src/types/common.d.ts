@@ -14,18 +14,18 @@ export interface Device {
   interface?: number;
   usagePage?: number;
   usage?: number;
-  deviceType?: any;
-  gpkRCVersion?: any;
+  deviceType?: string;
+  gpkRCVersion?: string;
 }
 
 // Settings related types
 export interface DeviceSettings {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Configuration types
 export interface Config {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Language types
@@ -36,7 +36,7 @@ export interface Layer {
   id: string;
   name: string;
   enabled: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Timer types
@@ -45,5 +45,5 @@ export interface Timer {
   shortBreak: number;
   longBreak: number;
   longBreakInterval: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }

@@ -3,17 +3,19 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import { fileURLToPath } from 'url';
 import { updateAutoLayerSettings } from '../gpkrc';
+import type Store from 'electron-store';
+import type { StoreSchema } from '../src/types/store';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let store: any;
+let store: Store<StoreSchema>;
 let mainWindow: BrowserWindow;
 
 // Import translation utilities
 import enTranslations from '../src/i18n/locales/en.ts';
 
-export const setStore = (storeInstance: any): void => {
+export const setStore = (storeInstance: Store<StoreSchema>): void => {
     store = storeInstance;
 };
 
@@ -22,12 +24,12 @@ export const setMainWindow = (window: BrowserWindow): void => {
 };
 
 // Translation utility function
-const translate = (key: string, params: Record<string, any> = {}): string => {
+const translate = (key: string, params: Record<string, unknown> = {}): string => {
     const locale = store.get('locale') || 'en';
     let translations = enTranslations;
     
     // Get nested value from translations using key path
-    const getValue = (obj: any, path: string): any => {
+    const getValue = (obj: unknown, path: string): unknown => {
         return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
     };
     
@@ -64,8 +66,8 @@ export const setupStoreHandlers = (): void => {
             mainWindow.webContents.send("oledSettingsChanged", { deviceId, enabled });
             
             return { success: true };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -80,8 +82,8 @@ export const setupStoreHandlers = (): void => {
                 success: true, 
                 enabled: settings[deviceId]?.enabled
             };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -98,8 +100,8 @@ export const setupStoreHandlers = (): void => {
             }
             
             return { success: true };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -112,8 +114,8 @@ export const setupStoreHandlers = (): void => {
                 minimizeToTray: store.get('minimizeToTray'),
                 backgroundStart: store.get('backgroundStart')
             };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -124,8 +126,8 @@ export const setupStoreHandlers = (): void => {
             store.set('windowBounds', bounds);
             
             return { success: true };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -139,8 +141,8 @@ export const setupStoreHandlers = (): void => {
                 success: true, 
                 bounds: bounds || { width: 1280, height: 800, x: undefined, y: undefined }
             };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -150,8 +152,8 @@ export const setupStoreHandlers = (): void => {
             // Save locale to electron-store
             store.set('locale', locale);
             return { success: true };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -160,16 +162,16 @@ export const setupStoreHandlers = (): void => {
         try {
             // Return current locale from electron-store
             return store.get('locale') || 'en';
-        } catch (error: any) {
+        } catch (error: unknown) {
             return 'en'; // Default to English on error
         }
     });
 
     // Translate a string using the current locale
-    ipcMain.handle('translate', async (event, key: string, params: Record<string, any> = {}) => {
+    ipcMain.handle('translate', async (event, key: string, params: Record<string, unknown> = {}) => {
         try {
             return translate(key, params);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(`Error translating key ${key}:`, error);
             return key; // Return the key itself as fallback
         }
@@ -188,9 +190,9 @@ export const setupStoreHandlers = (): void => {
             store.set('pomodoroDesktopNotificationsSettings', currentSettings);
             
             return { success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error saving pomodoro notification settings:", error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -211,9 +213,9 @@ export const setupStoreHandlers = (): void => {
                 success: true, 
                 enabled: enabled
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error loading pomodoro notification settings:", error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -234,14 +236,14 @@ export const setupStoreHandlers = (): void => {
             };
             
             return { success: true, settings };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error getting all store settings:", error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
     // Save a specific setting by key
-    ipcMain.handle('saveStoreSetting', async (event, { key, value }: { key: string; value: any }) => {
+    ipcMain.handle('saveStoreSetting', async (event, { key, value }: { key: string; value: unknown }) => {
         try {
             if (!key) {
                 throw new Error("Setting key is required");
@@ -294,9 +296,9 @@ export const setupStoreHandlers = (): void => {
             }
             
             return { success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(`Error saving store setting ${key}:`, error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -312,7 +314,7 @@ export const setupStoreHandlers = (): void => {
                 author: packageData.author,
                 homepage: packageData.homepage
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error reading package.json:', error);
             return {
                 name: translate('header.title'),
@@ -330,9 +332,9 @@ export const setupStoreHandlers = (): void => {
         try {
             await shell.openExternal(url);
             return { success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error opening external link:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -341,9 +343,9 @@ export const setupStoreHandlers = (): void => {
         try {
             const storePath = store ? store.path : null;
             return { success: true, path: storePath };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error getting store file path:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 };

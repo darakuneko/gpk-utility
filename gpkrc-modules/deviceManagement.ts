@@ -1,4 +1,5 @@
 import HID from 'node-hid'
+import Store from 'electron-store';
 import { DeviceType, stringToDeviceType } from './deviceTypes';
 import { commandId, actionId, commandToBytes, encodeDeviceId, parseDeviceId, DEFAULT_USAGE, PACKET_PADDING } from './communication';
 import { 
@@ -21,6 +22,7 @@ import type {
     PomodoroConfig,
     WriteCommandFunction
 } from '../src/types/device';
+import type { StoreSchema } from '../src/types/store';
 
 interface Command {
     id: number;
@@ -43,7 +45,7 @@ interface WriteCommandResult {
 
 interface ElectronWindow {
     webContents: {
-        send: (channel: string, data: any) => void;
+        send: (channel: string, data: unknown) => void;
     };
 }
 
@@ -52,7 +54,7 @@ let deviceStatusMap: Record<string, DeviceStatus | undefined> = {}
 let hidDeviceInstances: Record<string, HID.HID | null> = {}
 let activeTabPerDevice: Record<string, string> = {}
 let isEditingPomodoroPerDevice: Record<string, boolean> = {}
-let settingsStore: any = null
+let settingsStore: Store<StoreSchema> | null = null
 let mainWindow: ElectronWindow | null = null
 
 const getKBD = async (device: HIDDevice, retryCount: number = 0): Promise<HIDDevice | null> => {
@@ -93,7 +95,7 @@ const getKBDList = (): DeviceWithId[] => HID.devices().filter(d =>
         d.usagePage === DEFAULT_USAGE.usagePage
     ).sort((a, b) => `${a.manufacturer}${a.product}` > `${b.manufacturer}${b.product}` ? 1 : -1)
     .map(device => {
-        const id = encodeDeviceId(device as any)        
+        const id = encodeDeviceId(device)
         if (deviceStatusMap[id]) {
             return {...device, id: id, deviceType: deviceStatusMap[id]!.deviceType, gpkRCVersion: deviceStatusMap[id]!.gpkRCVersion}
         } else {
@@ -103,24 +105,24 @@ const getKBDList = (): DeviceWithId[] => HID.devices().filter(d =>
 
 // Function to set the active tab
 const setActiveTab = (device: HIDDevice, tabName: string): void => {
-    const id = encodeDeviceId(device as any)
+    const id = encodeDeviceId(device)
     activeTabPerDevice[id] = tabName
 }
 
 // Function to get the active tab
 const getActiveTab = (device: HIDDevice): string | undefined => {
-    const id = encodeDeviceId(device as any)
+    const id = encodeDeviceId(device)
     return activeTabPerDevice[id]
 }
 
 const setMainWindow = (window: ElectronWindow): void => {
     mainWindow = window
-    ;(global as any).mainWindow = window
+    ;(global as { mainWindow?: ElectronWindow }).mainWindow = window
 }
 
 const addKbd = async (device: HIDDevice): Promise<string> => { 
     const d = await getKBD(device);
-    const id = encodeDeviceId(device as any);
+    const id = encodeDeviceId(device);
     
     if (!d || !d.path) {
         console.error(`Device not found or path not available for device: ${id}`);
@@ -174,7 +176,7 @@ const start = async (device: HIDDevice): Promise<string> => {
     }
     
     try {
-        const id = encodeDeviceId(device as any);
+        const id = encodeDeviceId(device);
 
         
         // Reset device status first
@@ -202,9 +204,9 @@ const start = async (device: HIDDevice): Promise<string> => {
                     break;
                 }
                 throw new Error(`HID instance not created despite successful addKbd call`);
-            } catch (addError: any) {
+            } catch (addError: unknown) {
                 retryCount++;
-                console.warn(`Failed to add device ${id} (attempt ${retryCount}/${maxRetries}):`, addError.message);
+                console.warn(`Failed to add device ${id} (attempt ${retryCount}/${maxRetries}):`, addError instanceof Error ? addError.message : String(addError));
                 
                 if (retryCount >= maxRetries) {
                     console.error(`Failed to create HID instance for ${id} after ${maxRetries} attempts`);
@@ -213,7 +215,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                         deviceStatusMap[id].initializing = false;
                         deviceStatusMap[id].connected = false;
                     }
-                    throw new Error(`Failed to initialize device ${id} after ${maxRetries} attempts: ${addError.message}`);
+                    throw new Error(`Failed to initialize device ${id} after ${maxRetries} attempts: ${addError instanceof Error ? addError.message : String(addError)}`);
                 }
                 
                 // Wait before retry
@@ -260,8 +262,8 @@ const start = async (device: HIDDevice): Promise<string> => {
                 hidDeviceInstances[newId!] = null;
                 
                 // Notify UI about device disconnection
-                if ((global as any).mainWindow) {
-                    (global as any).mainWindow.webContents.send("deviceConnectionStateChanged", {
+                if ((global as { mainWindow?: ElectronWindow }).mainWindow) {
+                    (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionStateChanged", {
                         deviceId: newId,
                         connected: false,
                         gpkRCVersion: deviceStatusMap[newId!]?.gpkRCVersion || 0,
@@ -282,7 +284,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                         if (receivedCmdId === commandId.customSetValue) {
                             if(receivedActionId === actionId.setValueComplete) {
                                 // Notify UI that data saving is complete
-                                (global as any).mainWindow.webContents.send("configSaveComplete", {
+                                (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("configSaveComplete", {
                                     deviceId: id,
                                     success: true,
                                     timestamp: Date.now()
@@ -311,7 +313,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                                         if(oledSettings[id].enabled) {
                                             // Note: writeTimeToOled function will be imported from oledDisplay.js
                                             // Use imported writeTimeToOled function
-                                            writeTimeToOled(device as any); 
+                                            writeTimeToOled(device); 
                                         }
                                         deviceStatusMap[id]!.config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
                                     }
@@ -322,7 +324,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                                 initializationComplete = true;
 
 
-                                (global as any).mainWindow.webContents.send("deviceConnectionStateChanged", {
+                                (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
                                     connected: deviceStatusMap[id]!.connected,
                                     gpkRCVersion: deviceStatusMap[id]!.gpkRCVersion,
@@ -334,7 +336,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                                 // Use imported receiveTrackpadSpecificConfig function
                                 deviceStatusMap[id]!.config.trackpad = receiveTrackpadSpecificConfig(Array.from(actualData));
 
-                                (global as any).mainWindow.webContents.send("deviceConnectionStateChanged", {
+                                (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
                                     connected: deviceStatusMap[id]!.connected,
                                     gpkRCVersion: deviceStatusMap[id]!.gpkRCVersion,
@@ -363,7 +365,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                                 }
                                 
                                 const phaseChanged = oldPhase !== newPhase || oldTimerActive !== newTimerActive;
-                                (global as any).mainWindow.webContents.send("deviceConnectionPomodoroPhaseChanged", {
+                                (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionPomodoroPhaseChanged", {
                                     deviceId: id,
                                     pomodoroConfig: deviceStatusMap[id]!.config.pomodoro,
                                     phaseChanged: phaseChanged,
@@ -388,7 +390,7 @@ const start = async (device: HIDDevice): Promise<string> => {
 
                                 const phaseChanged = oldPhase !== pomodoroActiveUpdate.phase || oldTimerActive !== pomodoroActiveUpdate.timer_active;
 
-                                (global as any).mainWindow.webContents.send("deviceConnectionPomodoroPhaseChanged", {
+                                (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionPomodoroPhaseChanged", {
                                     deviceId: id,
                                     pomodoroConfig: deviceStatusMap[id]!.config.pomodoro,
                                     phaseChanged: phaseChanged,
@@ -396,12 +398,13 @@ const start = async (device: HIDDevice): Promise<string> => {
                             }
                         }
                     }
-                } catch (dataProcessingError: any) {
+                } catch (dataProcessingError: unknown) {
                     console.error(`Error processing device data for ${newId}:`, dataProcessingError);
                     
+                    const errorMessage = dataProcessingError instanceof Error ? dataProcessingError.message : String(dataProcessingError);
                     // If error suggests HID communication issues, trigger error event
-                    if (dataProcessingError.message.includes("could not read from HID device") ||
-                        dataProcessingError.message.includes("HID device disconnected")) {
+                    if (errorMessage.includes("could not read from HID device") ||
+                        errorMessage.includes("HID device disconnected")) {
                         console.error(`HID communication error detected for ${newId}, triggering cleanup`);
                         
                         // Trigger the error event which will handle cleanup
@@ -424,7 +427,7 @@ const start = async (device: HIDDevice): Promise<string> => {
             if (hidDeviceInstances[newId!]) {
                 try {
                     // Test HID instance readiness
-                    if (!(hidDeviceInstances[newId!] as any).read) {
+                    if (!(hidDeviceInstances[newId!] as HID.HID & { read?: () => void }).read) {
                         console.warn(`Device ${newId} HID instance not fully ready after timeout`);
                     } else {
                     }
@@ -454,7 +457,7 @@ const start = async (device: HIDDevice): Promise<string> => {
 }
 
 const stop = async (device: HIDDevice): Promise<void> => {
-    const id = encodeDeviceId(device as any);
+    const id = encodeDeviceId(device);
 
     if (hidDeviceInstances[id]) {
         try {
@@ -513,7 +516,7 @@ const close = async (): Promise<void> => {
 }
 
 const writeCommand = async (device: HIDDevice, command: number[], retryCount: number = 0): Promise<CommandResult> => {
-    const id = encodeDeviceId(device as any);
+    const id = encodeDeviceId(device);
     const maxRetries = 2; // Allow 2 retries for communication failures
     
     try {
@@ -530,7 +533,7 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
         }
         
         // Additional check: verify HID instance hasn't been closed
-        if ((hidDeviceInstances[id] as any).closed) {
+        if ((hidDeviceInstances[id] as HID.HID & { closed?: boolean }).closed) {
             console.error(`Device ${id} writeCommand failed: HID instance is closed`);
             
             // Mark device as disconnected
@@ -552,7 +555,7 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
         await hidDeviceInstances[id]!.write(bytes);    
 
         return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error(`Error writing command to device ${id} (attempt ${retryCount + 1}):`, err);
         
         // If write fails, mark device as potentially disconnected
@@ -560,11 +563,12 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
             deviceStatusMap[id]!.connected = false;
         }
         
+        const errorMessage = err instanceof Error ? err.message : String(err);
         // Check if this is a recoverable error and we haven't exceeded retries
-        const isRecoverableError = err.message.includes("cannot write to hid device") ||
-                                   err.message.includes("could not read from HID device") ||
-                                   err.message.includes("HID device disconnected") ||
-                                   err.message.includes("Device or resource busy");
+        const isRecoverableError = errorMessage.includes("cannot write to hid device") ||
+                                   errorMessage.includes("could not read from HID device") ||
+                                   errorMessage.includes("HID device disconnected") ||
+                                   errorMessage.includes("Device or resource busy");
         
         if (isRecoverableError && retryCount < maxRetries) {            
             // Clean up current HID instance
@@ -601,7 +605,7 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
                 }
             } catch (recreateError) {
                 console.error(`Failed to recreate HID instance for ${id}:`, recreateError);
-                return { success: false, error: `Write error after recovery attempt: ${err.message}` };
+                return { success: false, error: `Write error after recovery attempt: ${errorMessage}` };
             }
         } else {
             // Clean up invalid HID instance for non-recoverable errors or after max retries
@@ -616,13 +620,13 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
             }
         }
         
-        return { success: false, error: `Write error: ${err.message}` };
+        return { success: false, error: `Write error: ${errorMessage}` };
     }
 }
 
 const getConnectKbd = (id: string): DeviceStatus | undefined => deviceStatusMap[id]
 
-const updateAutoLayerSettings = (store: any): boolean => {
+const updateAutoLayerSettings = (store: Store<StoreSchema>): boolean => {
     if (!store) return false;
     
     settingsStore = store;

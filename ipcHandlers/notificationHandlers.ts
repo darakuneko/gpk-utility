@@ -1,4 +1,5 @@
 import { ipcMain, Notification, Menu, IpcMainEvent, BrowserWindow, Tray } from "electron";
+import Store from 'electron-store';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
@@ -10,14 +11,15 @@ import type {
   DeviceConnectionPomodoroData 
 } from '../src/types/ipc';
 import type { LocaleMessages } from '../src/types/i18n';
+import type { StoreSchema } from '../src/types/store';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let store: any;
+let store: Store<StoreSchema>;
 let mainWindow: BrowserWindow | null;
 
-export const setStore = (storeInstance: any): void => {
+export const setStore = (storeInstance: Store<StoreSchema>): void => {
     store = storeInstance;
 };
 
@@ -26,12 +28,12 @@ export const setMainWindow = (window: BrowserWindow): void => {
 };
 
 // Translation utility function
-const translate = (key: string, params: Record<string, any> = {}): string => {
+const translate = (key: string, params: Record<string, unknown> = {}): string => {
     const locale = store.get('locale') || 'en';
     let translations: LocaleMessages = enTranslations;
     
     // Get nested value from translations using key path
-    const getValue = (obj: any, path: string): string | undefined => {
+    const getValue = (obj: Record<string, unknown>, path: string): string | undefined => {
         return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
     };
     
@@ -92,7 +94,7 @@ export const setupNotificationEvents = (
         const pomodoroDesktopNotificationsSettings = store.get('pomodoroDesktopNotificationsSettings') || {};
         
         // Use provided deviceId directly if available, otherwise generate it from device name
-        const idToUse = deviceId || encodeDeviceId({ id: deviceName } as any);
+        const idToUse = deviceId || encodeDeviceId({ id: deviceName } as Device);
         
         // Skip notification if disabled for this device
         if (pomodoroDesktopNotificationsSettings[idToUse] === false) {
@@ -161,7 +163,7 @@ export const setupNotificationEvents = (
             // Get device name
             const devices = getKBDList();
             const device = devices.find(d => d.id === deviceId);
-            const deviceName = (device as any)?.product || (device as any)?.name || 'Device';
+            const deviceName = device?.product || 'Device';
             
             // Add to active devices
             activePomodoroDevices.set(deviceId, {

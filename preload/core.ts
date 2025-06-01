@@ -2,7 +2,7 @@ import { ipcRenderer } from 'electron';
 import type { Device, StoreSettings, CommandResult } from './types';
 
 // Global state variables
-export const listeners = new Map<(...args: any[]) => void, (...args: any[]) => void>();
+export const listeners = new Map<(...args: unknown[]) => void, (...args: unknown[]) => void>();
 export let cachedDeviceRegistry: Device[] = [];
 export let keyboardPollingInterval: NodeJS.Timeout | null = null;
 export let windowMonitoringInterval: NodeJS.Timeout | null = null;
@@ -64,7 +64,7 @@ export const startKeyboardPolling = (keyboardSendLoop: () => Promise<void>): voi
 };
 
 // Function to start window monitoring at faster intervals
-export const startWindowMonitoring = (startWindowMonitoringCommand: () => Promise<any>): void => {
+export const startWindowMonitoring = (startWindowMonitoringCommand: () => Promise<void>): void => {
     if (windowMonitoringInterval) {
         clearInterval(windowMonitoringInterval);
     }
@@ -92,12 +92,12 @@ export const loadStoreSettings = async (): Promise<void> => {
 };
 
 // Save store setting and update cache
-export const saveStoreSetting = async (key: keyof StoreSettings, value: any, deviceId: string | null = null): Promise<CommandResult> => {
+export const saveStoreSetting = async (key: keyof StoreSettings, value: unknown, deviceId: string | null = null): Promise<CommandResult> => {
     try {
         const result = await ipcRenderer.invoke('saveStoreSetting', { key, value }) as CommandResult;
         if (result.success) {
             // Update local cache
-            (cachedStoreSettings as any)[key] = value;
+            (cachedStoreSettings as Record<string, unknown>)[key] = value;
             
             // Handle polling interval changes
             if (key === 'pollingInterval') {
@@ -126,9 +126,9 @@ export const saveStoreSetting = async (key: keyof StoreSettings, value: any, dev
             }
         }
         return result;
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error(`[ERROR] saveStoreSetting ${key}:`, err);
-        return { success: false, error: err.message };
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
 };
 

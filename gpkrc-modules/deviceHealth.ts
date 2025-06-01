@@ -9,10 +9,10 @@ let deviceHealthCheckInterval = 10000; // Check every 10 seconds
 // Dependency injection interfaces
 interface DeviceHealthDependencies {
     deviceStatusMap: Record<string, DeviceStatus>;
-    hidDeviceInstances: Record<string, any>;
-    getKBD: (deviceInfo: any) => Promise<any>;
-    addKbd: (deviceInfo: any) => Promise<string>;
-    mainWindow?: any;
+    hidDeviceInstances: Record<string, unknown>;
+    getKBD: (deviceInfo: Device) => Promise<HIDDevice>;
+    addKbd: (deviceInfo: Device) => Promise<string>;
+    mainWindow?: Electron.BrowserWindow;
 }
 
 let dependencies: DeviceHealthDependencies | null = null;
@@ -63,7 +63,7 @@ export const checkDeviceHealth = async (): Promise<void> => {
             }
             
             // Check if HID instance exists but is marked as closed
-            if (hidInstance && (hidInstance as any).closed) {
+            if (hidInstance && (hidInstance as HIDDevice & { closed?: boolean }).closed) {
                 console.warn(`Device ${deviceId} HID instance is closed, attempting recovery...`);
                 
                 // Mark device as disconnected

@@ -24,24 +24,7 @@ import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, se
 // ActiveWindow is already initialized as an instance, no need to call initialize()
 
 // Types
-interface WindowBounds {
-    width: number;
-    height: number;
-    x?: number;
-    y?: number;
-}
-
-interface StoreSchema {
-    autoLayerSettings: Record<string, any>;
-    oledSettings: Record<string, any>;
-    pomodoroDesktopNotificationsSettings: Record<string, any>;
-    savedNotifications: any[];
-    minimizeToTray: boolean;
-    backgroundStart: boolean;
-    windowBounds: WindowBounds;
-    locale: string;
-    notificationApiEndpoint: string;
-}
+import type { StoreSchema } from './src/types/store';
 
 interface PomodoroDeviceInfo {
     name: string;
@@ -69,12 +52,12 @@ const store = new Store<StoreSchema>({
 });
 
 // Translation utility function
-const translate = (key: string, params: Record<string, any> = {}): string => {
+const translate = (key: string, params: Record<string, unknown> = {}): string => {
     const locale = store.get('locale') || 'en';
-    let translations: any = enTranslations;
+    let translations: Record<string, unknown> = enTranslations;
     
     // Get nested value from translations using key path
-    const getValue = (obj: any, path: string): any => {
+    const getValue = (obj: Record<string, unknown>, path: string): unknown => {
         return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
     };
     
@@ -226,7 +209,7 @@ const createWindow = (): void => {
     
     // Monitor window size and position changes
     (['resize', 'move'] as const).forEach(eventName => {
-        mainWindow!.on(eventName as any, () => {
+        mainWindow!.on(eventName as keyof Electron.BrowserWindowConstructorOptions, () => {
             if (!mainWindow!.isMinimized() && !mainWindow!.isMaximized()) {
                 const bounds = mainWindow!.getBounds();
                 store.set('windowBounds', bounds);
@@ -248,7 +231,7 @@ const createWindow = (): void => {
         }
     });
     
-    mainWindow.on('minimize' as any, (event: Electron.Event) => {
+    mainWindow.on('minimize', (event: Electron.Event) => {
         if (store.get('minimizeToTray')) {
             event.preventDefault();
             mainWindow!.hide();

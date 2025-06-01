@@ -17,14 +17,14 @@ export const exposeAPI = (): void => {
         start: async (device: Device): Promise<CommandResult> => await command.start(device),
         stop: async (device: Device): Promise<CommandResult> => await command.stop(device),
         getDeviceInitConfig: async (device: Device): Promise<CommandResult> => await command.getDeviceInitConfig(device),
-        getDeviceType: (): Promise<any> => ipcRenderer.invoke('getDeviceType'),
+        getDeviceType: (): Promise<string> => ipcRenderer.invoke('getDeviceType'),
         dispatchSaveDeviceConfig: async (deviceWithConfig: Device, configTypes: string[]): Promise<CommandResult> => await command.dispatchSaveDeviceConfig(deviceWithConfig, configTypes),
         getDeviceConfig: async (device: Device): Promise<CommandResult> => await ipcRenderer.invoke('getDeviceConfig', device),
         getPomodoroConfig: async (device: Device): Promise<CommandResult> => await ipcRenderer.invoke('getPomodoroConfig', device),
         getPomodoroActiveStatus: async (device: Device): Promise<CommandResult> => await command.getPomodoroActiveStatus(device),
         getTrackpadConfigData: async (device: Device): Promise<CommandResult> => await command.getTrackpadConfigData(device),
         saveTrackpadConfig: async (device: Device): Promise<CommandResult> => await command.saveTrackpadConfig(device),
-        savePomodoroConfigData: async (device: Device, pomodoroDataBytes: any): Promise<CommandResult> => await command.savePomodoroConfigData(device, pomodoroDataBytes),
+        savePomodoroConfigData: async (device: Device, pomodoroDataBytes: Buffer): Promise<CommandResult> => await command.savePomodoroConfigData(device, pomodoroDataBytes),
         sleep: async (msec: number): Promise<void> => await ipcRenderer.invoke('sleep', msec),
         setActiveTab: async (device: Device, tabName: string): Promise<CommandResult> => await ipcRenderer.invoke('setActiveTab', device, tabName),
         getActiveWindows: async (): Promise<CommandResult> => await command.getActiveWindows(),
@@ -83,9 +83,9 @@ export const exposeAPI = (): void => {
                 
                 // Export the enhanced data
                 return await command.exportFile(exportData);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Error in exportFile:", err);
-                return { success: false, error: err.message };
+                return { success: false, error: err instanceof Error ? err.message : String(err) };
             }
         },
         importFile: async (): Promise<ImportResult> => {
@@ -216,30 +216,30 @@ export const exposeAPI = (): void => {
                     return { success: false, error: "Invalid JSON format" };
                 }
                 
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Import file error:", err);
-                return { success: false, error: err.message || "Unknown error during import" };
+                return { success: false, error: err instanceof Error ? err.message : "Unknown error during import" };
             }
         },
         
         // Unified store settings API
-        getStoreSetting: (key: string): any => {
-            return (cachedStoreSettings as any)[key];
+        getStoreSetting: (key: string): unknown => {
+            return (cachedStoreSettings as Record<string, unknown>)[key];
         },
-        saveStoreSetting: async (key: string, value: any): Promise<CommandResult> => {
-            return await saveStoreSetting(key as any, value, null);
+        saveStoreSetting: async (key: string, value: unknown): Promise<CommandResult> => {
+            return await saveStoreSetting(key as keyof StoreSettings, value, null);
         },
-        getAllStoreSettings: (): any => {
+        getAllStoreSettings: (): Record<string, unknown> => {
             return cachedStoreSettings;
         },
         
         // Legacy API for backward compatibility
-        saveAutoLayerSettings: async (settings: any): Promise<CommandResult> => {
+        saveAutoLayerSettings: async (settings: Record<string, unknown>): Promise<CommandResult> => {
             // Try to get a device ID (use the first one if there are multiple devices)
             const deviceId = Object.keys(settings)[0] || null;
             return await saveStoreSetting('autoLayerSettings', settings, deviceId);
         },
-        loadAutoLayerSettings: async (): Promise<{ success: boolean; settings: any }> => {
+        loadAutoLayerSettings: async (): Promise<{ success: boolean; settings: Record<string, unknown> }> => {
             return { success: true, settings: cachedStoreSettings.autoLayerSettings || {} };
         },
         saveOledSettings: async (deviceId: string, enabled: boolean): Promise<CommandResult> => {
@@ -282,12 +282,12 @@ export const exposeAPI = (): void => {
         },
         
         // Event listeners
-        on: (channel: string, func: (...args: any[]) => void): void => {
-            const listener = (event: any, ...args: any[]) => func(...args);
+        on: (channel: string, func: (...args: unknown[]) => void): void => {
+            const listener = (event: Electron.IpcRendererEvent, ...args: unknown[]) => func(...args);
             listeners.set(func, listener);
             ipcRenderer.on(channel, listener);
         },
-        off: (channel: string, func: (...args: any[]) => void): void => {
+        off: (channel: string, func: (...args: unknown[]) => void): void => {
             const listener = listeners.get(func);
             if (listener) {
                 ipcRenderer.removeListener(channel, listener);
@@ -295,7 +295,7 @@ export const exposeAPI = (): void => {
             }
         },
         
-        getCachedNotifications: async (): Promise<any[]> => cachedStoreSettings.savedNotifications || [],
+        getCachedNotifications: async (): Promise<NotificationData[]> => cachedStoreSettings.savedNotifications || [],
         
         // Get application info from package.json
         getAppInfo: async (): Promise<AppInfo> => {
@@ -314,7 +314,7 @@ export const exposeAPI = (): void => {
         },
         
         // Open external links (for version modal)
-        openExternalLink: async (url: string): Promise<any> => {
+        openExternalLink: async (url: string): Promise<void> => {
             return await ipcRenderer.invoke('openExternalLink', url);
         },
         

@@ -20,20 +20,27 @@ export interface DeviceWithId extends HIDDevice {
     gpkRCVersion?: number;
 }
 
+// Base Device interface ensures manufacturer and product are required for core operations
 export interface Device extends DeviceWithId {
     id: string;             // Ensure id is always present
+    manufacturer: string;   // Required for device identification
+    product: string;        // Required for device identification
     connected?: boolean;
     initializing?: boolean;
     checkDevice?: boolean;
     needsRestart?: boolean;
     config?: DeviceConfig | null;
-    manufacturer?: string;  // Override to make optional
-    product?: string;       // Override to make optional
+}
+
+// For cases where manufacturer/product might be optional (e.g., during device discovery)
+export interface PartialDevice extends Omit<Device, 'manufacturer' | 'product'> {
+    manufacturer?: string;
+    product?: string;
 }
 
 export interface CommandResult {
     success: boolean;
-    data?: any;
+    data?: unknown;
     error?: string;
     skipped?: boolean;
 }

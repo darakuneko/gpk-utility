@@ -5,7 +5,7 @@
     "lib": ["ES2022", "DOM"],
     "jsx": "react-jsx",
     "strict": false,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,

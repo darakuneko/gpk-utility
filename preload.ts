@@ -15,11 +15,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         startWindowMonitoring(command.startWindowMonitoring);
         
         const result = await command.getNotifications();
-        const latestNotification = result?.notifications[0] || {} as any;
+        const latestNotification = result?.notifications[0] || {} as Record<string, unknown>;
         const savedNotifications = cachedStoreSettings?.savedNotifications || [];
 
         if (latestNotification?.id) {
-            const isDifferent = !savedNotifications.length || !savedNotifications.some((n: any) => n.id === latestNotification.id);
+            const isDifferent = !savedNotifications.length || !savedNotifications.some((n: Record<string, unknown>) => n.id === latestNotification.id);
             if (isDifferent) {       
                 await saveStoreSetting('savedNotifications', result.notifications);
                 window.dispatchEvent(new CustomEvent('showUpdatesNotificationModal', {

@@ -19,7 +19,7 @@ const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose }) => {
       // Get app information when modal is opened
       window.api.getAppInfo().then((info: AppInfo) => {
         setAppInfo(info);
-      }).catch((err: any) => {
+      }).catch((err: unknown) => {
         console.error('Failed to get app info:', err);
       });
       
@@ -28,7 +28,7 @@ const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose }) => {
         if (result.success && result.path) {
           setStoreFilePath(result.path);
         }
-      }).catch((err: any) => {
+      }).catch((err: unknown) => {
         console.error('Failed to get store file path:', err);
       });
     }

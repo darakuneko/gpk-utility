@@ -21,10 +21,8 @@ import {
 
 let mainWindow: BrowserWindow;
 
-interface Device {
-    id: string;
-    [key: string]: any;
-}
+// Use proper Device type from types/device.ts
+import type { Device } from '../src/types/device';
 
 export const setMainWindow = (window: BrowserWindow): void => {
     mainWindow = window;
@@ -33,56 +31,57 @@ export const setMainWindow = (window: BrowserWindow): void => {
 export const setupDeviceHandlers = (): void => {
     // Device control handlers
     ipcMain.handle('start', async (event, device: Device) => {
-        await start(device as any)
+        await start(device)
     });
     
     ipcMain.handle('stop', async (event, device: Device) => {
-        await stop(device as any)
+        await stop(device)
     });
     
     ipcMain.handle('close', async (event) => {
         await close()
     });
     
-    ipcMain.handle('encodeDeviceId', async (event, device: Device) => await encodeDeviceId(device as any));
+    ipcMain.handle('encodeDeviceId', async (event, device: Device) => await encodeDeviceId(device));
     ipcMain.handle('getKBDList', async (event) => await getKBDList());
     ipcMain.handle('getDeviceType', (event) => getDeviceType());
     ipcMain.handle('getConnectKbd', async (event, id: string) => await getConnectKbd(id));
     
-    ipcMain.on("changeConnectDevice", (e, data: any) => {
+    ipcMain.on("changeConnectDevice", (e, data: Device) => {
         mainWindow.webContents.send("changeConnectDevice", data)
     });
     
     ipcMain.handle('getDeviceConfig', async (event, device: Device) => {
         try {
-            const result = await getDeviceConfig(device as any);
+            const result = await getDeviceConfig(device);
             return { success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(`IPC handler: Error getting device config for ${device.id}:`, error);
             
+            const errorMessage = error instanceof Error ? error.message : String(error);
             // If the error is related to HID instance unavailability, suggest reconnection
-            if (error.message.includes("No HID instance available") || 
-                error.message.includes("Device may need to be reconnected")) {
+            if (errorMessage.includes("No HID instance available") || 
+                errorMessage.includes("Device may need to be reconnected")) {
                 return { 
                     success: false, 
-                    error: error.message,
+                    error: errorMessage,
                     requiresReconnection: true,
                     suggestion: "Please disconnect and reconnect the device to re-establish communication."
                 };
             }
             
-            return { success: false, error: error.message };
+            return { success: false, error: errorMessage };
         }
     });
-    ipcMain.handle('getPomodoroConfig', async (event, device: Device) => await getPomodoroConfig(device as any));
+    ipcMain.handle('getPomodoroConfig', async (event, device: Device) => await getPomodoroConfig(device));
     
     // Device config data handlers
-    ipcMain.handle('getPomodoroActiveStatus', async (event, device: Device) => await getPomodoroActiveStatus(device as any));
-    ipcMain.handle('getTrackpadConfigData', async (event, device: Device) => await getTrackpadConfigData(device as any));
+    ipcMain.handle('getPomodoroActiveStatus', async (event, device: Device) => await getPomodoroActiveStatus(device));
+    ipcMain.handle('getTrackpadConfigData', async (event, device: Device) => await getTrackpadConfigData(device));
 
     // Tab switch handler
     ipcMain.handle('setActiveTab', async (event, device: Device, tabName: string) => {
-        setActiveTab(device as any, tabName)
+        setActiveTab(device, tabName)
     });
 
     // Window monitoring control
@@ -97,16 +96,16 @@ export const setupDeviceHandlers = (): void => {
 
     ipcMain.handle('getDeviceInitConfig', async (event, device: Device) => {
         try {
-            return await getDeviceInitConfig(device as any);
-        } catch (error: any) {
-            return { success: false, error: error.message };
+            return await getDeviceInitConfig(device);
+        } catch (error: unknown) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
     // Write to OLED
     ipcMain.handle('dateTimeOledWrite', async (event, device: Device, forceWrite?: boolean) => {
         try {
-            const result = await writeTimeToOled(device as any, forceWrite);        
+            const result = await writeTimeToOled(device, forceWrite);        
             
             if (!result.success) {
                 console.error(`Failed to write to OLED: ${result.error || 'Unknown error'}`);
@@ -114,15 +113,15 @@ export const setupDeviceHandlers = (): void => {
             }
             
             return { success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(`Error in dateTimeOledWrite handler:`, error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 };
 
 export const setupDeviceEvents = (): void => {
-    ipcMain.on("connectDevice", (e, data: any) => {
+    ipcMain.on("connectDevice", (e, data: Device) => {
         mainWindow.webContents.send("isConnectDevice", data)
     });
 };

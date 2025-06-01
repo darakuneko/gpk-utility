@@ -1,3 +1,4 @@
+import Store from 'electron-store';
 import { commandId, actionId, parseDeviceId } from './communication';
 import type { 
     Device, 
@@ -7,13 +8,14 @@ import type {
     ActiveWindowResult,
     WriteCommandFunction 
 } from '../src/types/device';
+import type { StoreSchema } from '../src/types/store';
 
 // Dependency injection
 interface WindowMonitoringDependencies {
     deviceStatusMap: Record<string, DeviceStatus>;
-    settingsStore: any;
+    settingsStore: Store<StoreSchema>;
     writeCommand: WriteCommandFunction;
-    mainWindow?: any;
+    mainWindow?: Electron.BrowserWindow;
 }
 
 let dependencies: WindowMonitoringDependencies | null = null;
@@ -27,7 +29,7 @@ export let activeWindows: string[] = [];
 export let currentLayers: { [deviceId: string]: number } = {}; // Track current layer for each device
 
 // Function for monitoring active windows and switching layers
-export const startWindowMonitoring = async (ActiveWindow: any): Promise<void> => {    
+export const startWindowMonitoring = async (ActiveWindow: { getActiveWindow: () => Promise<{ title: string; name: string }> }): Promise<void> => {    
     try {
         const result: ActiveWindowResult = await ActiveWindow.getActiveWindow();
         if (!result) return;
@@ -125,7 +127,7 @@ export const getSelectedAppSettings = async (deviceId: string, appName: string):
 };
 
 // Function to add new application to settings that isn't in the list
-export const addNewAppToAutoLayerSettings = async (deviceId: string, appName: string, layer: number): Promise<any> => {
+export const addNewAppToAutoLayerSettings = async (deviceId: string, appName: string, layer: number): Promise<{ success: boolean; message?: string }> => {
     if (!dependencies?.settingsStore) return null;
     
     const settingsStore = dependencies.settingsStore;

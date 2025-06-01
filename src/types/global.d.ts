@@ -1,27 +1,28 @@
 // Global type definitions for GPK Utility
+import { Device, DeviceConfig, AppInfo } from './common';
 
 // Window API exposed by preload script
 declare global {
   interface Window {
     api: {
       // Device operations
-      getConnectedDevices: () => Promise<any[]>;
-      connectDevice: (device: any) => Promise<void>;
-      disconnectDevice: (device: any) => Promise<void>;
-      sendCommand: (command: any[]) => Promise<any>;
+      getConnectedDevices: () => Promise<Device[]>;
+      connectDevice: (device: Device) => Promise<void>;
+      disconnectDevice: (device: Device) => Promise<void>;
+      sendCommand: (command: unknown[]) => Promise<unknown>;
       
       // Config operations
-      getDeviceSettings: (device: any) => Promise<any>;
-      saveDeviceSettings: (device: any, settings: any) => Promise<void>;
+      getDeviceSettings: (device: Device) => Promise<DeviceConfig>;
+      saveDeviceSettings: (device: Device, settings: DeviceConfig) => Promise<void>;
       
       // File operations
       importConfigs: () => Promise<string>;
       exportConfigs: () => Promise<void>;
-      exportDeviceJson: (device: any, settings: any) => Promise<void>;
+      exportDeviceJson: (device: Device, settings: DeviceConfig) => Promise<void>;
       
       // Store operations
-      storeGet: (key: string) => Promise<any>;
-      storeSet: (key: string, value: any) => Promise<void>;
+      storeGet: (key: string) => Promise<unknown>;
+      storeSet: (key: string, value: unknown) => Promise<void>;
       storeDelete: (key: string) => Promise<void>;
       storeClear: () => Promise<void>;
       
@@ -32,7 +33,7 @@ declare global {
       getVersion: () => Promise<string>;
       
       // App info
-      getAppInfo: () => Promise<any>;
+      getAppInfo: () => Promise<AppInfo>;
       getStoreFilePath: () => Promise<{ success: boolean; path?: string }>;
       
       // External links

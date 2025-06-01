@@ -1,4 +1,5 @@
 // IPC-related type definitions
+import { Device, PomodoroConfig } from './common';
 
 export interface PomodoroNotificationData {
     deviceName: string;
@@ -22,7 +23,7 @@ export interface ImportResult {
 }
 
 export interface ExportData {
-    devices: any[];
+    devices: Device[];
     appSettings: {
         traySettings: {
             minimizeToTray: boolean;
@@ -34,14 +35,14 @@ export interface ExportData {
 
 export interface NotificationData {
     id?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface NotificationQueryPayload {
     deviceId: string;
     type: string;
     collection?: string;
-    filters?: any;
+    filters?: Record<string, unknown>;
     orderBy?: string | { field: string; direction: string; };
     limit?: number;
 }
@@ -55,12 +56,12 @@ export interface PomodoroPhaseData {
 
 export interface DeviceConnectionPomodoroData {
     deviceId: string;
-    pomodoroConfig: any;
+    pomodoroConfig: PomodoroConfig;
     phaseChanged: boolean;
 }
 
 export interface IpcResponse {
     success: boolean;
     error?: string;
-    data?: any;
+    data?: unknown;
 }

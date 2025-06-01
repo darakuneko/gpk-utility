@@ -1,18 +1,20 @@
 import { ipcMain, BrowserWindow } from "electron";
+import Store from 'electron-store';
 import {
     saveTrackpadConfig,
     savePomodoroConfigData,
     updateAutoLayerSettings
 } from '../gpkrc';
+import type { StoreSchema } from '../src/types/store';
 
 let mainWindow: BrowserWindow;
-let store: any;
+let store: Store<StoreSchema>;
 
 export const setMainWindow = (window: BrowserWindow): void => {
     mainWindow = window;
 };
 
-export const setStore = (storeInstance: any): void => {
+export const setStore = (storeInstance: Store<StoreSchema>): void => {
     store = storeInstance;
 };
 
@@ -134,21 +136,21 @@ export const setupConfigHandlers = (): void => {
             const trackpadBytes = buildTrackpadConfigByteArray(device.config.trackpad);
             
             // Call GPKRC to send settings to the device
-            await saveTrackpadConfig(device as any, trackpadBytes);
+            await saveTrackpadConfig(device, trackpadBytes);
             return { success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error in saveTrackpadConfig:", error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
     
     ipcMain.handle('savePomodoroConfigData', async (event, device: Device, pomodoroDataBytes: number[]) => {
         try {
-            await savePomodoroConfigData(device as any, pomodoroDataBytes);
+            await savePomodoroConfigData(device, pomodoroDataBytes);
             return { success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error in savePomodoroConfigData:", error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -169,14 +171,14 @@ export const setupConfigHandlers = (): void => {
             if ((updateAll || typesToUpdate.includes('trackpad')) && deviceWithConfig.config.trackpad) {
                 // Use the existing local function
                 const trackpadBytes = buildTrackpadConfigByteArray(deviceWithConfig.config.trackpad);
-                saveTrackpadConfig(deviceWithConfig as any, trackpadBytes); // Deliberately not awaiting to prevent UI sluggishness
+                saveTrackpadConfig(deviceWithConfig as Device, trackpadBytes); // Deliberately not awaiting to prevent UI sluggishness
                 trackpadSaved = true;
             }
 
             // Handle pomodoro config
             if ((updateAll || typesToUpdate.includes('pomodoro')) && deviceWithConfig.config.pomodoro) {
                 const pomodoroBytes = buildPomodoroConfigByteArray(deviceWithConfig.config.pomodoro);
-                savePomodoroConfigData(deviceWithConfig as any, pomodoroBytes); // Deliberately not awaiting to prevent UI sluggishness
+                savePomodoroConfigData(deviceWithConfig as Device, pomodoroBytes); // Deliberately not awaiting to prevent UI sluggishness
                 pomodoroSaved = true;
             }
 
@@ -198,14 +200,14 @@ export const setupConfigHandlers = (): void => {
                 return { success: false, message: "No config found to save for the specified types." };
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error in dispatchSaveDeviceConfig:", error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
     // Save auto layer settings
-    ipcMain.handle('saveAutoLayerSettings', async (event, settings: any) => {
+    ipcMain.handle('saveAutoLayerSettings', async (event, settings: Record<string, unknown>) => {
         try {
             // Save settings to electron-store
             store.set('autoLayerSettings', settings);
@@ -224,8 +226,8 @@ export const setupConfigHandlers = (): void => {
             }
             
             return { success: true };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 
@@ -239,8 +241,8 @@ export const setupConfigHandlers = (): void => {
             updateAutoLayerSettings(store);
             
             return { success: true, settings };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
 };

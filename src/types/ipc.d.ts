@@ -26,17 +26,17 @@ export type IpcChannels =
 
 // IPC Handler types
 export interface IpcHandlers {
-  [key: string]: (event: any, ...args: any[]) => Promise<any> | any;
+  [key: string]: (event: Electron.IpcMainEvent, ...args: unknown[]) => Promise<unknown> | unknown;
 }
 
 // Command types
 export interface Command {
   id: number;
-  params?: any[];
+  params?: unknown[];
 }
 
 // Response types
-export interface IpcResponse<T = any> {
+export interface IpcResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -48,7 +48,7 @@ export interface NotificationQueryPayload {
   filters: Array<{
     field: string;
     op: string;
-    value: any;
+    value: unknown;
   }>;
   orderBy: {
     field: string;

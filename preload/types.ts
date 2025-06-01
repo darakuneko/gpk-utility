@@ -35,12 +35,12 @@ export interface PomodoroConfig {
 export interface TrackpadConfig {
     auto_layer_enabled?: number;
     auto_layer_settings?: AutoLayerSetting[];
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface AutoLayerSetting {
     enabled: boolean;
-    layerSettings: any[];
+    layerSettings: Record<string, unknown>[];
 }
 
 export interface StoreSettings {
@@ -58,7 +58,7 @@ export interface StoreSettings {
 
 export interface Notification {
     id?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface ExportData {
@@ -79,7 +79,7 @@ export interface ImportResult {
 export interface CommandResult {
     success: boolean;
     error?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface PomodoroNotificationData {
@@ -105,7 +105,7 @@ export interface AppInfo {
     name: string;
     version: string;
     description: string;
-    author: any;
+    author: Record<string, unknown>;
 }
 
 export interface TraySettings {

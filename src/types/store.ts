@@ -1,13 +1,21 @@
 // Store-related type definitions
+import type { LayerSetting } from './device';
+import type { Notification } from './ipc';
+
+export interface WindowBounds {
+    width: number;
+    height: number;
+    x?: number;
+    y?: number;
+}
 
 export interface AutoLayerSetting {
     enabled: boolean;
     layerSettings: LayerSetting[];
 }
 
-export interface LayerSetting {
-    applicationName: string;
-    layer: number;
+export interface OledSetting {
+    enabled: boolean;
 }
 
 export interface TraySettings {
@@ -15,17 +23,19 @@ export interface TraySettings {
     backgroundStart: boolean;
 }
 
-export interface StoreSettings {
+export interface StoreSchema {
     autoLayerSettings: Record<string, AutoLayerSetting>;
-    oledSettings: Record<string, { enabled: boolean }>;
+    oledSettings: Record<string, OledSetting>;
     pomodoroDesktopNotificationsSettings: Record<string, boolean>;
-    savedNotifications: NotificationData[];
+    savedNotifications: Notification[];
     traySettings: TraySettings;
-    pollingInterval: number;
+    windowBounds: WindowBounds;
     locale: string;
+    notificationApiEndpoint: string;
+    // Legacy fields for backward compatibility
+    minimizeToTray?: boolean;
+    backgroundStart?: boolean;
 }
 
-export interface NotificationData {
-    id?: string;
-    [key: string]: any;
-}
+export type StoreKey = keyof StoreSchema;
+export type StoreValue<K extends StoreKey> = StoreSchema[K];

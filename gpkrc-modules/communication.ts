@@ -33,22 +33,30 @@ export const DEFAULT_USAGE = {
 } as const;
 
 // Types
-interface Device {
+import type { HIDDevice } from '../src/types/device';
+
+interface Command {
+    id: number;
+    data?: unknown;
+}
+
+interface ParsedDevice {
     manufacturer: string;
     product: string;
     vendorId: number;
     productId: number;
+    id: string;
     path?: string;
 }
 
-interface Command {
-    id: number;
-    data?: any;
-}
-
-interface ParsedDevice extends Device {
-    id: string;
-}
+// Type guard for devices with required encoding properties
+export const hasRequiredDeviceProperties = (device: unknown): device is HIDDevice & { manufacturer: string; product: string } => {
+    return device && 
+           typeof device.manufacturer === 'string' && 
+           typeof device.product === 'string' && 
+           typeof device.vendorId === 'number' && 
+           typeof device.productId === 'number';
+};
 
 export const dataToBytes = (data: string | number[] | undefined): number[] => {
     if (typeof data === 'string') {
@@ -72,8 +80,8 @@ export const commandToBytes = ({ id, data }: Command): number[] => {
     return unpadded.concat(padding);
 };
 
-export const encodeDeviceId = (device: Device | null): string => {
-    if (!device || !device.manufacturer || !device.product || !device.vendorId || !device.productId) {
+export const encodeDeviceId = (device: HIDDevice | null): string => {
+    if (!device || !hasRequiredDeviceProperties(device)) {
         console.error("Invalid device object for ID encoding:", device);
         return "unknown-device";
     }
