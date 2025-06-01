@@ -65,7 +65,7 @@
       "dist/**/*",
       "icons/*",
       "index.js",
-      "preload.cjs",
+      "dist-electron/preload.js",
       "gpkrc.js",
       "ipcHandlers.js",
       "ipcHandlers/**/*",

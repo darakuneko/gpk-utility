@@ -1,22 +1,138 @@
-const { contextBridge, ipcRenderer } = require('electron');
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-const listeners = new Map();
-let cachedDeviceRegistry = [];
-let keyboardPollingInterval = null;
-let windowMonitoringInterval = null;
+// Type definitions for device and configuration structures
+interface Device {
+    id: string;
+    manufacturer: string;
+    product: string;
+    productId: number;
+    vendorId: number;
+    path?: string;
+    connected: boolean;
+    initializing?: boolean;
+    checkDevice?: boolean;
+    config?: DeviceConfig | null;
+    needsRestart?: boolean;
+    gpkRCVersion?: string;
+    deviceType?: string;
+    name?: string;
+}
+
+interface DeviceConfig {
+    init?: number;
+    oled_enabled?: number;
+    pomodoro?: PomodoroConfig;
+    trackpad?: TrackpadConfig;
+}
+
+interface PomodoroConfig {
+    timer_active?: number;
+    phase?: number;
+    work_time?: number;
+    break_time?: number;
+    long_break_time?: number;
+    notifications_enabled?: number | boolean;
+}
+
+interface TrackpadConfig {
+    auto_layer_enabled?: number;
+    auto_layer_settings?: AutoLayerSetting[];
+    [key: string]: any;
+}
+
+interface AutoLayerSetting {
+    enabled: boolean;
+    layerSettings: any[];
+}
+
+interface StoreSettings {
+    autoLayerSettings: Record<string, AutoLayerSetting>;
+    oledSettings: Record<string, { enabled: boolean }>;
+    pomodoroDesktopNotificationsSettings: Record<string, boolean>;
+    savedNotifications: Notification[];
+    traySettings: {
+        minimizeToTray: boolean;
+        backgroundStart: boolean;
+    };
+    pollingInterval: number;
+    locale: string;
+}
+
+interface Notification {
+    id?: string;
+    [key: string]: any;
+}
+
+interface ExportData {
+    devices: Device[];
+    appSettings: {
+        traySettings: StoreSettings['traySettings'];
+        locale: string;
+    };
+}
+
+interface ImportResult {
+    success: boolean;
+    message?: string;
+    error?: string;
+    devicesUpdated?: number;
+}
+
+interface CommandResult {
+    success: boolean;
+    error?: string;
+    [key: string]: any;
+}
+
+interface PomodoroNotificationData {
+    deviceName: string;
+    deviceId: string;
+    phase: number;
+    minutes: number;
+}
+
+interface ConfigSaveCompleteDetail {
+    deviceId: string;
+    success: boolean;
+    timestamp: number;
+    importOperation?: boolean;
+}
+
+interface SliderState {
+    isSliderActive: boolean;
+    activeSliderDeviceId: string | null;
+}
+
+interface AppInfo {
+    name: string;
+    version: string;
+    description: string;
+    author: any;
+}
+
+interface TraySettings {
+    minimizeToTray?: boolean;
+    backgroundStart?: boolean;
+}
+
+// Global state variables
+const listeners = new Map<Function, Function>();
+let cachedDeviceRegistry: Device[] = [];
+let keyboardPollingInterval: NodeJS.Timeout | null = null;
+let windowMonitoringInterval: NodeJS.Timeout | null = null;
 
 // Device processing lock mechanism to prevent concurrent processing
-const deviceProcessingLocks = new Map();
+const deviceProcessingLocks = new Map<string, boolean>();
 
 // Flag to prevent duplicate event listener registration
 let eventListenersRegistered = false;
 
 // Slider activity tracking variables
 let isSliderActive = false;
-let activeSliderDeviceId = null;
+let activeSliderDeviceId: string | null = null;
 
 // Store settings cache
-let cachedStoreSettings = {
+let cachedStoreSettings: StoreSettings = {
     autoLayerSettings: {},
     oledSettings: {},
     pomodoroDesktopNotificationsSettings: {},
@@ -30,7 +146,7 @@ let cachedStoreSettings = {
 };
 
 // Device processing lock functions to prevent concurrent processing
-const lockDeviceProcessing = (deviceId) => {
+const lockDeviceProcessing = (deviceId: string): boolean => {
     if (deviceProcessingLocks.has(deviceId)) {
         return false; // Already locked
     }
@@ -38,17 +154,17 @@ const lockDeviceProcessing = (deviceId) => {
     return true; // Lock successful
 };
 
-const unlockDeviceProcessing = (deviceId) => {
+const unlockDeviceProcessing = (deviceId: string): void => {
     deviceProcessingLocks.delete(deviceId);
 };
 
 // Get current polling interval from settings or use default
-const getPollingInterval = () => {
+const getPollingInterval = (): number => {
     return cachedStoreSettings.pollingInterval || 1000;
 };
 
 // Function to start keyboard polling at regular intervals
-const startKeyboardPolling = () => {
+const startKeyboardPolling = (): void => {
     if (keyboardPollingInterval) {
         clearInterval(keyboardPollingInterval);
     }
@@ -62,7 +178,7 @@ const startKeyboardPolling = () => {
 };
 
 // Function to start window monitoring at faster intervals
-const startWindowMonitoring = () => {
+const startWindowMonitoring = (): void => {
     if (windowMonitoringInterval) {
         clearInterval(windowMonitoringInterval);
     }
@@ -76,9 +192,9 @@ const startWindowMonitoring = () => {
 };
 
 // Load store settings from main process
-const loadStoreSettings = async () => {
+const loadStoreSettings = async (): Promise<void> => {
     try {
-        const result = await ipcRenderer.invoke('getAllStoreSettings');
+        const result = await ipcRenderer.invoke('getAllStoreSettings') as { success: boolean; settings: StoreSettings };
         if (result.success) {
             cachedStoreSettings = result.settings;
         } else {
@@ -90,12 +206,12 @@ const loadStoreSettings = async () => {
 };
 
 // Save store setting and update cache
-const saveStoreSetting = async (key, value, deviceId = null) => {
+const saveStoreSetting = async (key: keyof StoreSettings, value: any, deviceId: string | null = null): Promise<CommandResult> => {
     try {
-        const result = await ipcRenderer.invoke('saveStoreSetting', { key, value });
+        const result = await ipcRenderer.invoke('saveStoreSetting', { key, value }) as CommandResult;
         if (result.success) {
             // Update local cache
-            cachedStoreSettings[key] = value;
+            (cachedStoreSettings as any)[key] = value;
             
             // Handle polling interval changes
             if (key === 'pollingInterval') {
@@ -125,7 +241,7 @@ const saveStoreSetting = async (key, value, deviceId = null) => {
             }
         }
         return result;
-    } catch (err) {
+    } catch (err: any) {
         console.error(`[ERROR] saveStoreSetting ${key}:`, err);
         return { success: false, error: err.message };
     }
@@ -159,49 +275,49 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 const command = {
-    start: async (device) => {
+    start: async (device: Device): Promise<CommandResult> => {
         return await ipcRenderer.invoke('start', device);
     },
-    stop: async (device) => {
+    stop: async (device: Device): Promise<CommandResult> => {
         return await ipcRenderer.invoke('stop', device);
     },
-    close: async () => await ipcRenderer.invoke('close'),
-    sleep: async (msec) => await ipcRenderer.invoke('sleep', msec),
-    encodeDeviceId: async (device) => await ipcRenderer.invoke('encodeDeviceId', device),
-    getKBDList: async () => {
+    close: async (): Promise<CommandResult> => await ipcRenderer.invoke('close'),
+    sleep: async (msec: number): Promise<void> => await ipcRenderer.invoke('sleep', msec),
+    encodeDeviceId: async (device: Device): Promise<string> => await ipcRenderer.invoke('encodeDeviceId', device),
+    getKBDList: async (): Promise<Device[]> => {
         const result = await ipcRenderer.invoke('getKBDList');
         return result;
     },
-    changeConnectDevice: (dat) => {
+    changeConnectDevice: (dat: Device[]): void => {
         ipcRenderer.send("changeConnectDevice", dat);
     },
-    getConnectKbd: async (id) => {
+    getConnectKbd: async (id: string): Promise<Device | null> => {
         return await ipcRenderer.invoke('getConnectKbd', id);
     },
-    getDeviceConfig: async (device) => {
+    getDeviceConfig: async (device: Device): Promise<CommandResult> => {
         return await ipcRenderer.invoke('getDeviceConfig', device);
     },
-    getPomodoroConfig: async (device) => {
+    getPomodoroConfig: async (device: Device): Promise<CommandResult> => {
         return await ipcRenderer.invoke('getPomodoroConfig', device);
     },
-    getPomodoroActiveStatus: async (device) => {
+    getPomodoroActiveStatus: async (device: Device): Promise<CommandResult> => {
         return await ipcRenderer.invoke('getPomodoroActiveStatus', device);
     },
-    getTrackpadConfigData: async (device) => {
+    getTrackpadConfigData: async (device: Device): Promise<CommandResult> => {
         return await ipcRenderer.invoke('getTrackpadConfigData', device);
     },
     
-    setActiveTab: async (device, tabName) => await ipcRenderer.invoke('setActiveTab', device, tabName),
-    startWindowMonitoring: async () => await ipcRenderer.invoke('startWindowMonitoring'),
-    getActiveWindows: async () => await ipcRenderer.invoke('getActiveWindows'),
-    dateTimeOledWrite: async (device, forceWrite) => await ipcRenderer.invoke('dateTimeOledWrite', device, forceWrite),
-    getDeviceInitConfig: async (device) => await ipcRenderer.invoke('getDeviceInitConfig', device),
-    dispatchSaveDeviceConfig: async (deviceWithConfig, configTypes) => await ipcRenderer.invoke('dispatchSaveDeviceConfig', deviceWithConfig, configTypes),
-    saveTrackpadConfig: async (device) => {
+    setActiveTab: async (device: Device, tabName: string): Promise<CommandResult> => await ipcRenderer.invoke('setActiveTab', device, tabName),
+    startWindowMonitoring: async (): Promise<CommandResult> => await ipcRenderer.invoke('startWindowMonitoring'),
+    getActiveWindows: async (): Promise<CommandResult> => await ipcRenderer.invoke('getActiveWindows'),
+    dateTimeOledWrite: async (device: Device, forceWrite?: boolean): Promise<CommandResult> => await ipcRenderer.invoke('dateTimeOledWrite', device, forceWrite),
+    getDeviceInitConfig: async (device: Device): Promise<CommandResult> => await ipcRenderer.invoke('getDeviceInitConfig', device),
+    dispatchSaveDeviceConfig: async (deviceWithConfig: Device, configTypes: string[]): Promise<CommandResult> => await ipcRenderer.invoke('dispatchSaveDeviceConfig', deviceWithConfig, configTypes),
+    saveTrackpadConfig: async (device: Device): Promise<CommandResult> => {
         if (device && device.config && device.config.trackpad) {
             try {
                 return await ipcRenderer.invoke('saveTrackpadConfig', device);
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Error sending trackpad config:", error);
                 return { success: false, error: error.message };
             }
@@ -209,25 +325,25 @@ const command = {
             return { success: false, error: "Invalid device or missing trackpad configuration" };
         }
     },
-    savePomodoroConfigData: async (device, pomodoroDataBytes) => {
+    savePomodoroConfigData: async (device: Device, pomodoroDataBytes: any): Promise<CommandResult> => {
         return await ipcRenderer.invoke('savePomodoroConfigData', device, pomodoroDataBytes);
     },
 
-    setSliderActive: (active) => {
+    setSliderActive: (active: boolean): void => {
         isSliderActive = active;
         if (active) {
             activeSliderDeviceId = null;
         }
     },
-    getSliderActive: () => {
+    getSliderActive: (): SliderState => {
         return { isSliderActive, activeSliderDeviceId };
     },
-    exportFile: async (data) => await ipcRenderer.invoke('exportFile', data),
-    importFile: async (filename) => await ipcRenderer.invoke('importFile', filename),
-    getNotifications: () => ipcRenderer.invoke('getNotifications')
+    exportFile: async (data: ExportData): Promise<CommandResult> => await ipcRenderer.invoke('exportFile', data),
+    importFile: async (filename?: string): Promise<string> => await ipcRenderer.invoke('importFile', filename),
+    getNotifications: (): Promise<{ notifications: Notification[] }> => ipcRenderer.invoke('getNotifications')
 }
 
-const keyboardSendLoop = async () => {
+const keyboardSendLoop = async (): Promise<void> => {
     try {
         const kbdList = await command.getKBDList();
         const connectedIds = new Set(kbdList.map(device => device.id));
@@ -262,7 +378,7 @@ const keyboardSendLoop = async () => {
         });
 
         // Mark disconnected devices and collect their IDs
-        const disconnectedDeviceIds = [];
+        const disconnectedDeviceIds: string[] = [];
         cachedDeviceRegistry.forEach(device => {
             if (!connectedIds.has(device.id)) {
                 if (device.connected !== false) {
@@ -290,7 +406,7 @@ const keyboardSendLoop = async () => {
         command.changeConnectDevice(cachedDeviceRegistry);
         
         // Process each device with lock mechanism to prevent concurrent processing
-        const results = await Promise.all(cachedDeviceRegistry.map(async (device) => {
+        const results = await Promise.all(cachedDeviceRegistry.map(async (device): Promise<Device> => {
             // Check device processing lock
             if (!lockDeviceProcessing(device.id)) {
                 return device; // Skip if already being processed
@@ -314,7 +430,7 @@ const keyboardSendLoop = async () => {
                         try {
                             await command.start(device);
                             startSuccess = true;
-                        } catch (startError) {
+                        } catch (startError: any) {
                             startAttempts++;
                             console.warn(`Failed to start device ${device.id} (attempt ${startAttempts}/${maxStartAttempts}):`, startError.message);
                             
@@ -416,14 +532,20 @@ const keyboardSendLoop = async () => {
 }
 
 // Setup IPC event listeners only once
-const setupEventListeners = () => {
+const setupEventListeners = (): void => {
     if (eventListenersRegistered) {
         return; // Already registered
     }
     
     eventListenersRegistered = true;
     
-    ipcRenderer.on("deviceConnectionStateChanged", (event, { deviceId, connected, gpkRCVersion, deviceType, config }) => {
+    ipcRenderer.on("deviceConnectionStateChanged", (event: IpcRendererEvent, { deviceId, connected, gpkRCVersion, deviceType, config }: {
+        deviceId: string;
+        connected: boolean;
+        gpkRCVersion: string;
+        deviceType: string;
+        config: DeviceConfig;
+    }) => {
         const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
         if (deviceIndex === -1) {
             return;
@@ -468,7 +590,10 @@ const setupEventListeners = () => {
     });
 
     // Event listener for when OLED settings are changed
-    ipcRenderer.on("oledSettingsChanged", (event, { deviceId, enabled }) => {
+    ipcRenderer.on("oledSettingsChanged", (event: IpcRendererEvent, { deviceId, enabled }: {
+        deviceId: string;
+        enabled: boolean;
+    }) => {
         const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
         if (deviceIndex !== -1) {
             // Ensure config object exists with safe structure
@@ -479,12 +604,16 @@ const setupEventListeners = () => {
                     oled_enabled: 0
                 };
             }
-            cachedDeviceRegistry[deviceIndex].config.oled_enabled = enabled ? 1 : 0;
+            cachedDeviceRegistry[deviceIndex].config!.oled_enabled = enabled ? 1 : 0;
             command.changeConnectDevice(cachedDeviceRegistry);
         }
     });
 
-    ipcRenderer.on("deviceConnectionPomodoroPhaseChanged", (event, { deviceId, pomodoroConfig, phaseChanged }) => {     
+    ipcRenderer.on("deviceConnectionPomodoroPhaseChanged", (event: IpcRendererEvent, { deviceId, pomodoroConfig, phaseChanged }: {
+        deviceId: string;
+        pomodoroConfig: PomodoroConfig;
+        phaseChanged: boolean;
+    }) => {     
         const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
         if (deviceIndex === -1) return;
         
@@ -504,11 +633,11 @@ const setupEventListeners = () => {
         const oldTimerActive = cachedDeviceRegistry[deviceIndex].config?.pomodoro?.timer_active;
 
         // Update cached values - ensure pomodoro object exists
-        cachedDeviceRegistry[deviceIndex].config.pomodoro = { ...pomodoroConfig };
+        cachedDeviceRegistry[deviceIndex].config!.pomodoro = { ...pomodoroConfig };
         
         // Restore notification settings
         if (notificationsEnabled !== undefined) {
-            cachedDeviceRegistry[deviceIndex].config.pomodoro.notifications_enabled = notificationsEnabled;
+            cachedDeviceRegistry[deviceIndex].config!.pomodoro!.notifications_enabled = notificationsEnabled;
         }
 
         command.changeConnectDevice(cachedDeviceRegistry);
@@ -523,7 +652,7 @@ const setupEventListeners = () => {
             (async () => {
                 try {
                     // Get the correct device ID for proper settings lookup
-                    const result = await ipcRenderer.invoke('loadPomodoroDesktopNotificationSettings', deviceId);
+                    const result = await ipcRenderer.invoke('loadPomodoroDesktopNotificationSettings', deviceId) as { success: boolean; enabled: boolean };
                     const notificationsEnabled = result.success ? result.enabled : true;
                     
                     // Only send notification if notifications are enabled
@@ -536,13 +665,13 @@ const setupEventListeners = () => {
                         // Determine minutes for the phase
                         switch (newPhase) {
                             case 1: // Work phase
-                                minutes = pomodoroConfig.work_time;
+                                minutes = pomodoroConfig.work_time || 0;
                                 break;
                             case 2: // Break phase
-                                minutes = pomodoroConfig.break_time;
+                                minutes = pomodoroConfig.break_time || 0;
                                 break;
                             case 3: // Long break phase
-                                minutes = pomodoroConfig.long_break_time;
+                                minutes = pomodoroConfig.long_break_time || 0;
                                 break;
                         }
                         
@@ -551,7 +680,7 @@ const setupEventListeners = () => {
                             deviceId: deviceId,
                             phase: newPhase,
                             minutes: minutes
-                        });
+                        } as PomodoroNotificationData);
                     }
                 } catch (error) {
                     console.error("Error checking notification settings:", error);
@@ -567,7 +696,7 @@ const setupEventListeners = () => {
         });
     });
 
-    ipcRenderer.on("configSaveComplete", (event, { deviceId, success, timestamp }) => {
+    ipcRenderer.on("configSaveComplete", (event: IpcRendererEvent, { deviceId, success, timestamp }: ConfigSaveCompleteDetail) => {
         // Notify UI that settings have been saved successfully
         const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
         if (deviceIndex !== -1) {
@@ -585,7 +714,10 @@ const setupEventListeners = () => {
         }
     });
 
-    ipcRenderer.on("configUpdated", (event, { deviceId, config }) => {
+    ipcRenderer.on("configUpdated", (event: IpcRendererEvent, { deviceId, config }: {
+        deviceId: string;
+        config: DeviceConfig;
+    }) => {
         const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
 
         if (deviceIndex !== -1) {
@@ -605,34 +737,34 @@ const setupEventListeners = () => {
 setupEventListeners();
 
 contextBridge.exposeInMainWorld("api", {
-    start: async (device) => await command.start(device),
-    stop: async (device) => await command.stop(device),
-    getDeviceInitConfig: async (device) => await command.getDeviceInitConfig(device),
-    getDeviceType: () => ipcRenderer.invoke('getDeviceType'),
-    dispatchSaveDeviceConfig: async (deviceWithConfig, configTypes) => await command.dispatchSaveDeviceConfig(deviceWithConfig, configTypes),
-    getDeviceConfig: async (device) => await ipcRenderer.invoke('getDeviceConfig', device),
-    getPomodoroConfig: async (device) => await ipcRenderer.invoke('getPomodoroConfig', device),
-    getPomodoroActiveStatus: async (device) => await command.getPomodoroActiveStatus(device),
-    getTrackpadConfigData: async (device) => await command.getTrackpadConfigData(device),
-    saveTrackpadConfig: async (device) => await command.saveTrackpadConfig(device),
-    savePomodoroConfigData: async (device, pomodoroDataBytes) => await command.savePomodoroConfigData(device, pomodoroDataBytes),
-    sleep: async (msec) => await ipcRenderer.invoke('sleep', msec),
-    setActiveTab: async (device, tabName) => await ipcRenderer.invoke('setActiveTab', device, tabName),
-    getActiveWindows: async () => await command.getActiveWindows(),
-    setSliderActive: (active) => command.setSliderActive(active),
+    start: async (device: Device): Promise<CommandResult> => await command.start(device),
+    stop: async (device: Device): Promise<CommandResult> => await command.stop(device),
+    getDeviceInitConfig: async (device: Device): Promise<CommandResult> => await command.getDeviceInitConfig(device),
+    getDeviceType: (): Promise<any> => ipcRenderer.invoke('getDeviceType'),
+    dispatchSaveDeviceConfig: async (deviceWithConfig: Device, configTypes: string[]): Promise<CommandResult> => await command.dispatchSaveDeviceConfig(deviceWithConfig, configTypes),
+    getDeviceConfig: async (device: Device): Promise<CommandResult> => await ipcRenderer.invoke('getDeviceConfig', device),
+    getPomodoroConfig: async (device: Device): Promise<CommandResult> => await ipcRenderer.invoke('getPomodoroConfig', device),
+    getPomodoroActiveStatus: async (device: Device): Promise<CommandResult> => await command.getPomodoroActiveStatus(device),
+    getTrackpadConfigData: async (device: Device): Promise<CommandResult> => await command.getTrackpadConfigData(device),
+    saveTrackpadConfig: async (device: Device): Promise<CommandResult> => await command.saveTrackpadConfig(device),
+    savePomodoroConfigData: async (device: Device, pomodoroDataBytes: any): Promise<CommandResult> => await command.savePomodoroConfigData(device, pomodoroDataBytes),
+    sleep: async (msec: number): Promise<void> => await ipcRenderer.invoke('sleep', msec),
+    setActiveTab: async (device: Device, tabName: string): Promise<CommandResult> => await ipcRenderer.invoke('setActiveTab', device, tabName),
+    getActiveWindows: async (): Promise<CommandResult> => await command.getActiveWindows(),
+    setSliderActive: (active: boolean): void => command.setSliderActive(active),
     
     // Method to listen for config save completion events
-    onConfigSaveComplete: (callback) => {
-        window.addEventListener('configSaveComplete', (event) => {
+    onConfigSaveComplete: (callback: (detail: ConfigSaveCompleteDetail) => void): void => {
+        window.addEventListener('configSaveComplete', (event: CustomEvent) => {
             callback(event.detail);
         });
     },
     
     // Import/Export
-    exportFile: async () => {
+    exportFile: async (): Promise<CommandResult> => {
         try {
             // Create a copy of the device registry to modify
-            const devicesToExport = JSON.parse(JSON.stringify(cachedDeviceRegistry));
+            const devicesToExport: Device[] = JSON.parse(JSON.stringify(cachedDeviceRegistry));
             
             // Apply store settings to each device
             await Promise.all(devicesToExport.map(async (device) => {
@@ -663,7 +795,7 @@ contextBridge.exposeInMainWorld("api", {
             }));
             
             // Create a complete export object with all settings
-            const exportData = {
+            const exportData: ExportData = {
                 devices: devicesToExport,
                 appSettings: {
                     traySettings: cachedStoreSettings.traySettings || {},
@@ -673,12 +805,12 @@ contextBridge.exposeInMainWorld("api", {
             
             // Export the enhanced data
             return await command.exportFile(exportData);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error in exportFile:", err);
             return { success: false, error: err.message };
         }
     },
-    importFile: async () => {
+    importFile: async (): Promise<ImportResult> => {
         try {
             const dat = await command.importFile();
             if (!dat) {
@@ -690,7 +822,7 @@ contextBridge.exposeInMainWorld("api", {
                 
                 // Handle new format (object with devices and appSettings) or legacy format (array of devices)
                 const isNewFormat = json.devices && Array.isArray(json.devices);
-                const devices = isNewFormat ? json.devices : json;
+                const devices: Device[] = isNewFormat ? json.devices : json;
                 const appSettings = isNewFormat ? json.appSettings : null;
                 
                 if (!Array.isArray(devices)) {
@@ -715,12 +847,12 @@ contextBridge.exposeInMainWorld("api", {
                 }
                 
                 // Extract store settings from imported devices
-                let autoLayerSettings = { ...cachedStoreSettings.autoLayerSettings } || {};
-                let oledSettings = { ...cachedStoreSettings.oledSettings } || {};
-                let pomodoroNotifSettings = { ...cachedStoreSettings.pomodoroDesktopNotificationsSettings } || {};
+                let autoLayerSettings: Record<string, AutoLayerSetting> = { ...cachedStoreSettings.autoLayerSettings } || {};
+                let oledSettings: Record<string, { enabled: boolean }> = { ...cachedStoreSettings.oledSettings } || {};
+                let pomodoroNotifSettings: Record<string, boolean> = { ...cachedStoreSettings.pomodoroDesktopNotificationsSettings } || {};
                 
                 // Process each device
-                const updatedDevices = await Promise.all(cachedDeviceRegistry.map(async (cd) => {
+                const updatedDevices = await Promise.all(cachedDeviceRegistry.map(async (cd): Promise<Device> => {
                     const matchingConfig = devices.find((j) =>
                         j.id === cd.id &&
                         j.manufacturer === cd.manufacturer &&
@@ -761,7 +893,7 @@ contextBridge.exposeInMainWorld("api", {
                                 // Process OLED settings
                                 if (matchingConfig.config.oled_enabled !== undefined) {
                                     if (!oledSettings[cd.id]) {
-                                        oledSettings[cd.id] = {};
+                                        oledSettings[cd.id] = { enabled: false };
                                     }
                                     oledSettings[cd.id].enabled = matchingConfig.config.oled_enabled === 1;
                                 }
@@ -769,12 +901,12 @@ contextBridge.exposeInMainWorld("api", {
                                 // Process pomodoro notification settings from pomodoro object
                                 if (matchingConfig.config.pomodoro && 
                                     matchingConfig.config.pomodoro.notifications_enabled !== undefined) {
-                                    pomodoroNotifSettings[cd.id] = matchingConfig.config?.pomodoro?.notifications_enabled;
+                                    pomodoroNotifSettings[cd.id] = Boolean(matchingConfig.config?.pomodoro?.notifications_enabled);
                                 }
                             }
                             
                             // Clone and organize device settings structure before sending
-                            const configToSend = JSON.parse(JSON.stringify(matchingConfig));
+                            const configToSend: Device = JSON.parse(JSON.stringify(matchingConfig));
                             
                             // Send device settings
                             await command.dispatchSaveDeviceConfig(configToSend, ['trackpad', 'pomodoro']);
@@ -818,85 +950,92 @@ contextBridge.exposeInMainWorld("api", {
                 console.error("JSON parse error:", parseErr);
                 return { success: false, error: "Invalid JSON format" };
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Import file error:", err);
             return { success: false, error: err.message || "Unknown error during import" };
         }
     },
     
     // Unified store settings API
-    getStoreSetting: (key) => {
+    getStoreSetting: <K extends keyof StoreSettings>(key: K): StoreSettings[K] => {
         return cachedStoreSettings[key];
     },
-    saveStoreSetting: async (key, value) => {
+    saveStoreSetting: async <K extends keyof StoreSettings>(key: K, value: StoreSettings[K]): Promise<CommandResult> => {
         return await saveStoreSetting(key, value, null);
     },
-    getAllStoreSettings: () => {
+    getAllStoreSettings: (): StoreSettings => {
         return cachedStoreSettings;
     },
     
     // Legacy API for backward compatibility
-    saveAutoLayerSettings: async (settings) => {
+    saveAutoLayerSettings: async (settings: Record<string, AutoLayerSetting>): Promise<CommandResult> => {
         // Try to get a device ID (use the first one if there are multiple devices)
         const deviceId = Object.keys(settings)[0] || null;
         return await saveStoreSetting('autoLayerSettings', settings, deviceId);
     },
-    loadAutoLayerSettings: async () => {
+    loadAutoLayerSettings: async (): Promise<{ success: boolean; settings: Record<string, AutoLayerSetting> }> => {
         return { success: true, settings: cachedStoreSettings.autoLayerSettings || {} };
     },
-    saveOledSettings: async (deviceId, enabled) => {
+    saveOledSettings: async (deviceId: string, enabled: boolean): Promise<CommandResult> => {
         const current = cachedStoreSettings.oledSettings || {};
         if(!current[deviceId]?.enabled && enabled) {
-            await command.dateTimeOledWrite(cachedDeviceRegistry.find(d => d.id === deviceId), true);
+            await command.dateTimeOledWrite(cachedDeviceRegistry.find(d => d.id === deviceId)!, true);
         }
         current[deviceId] = { enabled };
         return await saveStoreSetting('oledSettings', current, deviceId);
     },
-    loadOledSettings: async (deviceId) => {
+    loadOledSettings: async (deviceId: string): Promise<{ success: boolean; enabled: boolean | undefined }> => {
         const settings = cachedStoreSettings.oledSettings || {};
         return { success: true, enabled: settings[deviceId]?.enabled };
     },
-    saveTraySettings: async (settings) => {
-        return await saveStoreSetting('traySettings', settings);
+    saveTraySettings: async (settings: TraySettings): Promise<CommandResult> => {
+        return await saveStoreSetting('traySettings', { ...cachedStoreSettings.traySettings, ...settings });
     },
-    loadTraySettings: async () => {
+    loadTraySettings: async (): Promise<{ 
+        success: boolean; 
+        minimizeToTray: boolean | undefined;
+        backgroundStart: boolean | undefined;
+    }> => {
         return { 
             success: true, 
             minimizeToTray: cachedStoreSettings.traySettings?.minimizeToTray,
             backgroundStart: cachedStoreSettings.traySettings?.backgroundStart
         };
     },
-    setAppLocale: async (locale) => {
+    setAppLocale: async (locale: string): Promise<CommandResult> => {
         return await saveStoreSetting('locale', locale);
     },
-    savePomodoroDesktopNotificationSettings: async (deviceId, enabled) => {
+    savePomodoroDesktopNotificationSettings: async (deviceId: string, enabled: boolean): Promise<CommandResult> => {
         const current = cachedStoreSettings.pomodoroDesktopNotificationsSettings || {};
         current[deviceId] = enabled;
         return await saveStoreSetting('pomodoroDesktopNotificationsSettings', current, deviceId);
     },
-    loadPomodoroDesktopNotificationSettings: async (deviceId) => {
+    loadPomodoroDesktopNotificationSettings: async (deviceId: string): Promise<{ 
+        success: boolean; 
+        enabled: boolean;
+    }> => {
         const settings = cachedStoreSettings.pomodoroDesktopNotificationsSettings || {};
         return { 
             success: true, 
             enabled: settings[deviceId] !== undefined ? settings[deviceId] : true
         };
     },
-    on: (channel, func) => {
-        const listener = (event, ...args) => func(...args);
+    on: (channel: string, func: Function): void => {
+        const listener = (event: IpcRendererEvent, ...args: any[]) => func(...args);
         listeners.set(func, listener);
         ipcRenderer.on(channel, listener);
     },
-    off: (channel, func) => {
+    off: (channel: string, func: Function): void => {
         const listener = listeners.get(func);
         if (listener) {
-            ipcRenderer.removeListener(channel, listener);
+            ipcRenderer.removeListener(channel, listener as any);
             listeners.delete(func);
         }
     },
-    getCachedNotifications: async() => cachedStoreSettings.savedNotifications || [],
+    getCachedNotifications: async (): Promise<Notification[]> => cachedStoreSettings.savedNotifications || [],
     
     // Get application info from package.json
-    getAppInfo: async() => {
+    getAppInfo: async (): Promise<AppInfo> => {
         try {
             const packageInfo = await ipcRenderer.invoke('getAppInfo');
             return packageInfo;
@@ -912,12 +1051,12 @@ contextBridge.exposeInMainWorld("api", {
     },
     
     // Open external links (for version modal)
-    openExternalLink: async (url) => {
+    openExternalLink: async (url: string): Promise<CommandResult> => {
         return await ipcRenderer.invoke('openExternalLink', url);
     },
     
     // Get store file path
-    getStoreFilePath: async () => {
+    getStoreFilePath: async (): Promise<string> => {
         return await ipcRenderer.invoke('getStoreFilePath');
     }
 });

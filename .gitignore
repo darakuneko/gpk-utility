@@ -6,9 +6,8 @@ yarn.lock
 /public/build/
 .github
 package-lock.json
-
-# Directories and files to exclude
 .claude/
 dist-electron/
 docs/
 CLAUDE.md
+build.log

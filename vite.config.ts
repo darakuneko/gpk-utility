@@ -1,10 +1,11 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
-import electron from 'vite-plugin-electron'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
+import electron from 'vite-plugin-electron';
+import type { UserConfig } from 'vite';
 // import renderer from 'vite-plugin-electron-renderer'
 
-export default defineConfig({
+const config: UserConfig = defineConfig({
   plugins: [
     react({
       jsxRuntime: 'automatic'
@@ -33,10 +34,10 @@ export default defineConfig({
         }
       },
       {
-        entry: 'preload.cjs',
+        entry: 'preload.ts',
         onstart(options) {
           // Notify the Renderer-Process to reload the page when the Preload-Scripts build is complete
-          options.reload()
+          options.reload();
         },
         vite: {
           build: {
@@ -44,7 +45,7 @@ export default defineConfig({
             minify: false,
             outDir: 'dist-electron',
             lib: {
-              entry: 'preload.cjs',
+              entry: 'preload.ts',
               formats: ['cjs'],
               fileName: () => 'preload.js'
             },
@@ -92,6 +93,8 @@ export default defineConfig({
     }
   },
   css: {
-    postcss: './postcss.config.cjs'
+    postcss: './postcss.config.ts'
   }
-})
+});
+
+export default config;
