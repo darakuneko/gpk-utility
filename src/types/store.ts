@@ -1,6 +1,6 @@
 // Store-related type definitions
 import type { LayerSetting } from './device';
-import type { Notification } from './ipc';
+import type { NotificationData } from './ipc';
 
 export interface WindowBounds {
     width: number;
@@ -27,7 +27,7 @@ export interface StoreSchema {
     autoLayerSettings: Record<string, AutoLayerSetting>;
     oledSettings: Record<string, OledSetting>;
     pomodoroDesktopNotificationsSettings: Record<string, boolean>;
-    savedNotifications: Notification[];
+    savedNotifications: NotificationData[];
     traySettings: TraySettings;
     windowBounds: WindowBounds;
     locale: string;

@@ -18,14 +18,14 @@ export interface NotificationAction {
     data?: Record<string, string | number>;
 }
 
-export interface PomodoroNotification extends NotificationData {
+export interface PomodoroNotification extends Omit<NotificationData, 'type'> {
     type: 'pomodoro';
     pomodoroPhase: 'work' | 'break' | 'long_break';
     remainingTime: number;
     totalTime: number;
 }
 
-export interface DeviceNotification extends NotificationData {
+export interface DeviceNotification extends Omit<NotificationData, 'type'> {
     type: 'device';
     deviceId: string;
     deviceName: string;

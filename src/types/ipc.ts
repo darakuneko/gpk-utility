@@ -1,5 +1,15 @@
 // IPC-related type definitions
-import { Device, PomodoroConfig } from './common';
+import { Device } from './common';
+
+// Define PomodoroConfig locally since it's not in common
+export interface PomodoroConfig {
+    timer_active?: number;
+    phase?: number;
+    work_time?: number;
+    break_time?: number;
+    long_break_time?: number;
+    notifications_enabled?: number | boolean;
+}
 
 export interface PomodoroNotificationData {
     deviceName: string;

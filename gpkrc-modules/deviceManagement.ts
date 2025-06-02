@@ -664,10 +664,10 @@ export const initializeDependencies = (): void => {
 
     // Inject dependencies for window monitoring
     injectWindowMonitoringDependencies({
-        deviceStatusMap,
-        settingsStore: settingsStore || undefined,
+        deviceStatusMap: deviceStatusMap as Record<string, DeviceStatus>,
+        settingsStore: settingsStore as any,
         writeCommand,
-        mainWindow: mainWindow || undefined
+        mainWindow: mainWindow as any
     });
 };
 

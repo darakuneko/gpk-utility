@@ -1,13 +1,25 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import type { LocaleMessages } from '../types/i18n';
 
-const LanguageContext = createContext();
+interface LanguageContextType {
+  locale: string;
+  changeLocale: (newLocale: string) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+  isLoading: boolean;
+}
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 const defaultLocale = 'en';
 
-export function LanguageProvider({ children }) {
-  const [locale, setLocale] = useState(defaultLocale);
-  const [translations, setTranslations] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
+interface LanguageProviderProps {
+  children: ReactNode;
+}
+
+export function LanguageProvider({ children }: LanguageProviderProps) {
+  const [locale, setLocale] = useState<string>(defaultLocale);
+  const [translations, setTranslations] = useState<LocaleMessages>({});
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     // Load previously selected language from localStorage
@@ -47,7 +59,7 @@ export function LanguageProvider({ children }) {
       });
   }, [locale]);
 
-  const t = (key, params = {}) => {
+  const t = (key: string, params: Record<string, string | number> = {}): string => {
     if (!key) return '';
     
     // If translations are not yet loaded, return the key without warning
@@ -57,7 +69,7 @@ export function LanguageProvider({ children }) {
     
     // Use dot notation to access nested keys
     const keys = key.split('.');
-    let value = translations;
+    let value: any = translations;
     
     for (const k of keys) {
       if (value && Object.prototype.hasOwnProperty.call(value, k)) {
@@ -70,30 +82,41 @@ export function LanguageProvider({ children }) {
       }
     }
 
-    let result = value || key;
+    let result: string = value || key;
     
     // Replace parameters in the translation string
     if (typeof result === 'string' && params && typeof params === 'object') {
       Object.keys(params).forEach(paramKey => {
         const placeholder = `{{${paramKey}}}`;
-        result = result.replace(new RegExp(placeholder, 'g'), params[paramKey]);
+        result = result.replace(new RegExp(placeholder, 'g'), String(params[paramKey]));
       });
     }
 
     return result;
   };
 
-  const changeLocale = (newLocale) => {
+  const changeLocale = (newLocale: string): void => {
     setLocale(newLocale);
   };
 
+  const contextValue: LanguageContextType = {
+    locale,
+    changeLocale,
+    t,
+    isLoading
+  };
+
   return (
-    <LanguageContext.Provider value={{ locale, changeLocale, t, isLoading }}>
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );
 }
 
-export function useLanguage() {
-  return useContext(LanguageContext);
+export function useLanguage(): LanguageContextType {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
 }

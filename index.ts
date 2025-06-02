@@ -79,7 +79,7 @@ const translate = (key: string, params: Record<string, string | number> = {}): s
     }
     
     // Replace parameters
-    return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? params[param] : match);
+    return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? String(params[param]) : match);
 };
 
 // Store active pomodoro devices
@@ -210,19 +210,19 @@ const createWindow = async (): Promise<void> => {
     
     // Pass the store reference to modules
     updateAutoLayerSettings(store);
-    setIpcStore(store);
+    setIpcStore(store as any);
     
     // Re-inject window monitoring dependencies with the actual store
     injectWindowMonitoringDependencies({
-        deviceStatusMap,
-        settingsStore: store,
+        deviceStatusMap: deviceStatusMap as any,
+        settingsStore: store as any,
         writeCommand,
-        mainWindow
+        mainWindow: mainWindow as any
     });
     
     // Monitor window size and position changes
     (['resize', 'move'] as const).forEach(eventName => {
-        mainWindow!.on(eventName as keyof Electron.BrowserWindowConstructorOptions, () => {
+        mainWindow!.on(eventName as any, () => {
             if (!mainWindow!.isMinimized() && !mainWindow!.isMaximized()) {
                 const bounds = mainWindow!.getBounds();
                 store.set('windowBounds', bounds);
@@ -244,7 +244,7 @@ const createWindow = async (): Promise<void> => {
         }
     });
     
-    mainWindow.on('minimize', (event: Electron.Event) => {
+    mainWindow.on('minimize', (event) => {
         if (store.get('minimizeToTray')) {
             event.preventDefault();
             mainWindow!.hide();
