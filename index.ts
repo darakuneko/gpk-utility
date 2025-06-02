@@ -52,12 +52,12 @@ const store = new Store<StoreSchema>({
 });
 
 // Translation utility function
-const translate = (key: string, params: Record<string, unknown> = {}): string => {
+const translate = (key: string, params: Record<string, string | number> = {}): string => {
     const locale = store.get('locale') || 'en';
-    let translations: Record<string, unknown> = enTranslations;
+    let translations: Record<string, string | Record<string, string>> = enTranslations;
     
     // Get nested value from translations using key path
-    const getValue = (obj: Record<string, unknown>, path: string): unknown => {
+    const getValue = (obj: Record<string, string | Record<string, string>>, path: string): string | undefined => {
         return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
     };
     

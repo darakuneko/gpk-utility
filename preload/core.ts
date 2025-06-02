@@ -2,7 +2,7 @@ import { ipcRenderer } from 'electron';
 import type { Device, StoreSettings, CommandResult } from './types';
 
 // Global state variables
-export const listeners = new Map<(...args: unknown[]) => void, (...args: unknown[]) => void>();
+export const listeners = new Map<(...args: any[]) => void, (...args: any[]) => void>();
 export let cachedDeviceRegistry: Device[] = [];
 export let keyboardPollingInterval: NodeJS.Timeout | null = null;
 export let windowMonitoringInterval: NodeJS.Timeout | null = null;
@@ -92,12 +92,12 @@ export const loadStoreSettings = async (): Promise<void> => {
 };
 
 // Save store setting and update cache
-export const saveStoreSetting = async (key: keyof StoreSettings, value: unknown, deviceId: string | null = null): Promise<CommandResult> => {
+export const saveStoreSetting = async <K extends keyof StoreSettings>(key: K, value: StoreSettings[K], deviceId: string | null = null): Promise<CommandResult> => {
     try {
         const result = await ipcRenderer.invoke('saveStoreSetting', { key, value }) as CommandResult;
         if (result.success) {
             // Update local cache
-            (cachedStoreSettings as Record<string, unknown>)[key] = value;
+            (cachedStoreSettings as StoreSettings)[key] = value;
             
             // Handle polling interval changes
             if (key === 'pollingInterval') {
@@ -126,7 +126,7 @@ export const saveStoreSetting = async (key: keyof StoreSettings, value: unknown,
             }
         }
         return result;
-    } catch (err: unknown) {
+    } catch (err: Error) {
         console.error(`[ERROR] saveStoreSetting ${key}:`, err);
         return { success: false, error: err instanceof Error ? err.message : String(err) };
     }

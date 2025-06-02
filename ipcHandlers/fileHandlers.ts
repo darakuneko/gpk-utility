@@ -1,8 +1,9 @@
 import { ipcMain, dialog } from "electron";
 import { promises as fs } from 'fs';
+import type { ExportData } from '../preload/types';
 
 // File operations
-const exportFile = async (data: unknown): Promise<void> => {
+const exportFile = async (data: ExportData): Promise<void> => {
     try {
         const result = await dialog.showSaveDialog({
             title: 'Export Config File',
@@ -41,7 +42,7 @@ const importFile = async (): Promise<string | null> => {
         try {
             const fileContent = await fs.readFile(filePath, 'utf-8');
             return fileContent;
-        } catch (readErr: unknown) {
+        } catch (readErr: Error) {
             console.error(`Error reading file ${filePath}:`, readErr);
             throw new Error(`Failed to read file: ${readErr instanceof Error ? readErr.message : String(readErr)}`);
         }
@@ -53,6 +54,6 @@ const importFile = async (): Promise<string | null> => {
 
 export const setupFileHandlers = (): void => {
     // File operations
-    ipcMain.handle('exportFile', async (event, data: unknown) => await exportFile(data));
-    ipcMain.handle('importFile', async (event, fn?: unknown) => await importFile());
+    ipcMain.handle('exportFile', async (event, data: ExportData) => await exportFile(data));
+    ipcMain.handle('importFile', async (event, fn?: string) => await importFile());
 };

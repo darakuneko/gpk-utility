@@ -1,4 +1,6 @@
 // Type definitions for device and configuration structures
+import type { LayerSetting } from '../src/types/trackpad';
+import type { CommandData } from '../src/types/command';
 export interface Device {
     id: string;
     manufacturer?: string;
@@ -35,12 +37,14 @@ export interface PomodoroConfig {
 export interface TrackpadConfig {
     auto_layer_enabled?: number;
     auto_layer_settings?: AutoLayerSetting[];
-    [key: string]: unknown;
+    // Specific trackpad properties can be added here
+    // Use TrackpadConfigProperties for detailed configuration
+    [key: string]: number | boolean | AutoLayerSetting[] | undefined;
 }
 
 export interface AutoLayerSetting {
     enabled: boolean;
-    layerSettings: Record<string, unknown>[];
+    layerSettings: LayerSetting[];
 }
 
 export interface StoreSettings {
@@ -58,7 +62,12 @@ export interface StoreSettings {
 
 export interface Notification {
     id?: string;
-    [key: string]: unknown;
+    title?: string;
+    message?: string;
+    timestamp?: number;
+    type?: string;
+    // Additional notification properties
+    [key: string]: string | number | boolean | undefined;
 }
 
 export interface ExportData {
@@ -79,7 +88,9 @@ export interface ImportResult {
 export interface CommandResult {
     success: boolean;
     error?: string;
-    [key: string]: unknown;
+    data?: CommandData;
+    // Additional command result properties
+    [key: string]: boolean | string | CommandData | undefined;
 }
 
 export interface PomodoroNotificationData {
@@ -105,7 +116,12 @@ export interface AppInfo {
     name: string;
     version: string;
     description: string;
-    author: Record<string, unknown>;
+    author: {
+        name?: string;
+        email?: string;
+        url?: string;
+        [key: string]: string | undefined;
+    };
 }
 
 export interface TraySettings {

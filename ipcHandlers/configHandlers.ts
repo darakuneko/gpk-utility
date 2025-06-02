@@ -138,7 +138,7 @@ export const setupConfigHandlers = (): void => {
             // Call GPKRC to send settings to the device
             await saveTrackpadConfig(device, trackpadBytes);
             return { success: true };
-        } catch (error: unknown) {
+        } catch (error: Error) {
             console.error("Error in saveTrackpadConfig:", error);
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
@@ -148,7 +148,7 @@ export const setupConfigHandlers = (): void => {
         try {
             await savePomodoroConfigData(device, pomodoroDataBytes);
             return { success: true };
-        } catch (error: unknown) {
+        } catch (error: Error) {
             console.error("Error in savePomodoroConfigData:", error);
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
@@ -200,7 +200,7 @@ export const setupConfigHandlers = (): void => {
                 return { success: false, message: "No config found to save for the specified types." };
             }
 
-        } catch (error: unknown) {
+        } catch (error: Error) {
             console.error("Error in dispatchSaveDeviceConfig:", error);
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
@@ -226,7 +226,7 @@ export const setupConfigHandlers = (): void => {
             }
             
             return { success: true };
-        } catch (error: unknown) {
+        } catch (error: Error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
@@ -241,7 +241,7 @@ export const setupConfigHandlers = (): void => {
             updateAutoLayerSettings(store);
             
             return { success: true, settings };
-        } catch (error: unknown) {
+        } catch (error: Error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });

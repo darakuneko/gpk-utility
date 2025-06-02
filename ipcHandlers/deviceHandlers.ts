@@ -55,7 +55,7 @@ export const setupDeviceHandlers = (): void => {
         try {
             const result = await getDeviceConfig(device);
             return { success: true };
-        } catch (error: unknown) {
+        } catch (error: Error) {
             console.error(`IPC handler: Error getting device config for ${device.id}:`, error);
             
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -97,7 +97,7 @@ export const setupDeviceHandlers = (): void => {
     ipcMain.handle('getDeviceInitConfig', async (event, device: Device) => {
         try {
             return await getDeviceInitConfig(device);
-        } catch (error: unknown) {
+        } catch (error: Error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });
@@ -113,7 +113,7 @@ export const setupDeviceHandlers = (): void => {
             }
             
             return { success: true };
-        } catch (error: unknown) {
+        } catch (error: Error) {
             console.error(`Error in dateTimeOledWrite handler:`, error);
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }

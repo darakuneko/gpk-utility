@@ -6,7 +6,9 @@ import type {
     ExportData, 
     ImportResult,
     TraySettings,
-    AppInfo 
+    AppInfo,
+    StoreSettings,
+    AutoLayerSetting
 } from './types';
 import { command } from './device';
 import { cachedDeviceRegistry, cachedStoreSettings, listeners } from './core';
@@ -83,7 +85,7 @@ export const exposeAPI = (): void => {
                 
                 // Export the enhanced data
                 return await command.exportFile(exportData);
-            } catch (err: unknown) {
+            } catch (err: Error) {
                 console.error("Error in exportFile:", err);
                 return { success: false, error: err instanceof Error ? err.message : String(err) };
             }
@@ -216,30 +218,30 @@ export const exposeAPI = (): void => {
                     return { success: false, error: "Invalid JSON format" };
                 }
                 
-            } catch (err: unknown) {
+            } catch (err: Error) {
                 console.error("Import file error:", err);
                 return { success: false, error: err instanceof Error ? err.message : "Unknown error during import" };
             }
         },
         
         // Unified store settings API
-        getStoreSetting: (key: string): unknown => {
-            return (cachedStoreSettings as Record<string, unknown>)[key];
+        getStoreSetting: <K extends keyof StoreSettings>(key: K): StoreSettings[K] => {
+            return (cachedStoreSettings as StoreSettings)[key];
         },
-        saveStoreSetting: async (key: string, value: unknown): Promise<CommandResult> => {
-            return await saveStoreSetting(key as keyof StoreSettings, value, null);
+        saveStoreSetting: async <K extends keyof StoreSettings>(key: K, value: StoreSettings[K]): Promise<CommandResult> => {
+            return await saveStoreSetting(key, value, null);
         },
-        getAllStoreSettings: (): Record<string, unknown> => {
+        getAllStoreSettings: (): Partial<StoreSettings> => {
             return cachedStoreSettings;
         },
         
         // Legacy API for backward compatibility
-        saveAutoLayerSettings: async (settings: Record<string, unknown>): Promise<CommandResult> => {
+        saveAutoLayerSettings: async (settings: Record<string, AutoLayerSetting>): Promise<CommandResult> => {
             // Try to get a device ID (use the first one if there are multiple devices)
             const deviceId = Object.keys(settings)[0] || null;
             return await saveStoreSetting('autoLayerSettings', settings, deviceId);
         },
-        loadAutoLayerSettings: async (): Promise<{ success: boolean; settings: Record<string, unknown> }> => {
+        loadAutoLayerSettings: async (): Promise<{ success: boolean; settings: Record<string, AutoLayerSetting> }> => {
             return { success: true, settings: cachedStoreSettings.autoLayerSettings || {} };
         },
         saveOledSettings: async (deviceId: string, enabled: boolean): Promise<CommandResult> => {
@@ -282,12 +284,12 @@ export const exposeAPI = (): void => {
         },
         
         // Event listeners
-        on: (channel: string, func: (...args: unknown[]) => void): void => {
-            const listener = (event: Electron.IpcRendererEvent, ...args: unknown[]) => func(...args);
+        on: (channel: string, func: (...args: any[]) => void): void => {
+            const listener = (event: Electron.IpcRendererEvent, ...args: any[]) => func(...args);
             listeners.set(func, listener);
             ipcRenderer.on(channel, listener);
         },
-        off: (channel: string, func: (...args: unknown[]) => void): void => {
+        off: (channel: string, func: (...args: any[]) => void): void => {
             const listener = listeners.get(func);
             if (listener) {
                 ipcRenderer.removeListener(channel, listener);

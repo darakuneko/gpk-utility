@@ -204,7 +204,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                     break;
                 }
                 throw new Error(`HID instance not created despite successful addKbd call`);
-            } catch (addError: unknown) {
+            } catch (addError: Error) {
                 retryCount++;
                 console.warn(`Failed to add device ${id} (attempt ${retryCount}/${maxRetries}):`, addError instanceof Error ? addError.message : String(addError));
                 
@@ -398,7 +398,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                             }
                         }
                     }
-                } catch (dataProcessingError: unknown) {
+                } catch (dataProcessingError: Error) {
                     console.error(`Error processing device data for ${newId}:`, dataProcessingError);
                     
                     const errorMessage = dataProcessingError instanceof Error ? dataProcessingError.message : String(dataProcessingError);
@@ -555,7 +555,7 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
         await hidDeviceInstances[id]!.write(bytes);    
 
         return { success: true };
-    } catch (err: unknown) {
+    } catch (err: Error) {
         console.error(`Error writing command to device ${id} (attempt ${retryCount + 1}):`, err);
         
         // If write fails, mark device as potentially disconnected

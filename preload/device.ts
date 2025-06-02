@@ -53,9 +53,9 @@ export const command = {
         if (device && device.config && device.config.trackpad) {
             try {
                 return await ipcRenderer.invoke('saveTrackpadConfig', device);
-            } catch (error: unknown) {
+            } catch (error: Error) {
                 console.error("Error sending trackpad config:", error);
-                return { success: false, error: error instanceof Error ? error.message : String(error) };
+                return { success: false, error: error.message };
             }
         } else {
             return { success: false, error: "Invalid device or missing trackpad configuration" };
@@ -164,9 +164,9 @@ export const keyboardSendLoop = async (): Promise<void> => {
                         try {
                             await command.start(device);
                             startSuccess = true;
-                        } catch (startError: unknown) {
+                        } catch (startError: Error) {
                             startAttempts++;
-                            console.warn(`Failed to start device ${device.id} (attempt ${startAttempts}/${maxStartAttempts}):`, startError instanceof Error ? startError.message : String(startError));
+                            console.warn(`Failed to start device ${device.id} (attempt ${startAttempts}/${maxStartAttempts}):`, startError.message);
                             
                             if (startAttempts < maxStartAttempts) {
                                 await new Promise(resolve => setTimeout(resolve, 1000 * startAttempts)); // Progressive delay
@@ -185,7 +185,7 @@ export const keyboardSendLoop = async (): Promise<void> => {
                         device.connected = false;
                         device.initializing = false;
                     }
-                } catch (error: unknown) {
+                } catch (error: Error) {
                     console.error(`Failed to restart device ${device.id}:`, error);
                     device.connected = false;
                     device.initializing = false;
@@ -212,7 +212,7 @@ export const keyboardSendLoop = async (): Promise<void> => {
                     try {
                         await new Promise(resolve => setTimeout(resolve, 1000));
                         await command.getDeviceConfig(device);
-                    } catch (error: unknown) {
+                    } catch (error: Error) {
                         console.error(`Failed to get device config for ${device.id}:`, error);
                         device.checkDevice = false;
                         device.config = null;
@@ -235,7 +235,7 @@ export const keyboardSendLoop = async (): Promise<void> => {
                     if (oled_enabled) {
                         try {
                             await command.dateTimeOledWrite(device);
-                        } catch (error: unknown) {
+                        } catch (error: Error) {
                             console.error(`Failed to write OLED for device ${device.id}:`, error);
                         }
                     }
@@ -244,7 +244,7 @@ export const keyboardSendLoop = async (): Promise<void> => {
                     if (pomodoro_timer_active) {
                         try {
                             await command.getPomodoroActiveStatus(device);
-                        } catch (error: unknown) {
+                        } catch (error: Error) {
                             console.error(`Failed to get pomodoro status for device ${device.id}:`, error);
                         }
                     }
@@ -260,7 +260,7 @@ export const keyboardSendLoop = async (): Promise<void> => {
 
         // Update cached device registry with results
         updateCachedDeviceRegistry(results);
-    } catch (err: unknown) {
+    } catch (err: Error) {
         console.error("[ERROR] keyboardSendLoop:", err);
     }
 };
