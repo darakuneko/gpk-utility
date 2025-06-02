@@ -14,8 +14,8 @@ const exportFile = async (data: ExportData): Promise<void> => {
                 { name: 'All Files', extensions: ['*'] }
             ]
         });
-        if (!(result as Electron.SaveDialogReturnValue).canceled && (result as Electron.SaveDialogReturnValue).filePath) {
-            await fs.writeFile((result as Electron.SaveDialogReturnValue).filePath!, JSON.stringify(data, null, 2))
+        if (!(result as any).canceled && (result as any).filePath) {
+            await fs.writeFile((result as any).filePath, JSON.stringify(data, null, 2))
         }
     } catch (err) {
         // Ignore errors
@@ -34,13 +34,13 @@ const importFile = async (): Promise<string | null> => {
             properties: ['openFile']
         });
 
-        if ((result as Electron.OpenDialogReturnValue).canceled || (result as Electron.OpenDialogReturnValue).filePaths.length === 0) {
+        if ((result as any).canceled || (result as any).filePaths.length === 0) {
             return null;
         }
         
-        const filePath = (result as Electron.OpenDialogReturnValue).filePaths[0];
+        const filePath = (result as any).filePaths[0];
         try {
-            const fileContent = await fs.readFile(filePath!, 'utf-8');
+            const fileContent = await fs.readFile(filePath, 'utf-8');
             return fileContent;
         } catch (readErr) {
             console.error(`Error reading file ${filePath}:`, readErr);

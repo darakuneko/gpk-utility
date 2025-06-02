@@ -174,7 +174,7 @@ export const setupNotificationEvents = (
             // Add to active devices
             activePomodoroDevices.set(deviceId, {
                 name: deviceName,
-                phase: pomodoroConfig.phase
+                phase: pomodoroConfig.phase || 1
             });
         } else {
             // Remove from active devices if timer is not active

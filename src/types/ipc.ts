@@ -52,7 +52,7 @@ export interface NotificationQueryPayload {
     deviceId: string;
     type: string;
     collection?: string;
-    filters?: Record<string, unknown>;
+    filters?: Array<{ field: string; op: string; value: unknown }>;
     orderBy?: string | { field: string; direction: string; };
     limit?: number;
 }

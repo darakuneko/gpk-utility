@@ -57,16 +57,16 @@ export const getSupportedSettingTabs = (device: Device, t: TranslationFunction, 
     // 共通セット - only include trackpad tabs if config is available and stable
     // However, always show layer tab for TP devices regardless of trackpad config status
     const tpTabs = hasTrackpadConfig 
-        ? [tabs.mouse, tabs.scroll, tabs.dragdrop, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer]
+        ? [tabs.mouse, tabs.scroll, tabs.dragdrop, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer] as Tab[]
         : []; // Always show layer tab, even without trackpad config
 
     const tabDefinitions: Record<string, Tab[]> = {
         [DeviceType.MACROPAD_TP]: tpTabs,
         [DeviceType.MACROPAD_TP_BTNS]: hasTrackpadConfig 
-            ? [tabs.mouse, tabs.scroll, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer]
+            ? [tabs.mouse, tabs.scroll, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer] as Tab[]
             : [], // Always show layer tab, even without trackpad config
         [DeviceType.KEYBOARD_TP]: tpTabs,
-        [DeviceType.KEYBOARD_OLED]: [tabs.layer, tabs.oled]
+        [DeviceType.KEYBOARD_OLED]: [tabs.layer, tabs.oled] as Tab[]
     };
     return tabDefinitions[device.deviceType] || [];
 };

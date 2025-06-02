@@ -1,6 +1,7 @@
 // Type definitions for device and configuration structures
 import type { LayerSetting } from '../src/types/trackpad';
 import type { CommandData } from '../src/types/command';
+import type { NotificationData } from '../src/types/notification';
 export interface Device {
     id: string;
     manufacturer?: string;
@@ -36,10 +37,10 @@ export interface PomodoroConfig {
 
 export interface TrackpadConfig {
     auto_layer_enabled?: number;
-    auto_layer_settings?: AutoLayerSetting[];
+    auto_layer_settings?: LayerSetting[];
     // Specific trackpad properties can be added here
     // Use TrackpadConfigProperties for detailed configuration
-    [key: string]: number | boolean | AutoLayerSetting[] | undefined;
+    [key: string]: number | boolean | LayerSetting[] | undefined;
 }
 
 export interface AutoLayerSetting {
@@ -51,7 +52,7 @@ export interface StoreSettings {
     autoLayerSettings: Record<string, AutoLayerSetting>;
     oledSettings: Record<string, { enabled: boolean }>;
     pomodoroDesktopNotificationsSettings: Record<string, boolean>;
-    savedNotifications: Notification[];
+    savedNotifications: NotificationData[];
     traySettings: {
         minimizeToTray: boolean;
         backgroundStart: boolean;

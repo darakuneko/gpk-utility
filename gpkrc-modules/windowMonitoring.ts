@@ -58,7 +58,7 @@ export const startWindowMonitoring = async (ActiveWindow: ActiveWindowModule): P
         if (!rawResult) {
             return;
         }
-        
+
         // Map the result to ActiveWindowResult format
         const result: ActiveWindowResult = {
             title: rawResult.title || '',
@@ -83,6 +83,9 @@ export const startWindowMonitoring = async (ActiveWindow: ActiveWindowModule): P
         // Always switch layers based on active application
         checkAndSwitchLayer(appName);
     } catch (error) {
+        // NOTE: This error can occur when accessing applications that reside in the system tray
+        // or when the active window API cannot access certain system-level applications.
+        // This is expected behavior in some cases and can be safely ignored.
         console.error('[ERROR] Error in window monitoring:', error);
     }
 };
@@ -103,7 +106,7 @@ export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
     
         const autoLayerSettings: AutoLayerSettings = settingsStore.get('autoLayerSettings') || {};
         const settings = autoLayerSettings[id];
-        
+
         if (!settings || !settings.enabled || !Array.isArray(settings.layerSettings) || !settings.layerSettings.length) {
             return;
         }
