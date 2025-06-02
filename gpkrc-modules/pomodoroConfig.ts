@@ -11,29 +11,29 @@ export const injectPomodoroDependencies = (writeCommand: WriteCommandFunction): 
 export function receivePomodoroConfig(buffer: number[]): {pomodoro: PomodoroConfig} {
     return {
         pomodoro: {
-            work_time: buffer[0],
-            break_time: buffer[1],
-            long_break_time: buffer[2],
-            work_interval: buffer[3],
-            work_hf_pattern: buffer[4],
-            break_hf_pattern: buffer[5],
-            timer_active: (buffer[6] & 0b10000000) >> 7,
-            notify_haptic_enable: (buffer[6] & 0b01000000) >> 6,
-            continuous_mode: (buffer[6] & 0b00100000) >> 5,
-            phase: buffer[6] & 0b00000011,
-            pomodoro_cycle: buffer[7]
+            work_time: buffer[0] || 0,
+            break_time: buffer[1] || 0,
+            long_break_time: buffer[2] || 0,
+            work_interval: buffer[3] || 0,
+            work_hf_pattern: buffer[4] || 0,
+            break_hf_pattern: buffer[5] || 0,
+            timer_active: ((buffer[6] || 0) & 0b10000000) >> 7,
+            notify_haptic_enable: ((buffer[6] || 0) & 0b01000000) >> 6,
+            continuous_mode: ((buffer[6] || 0) & 0b00100000) >> 5,
+            phase: (buffer[6] || 0) & 0b00000011,
+            pomodoro_cycle: buffer[7] || 0
         }
     };
 }
 
 export function receivePomodoroActiveStatus(buffer: number[]): PomodoroActiveStatus {
     return {
-        timer_active: (buffer[0] & 0b10000000) >> 7,
-        phase: buffer[0] & 0b00000011,
-        minutes: buffer[1],
-        seconds: buffer[2],
-        current_work_Interval: buffer[3],
-        current_pomodoro_cycle: buffer[4]
+        timer_active: ((buffer[0] || 0) & 0b10000000) >> 7,
+        phase: (buffer[0] || 0) & 0b00000011,
+        minutes: buffer[1] || 0,
+        seconds: buffer[2] || 0,
+        current_work_Interval: buffer[3] || 0,
+        current_pomodoro_cycle: buffer[4] || 0
     };
 }
 

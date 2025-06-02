@@ -27,6 +27,12 @@ export const actionId = {
 export const PACKET_PADDING = 64;
 export const DEVICE_ID_SEPARATOR = '::';
 
+// Command interface
+export interface Command {
+    id: number;
+    data?: string | number[] | undefined;
+}
+
 export const DEFAULT_USAGE = {
     usage: 0x61,
     usagePage: 0xFF60
@@ -35,10 +41,6 @@ export const DEFAULT_USAGE = {
 // Types
 import type { HIDDevice } from '../src/types/device';
 
-interface Command {
-    id: number;
-    data?: unknown;
-}
 
 interface ParsedDevice {
     manufacturer: string;
@@ -51,11 +53,11 @@ interface ParsedDevice {
 
 // Type guard for devices with required encoding properties
 export const hasRequiredDeviceProperties = (device: unknown): device is HIDDevice & { manufacturer: string; product: string } => {
-    return device && 
-           typeof device.manufacturer === 'string' && 
-           typeof device.product === 'string' && 
-           typeof device.vendorId === 'number' && 
-           typeof device.productId === 'number';
+    return Boolean(device && 
+           typeof (device as any).manufacturer === 'string' && 
+           typeof (device as any).product === 'string' && 
+           typeof (device as any).vendorId === 'number' && 
+           typeof (device as any).productId === 'number');
 };
 
 export const dataToBytes = (data: string | number[] | undefined): number[] => {
@@ -69,7 +71,7 @@ export const dataToBytes = (data: string | number[] | undefined): number[] => {
 };
 
 export const commandToBytes = ({ id, data }: Command): number[] => {
-    const bytes = data ? dataToBytes(data) : [];
+    const bytes = data ? dataToBytes(data) : dataToBytes(undefined);
     const unpadded = [
         0, 
         commandId.gpkRCPrefix, 
@@ -92,10 +94,10 @@ export const parseDeviceId = (id: string): ParsedDevice | null => {
     const deviceKeys = id.split(DEVICE_ID_SEPARATOR);
     if (deviceKeys.length >= 4) {
         return {
-            manufacturer: deviceKeys[0],
-            product: deviceKeys[1],
-            vendorId: parseInt(deviceKeys[2], 10),
-            productId: parseInt(deviceKeys[3], 10),
+            manufacturer: deviceKeys[0] || '',
+            product: deviceKeys[1] || '',
+            vendorId: parseInt(deviceKeys[2] || '0', 10),
+            productId: parseInt(deviceKeys[3] || '0', 10),
             id
         };
     }

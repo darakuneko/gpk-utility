@@ -58,7 +58,7 @@ const isEditingPomodoroPerDevice: Record<string, boolean> = {}
 let settingsStore: Store<StoreSchema> | null = null
 let mainWindow: ElectronWindow | null = null
 
-const getKBD = async (device: HIDDevice, retryCount: number = 0): Promise<HIDDevice | null> => {
+const getKBD = async (device: HIDDevice, retryCount: number = 0): Promise<HIDDevice | undefined> => {
     const maxRetries = 3;
     
     const searchDevice = (): HIDDevice | undefined => HID.devices().find(d =>
@@ -87,7 +87,7 @@ const getKBD = async (device: HIDDevice, retryCount: number = 0): Promise<HIDDev
         foundDevice = await getKBD(device, retryCount + 1);
     }
 
-    return foundDevice || null;
+    return foundDevice;
 }
 
 const getKBDList = (): DeviceWithId[] => HID.devices().filter(d =>
@@ -205,7 +205,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                     break;
                 }
                 throw new Error(`HID instance not created despite successful addKbd call`);
-            } catch (addError: unknown) {
+            } catch (addError) {
                 retryCount++;
                 console.warn(`Failed to add device ${id} (attempt ${retryCount}/${maxRetries}):`, addError instanceof Error ? addError.message : String(addError));
                 
@@ -248,7 +248,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                 
                 // Mark device as disconnected and clean up HID instance
                 if (deviceStatusMap[newId!]) {
-                    deviceStatusMap[newId!].connected = false;
+                    deviceStatusMap[newId!]!.connected = false;
                 }
                 
                 // Clean up the problematic HID instance
@@ -265,7 +265,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                 // Notify UI about device disconnection
                 if ((global as { mainWindow?: ElectronWindow }).mainWindow) {
                     (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionStateChanged", {
-                        deviceId: newId,
+                        deviceId: newId!,
                         connected: false,
                         gpkRCVersion: deviceStatusMap[newId!]?.gpkRCVersion || 0,
                         deviceType: deviceStatusMap[newId!]?.deviceType || DeviceType.KEYBOARD,
@@ -303,9 +303,9 @@ const start = async (device: HIDDevice): Promise<string> => {
                                     oled_enabled: undefined 
                                 };
                                 
-                                deviceStatusMap[id]!.gpkRCVersion = actualData[0];
+                                deviceStatusMap[id]!.gpkRCVersion = actualData[0] || 0;
                                 deviceStatusMap[id]!.init = actualData[1];
-                                const deviceTypeStr = actualData.toString('utf8', 2).split('\0')[0];
+                                const deviceTypeStr = actualData.toString('utf8', 2).split('\0')[0] || '';
                                 deviceStatusMap[id]!.deviceType = stringToDeviceType(deviceTypeStr);
 
                                 if (settingsStore) {
@@ -407,7 +407,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                             }
                         }
                     }
-                } catch (dataProcessingError: unknown) {
+                } catch (dataProcessingError) {
                     console.error(`Error processing device data for ${newId}:`, dataProcessingError);
                     
                     const errorMessage = dataProcessingError instanceof Error ? dataProcessingError.message : String(dataProcessingError);
@@ -437,19 +437,19 @@ const start = async (device: HIDDevice): Promise<string> => {
                 try {
                     // Test HID instance readiness
                     if (!(hidDeviceInstances[newId!] as HID.HID & { read?: () => void }).read) {
-                        console.warn(`Device ${newId} HID instance not fully ready after timeout`);
+                        console.warn(`Device ${newId!} HID instance not fully ready after timeout`);
                     } else {
                     }
                 } catch (hidTestError) {
-                    console.warn(`Device ${newId} HID instance validation failed:`, hidTestError);
+                    console.warn(`Device ${newId!} HID instance validation failed:`, hidTestError);
                 }
             }
         } else {
-            console.warn(`Device ${newId} started but no HID instance available`);
+            console.warn(`Device ${newId!} started but no HID instance available`);
             // Ensure device status reflects the lack of HID instance
             if (deviceStatusMap[newId!]) {
-                deviceStatusMap[newId!].initializing = false;
-                deviceStatusMap[newId!].connected = false;
+                deviceStatusMap[newId!]!.initializing = false;
+                deviceStatusMap[newId!]!.connected = false;
             }
         }
         
@@ -564,7 +564,7 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
         await hidDeviceInstances[id]!.write(bytes);    
 
         return { success: true };
-    } catch (err: unknown) {
+    } catch (err) {
         console.error(`Error writing command to device ${id} (attempt ${retryCount + 1}):`, err);
         
         // If write fails, mark device as potentially disconnected
@@ -646,15 +646,15 @@ const updateAutoLayerSettings = (store: Store<StoreSchema>): boolean => {
 export const initializeDependencies = (): void => {
     // Inject dependencies for device health monitoring
     injectDeviceHealthDependencies({
-        deviceStatusMap,
+        deviceStatusMap: deviceStatusMap as Record<string, DeviceStatus>,
         hidDeviceInstances,
-        getKBD,
-        addKbd,
-        mainWindow
+        getKBD: getKBD as (device: unknown, retryCount?: number) => Promise<unknown>,
+        addKbd: addKbd as (device: unknown) => Promise<string>,
+        mainWindow: mainWindow || undefined
     });
 
     // Inject dependencies for OLED display
-    injectOledDependencies(writeCommand);
+    injectOledDependencies(writeCommand as any);
 
     // Inject dependencies for pomodoro config
     injectPomodoroDependencies(writeCommand);
@@ -665,9 +665,9 @@ export const initializeDependencies = (): void => {
     // Inject dependencies for window monitoring
     injectWindowMonitoringDependencies({
         deviceStatusMap,
-        settingsStore,
+        settingsStore: settingsStore || undefined,
         writeCommand,
-        mainWindow
+        mainWindow: mainWindow || undefined
     });
 };
 

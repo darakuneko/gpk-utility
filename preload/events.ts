@@ -31,27 +31,27 @@ export const setupEventListeners = (): void => {
             const initializationComplete = config && (config.init !== undefined || config.oled_enabled !== undefined);
             
             if (device.connected !== connected){
-                cachedDeviceRegistry[deviceIndex].connected = connected;
+                cachedDeviceRegistry[deviceIndex]!.connected = connected;
                 changed = true;
             } 
             if(device.gpkRCVersion !== gpkRCVersion) {
-                cachedDeviceRegistry[deviceIndex].gpkRCVersion = gpkRCVersion;
+                cachedDeviceRegistry[deviceIndex]!.gpkRCVersion = gpkRCVersion;
                 changed = true;
             }
             if(device.deviceType !== deviceType) {
-                cachedDeviceRegistry[deviceIndex].deviceType = deviceType;
+                cachedDeviceRegistry[deviceIndex]!.deviceType = deviceType;
                 changed = true;
             }
             
             if (device.config !== config) {
-                cachedDeviceRegistry[deviceIndex].config = config;
+                cachedDeviceRegistry[deviceIndex]!.config = config;
                 changed = true;
             }
             
             // Mark initialization as complete and device as connected when config is received
             if (initializationComplete && device.initializing) {
-                cachedDeviceRegistry[deviceIndex].initializing = false;
-                cachedDeviceRegistry[deviceIndex].connected = true;
+                cachedDeviceRegistry[deviceIndex]!.initializing = false;
+                cachedDeviceRegistry[deviceIndex]!.connected = true;
                 changed = true;
             }
         }
@@ -68,14 +68,14 @@ export const setupEventListeners = (): void => {
         const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
         if (deviceIndex !== -1) {
             // Ensure config object exists with safe structure
-            if (!cachedDeviceRegistry[deviceIndex].config) {
-                cachedDeviceRegistry[deviceIndex].config = {
+            if (!cachedDeviceRegistry[deviceIndex]!.config) {
+                cachedDeviceRegistry[deviceIndex]!.config = {
                     pomodoro: {},
                     trackpad: {},
                     oled_enabled: 0
                 };
             }
-            cachedDeviceRegistry[deviceIndex].config!.oled_enabled = enabled ? 1 : 0;
+            cachedDeviceRegistry[deviceIndex]!.config!.oled_enabled = enabled ? 1 : 0;
             command.changeConnectDevice(cachedDeviceRegistry);
         }
     });
@@ -89,8 +89,8 @@ export const setupEventListeners = (): void => {
         if (deviceIndex === -1) return;
         
         // Ensure config object exists with safe structure
-        if (!cachedDeviceRegistry[deviceIndex].config) {
-            cachedDeviceRegistry[deviceIndex].config = {
+        if (!cachedDeviceRegistry[deviceIndex]!.config) {
+            cachedDeviceRegistry[deviceIndex]!.config = {
                 pomodoro: {},
                 trackpad: {},
                 oled_enabled: 0
@@ -98,17 +98,17 @@ export const setupEventListeners = (): void => {
         }
             
         // Save existing notification settings
-        const notificationsEnabled = cachedDeviceRegistry[deviceIndex].config?.pomodoro?.notifications_enabled;
+        const notificationsEnabled = cachedDeviceRegistry[deviceIndex]!.config?.pomodoro?.notifications_enabled;
         
         // Check previous timer active state
-        const oldTimerActive = cachedDeviceRegistry[deviceIndex].config?.pomodoro?.timer_active;
+        const oldTimerActive = cachedDeviceRegistry[deviceIndex]!.config?.pomodoro?.timer_active;
         
         // Update pomodoro config
-        cachedDeviceRegistry[deviceIndex].config!.pomodoro = { ...pomodoroConfig };
+        cachedDeviceRegistry[deviceIndex]!.config!.pomodoro = { ...pomodoroConfig };
         
         // Restore notification settings if they existed
         if (notificationsEnabled !== undefined) {
-            cachedDeviceRegistry[deviceIndex].config!.pomodoro!.notifications_enabled = notificationsEnabled;
+            cachedDeviceRegistry[deviceIndex]!.config!.pomodoro!.notifications_enabled = notificationsEnabled;
         }
         
         command.changeConnectDevice(cachedDeviceRegistry);
@@ -124,7 +124,7 @@ export const setupEventListeners = (): void => {
                     const result = await ipcRenderer.invoke('loadPomodoroDesktopNotificationSettings', deviceId);
                     const notificationsEnabled = result.success ? result.enabled : true;
                     if (notificationsEnabled) {
-                        const deviceName = cachedDeviceRegistry[deviceIndex].product || cachedDeviceRegistry[deviceIndex].name || 'Keyboard';
+                        const deviceName = cachedDeviceRegistry[deviceIndex]!.product || cachedDeviceRegistry[deviceIndex]!.name || 'Keyboard';
                         const newPhase = pomodoroConfig.phase;
                         let minutes = 0;
                         switch (newPhase) {
@@ -192,7 +192,7 @@ export const setupEventListeners = (): void => {
                 trackpad: {},
                 oled_enabled: 0
             };
-            cachedDeviceRegistry[deviceIndex].config = { ...safeConfig };
+            cachedDeviceRegistry[deviceIndex]!.config = { ...safeConfig };
             command.changeConnectDevice(cachedDeviceRegistry);
         }
     });

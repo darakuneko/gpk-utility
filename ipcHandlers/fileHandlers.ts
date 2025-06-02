@@ -42,7 +42,7 @@ const importFile = async (): Promise<string | null> => {
         try {
             const fileContent = await fs.readFile(filePath, 'utf-8');
             return fileContent;
-        } catch (readErr: Error) {
+        } catch (readErr) {
             console.error(`Error reading file ${filePath}:`, readErr);
             throw new Error(`Failed to read file: ${readErr instanceof Error ? readErr.message : String(readErr)}`);
         }

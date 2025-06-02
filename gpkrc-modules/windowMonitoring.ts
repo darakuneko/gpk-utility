@@ -61,9 +61,9 @@ export const startWindowMonitoring = async (ActiveWindow: ActiveWindowModule): P
         
         // Map the result to ActiveWindowResult format
         const result: ActiveWindowResult = {
-            title: rawResult.title,
-            executableName: rawResult.application || rawResult.name,
-            application: rawResult.application || rawResult.name
+            title: rawResult.title || '',
+            executableName: rawResult.application || rawResult.name || '',
+            application: rawResult.application || rawResult.name || ''
         };
         
         const appName = result.application;
@@ -193,10 +193,11 @@ export const addNewAppToAutoLayerSettings = async (deviceId: string, appName: st
     );
     
     if (existingIndex >= 0) {
-        autoLayerSettings[deviceId].layerSettings[existingIndex].layer = layer;
+        autoLayerSettings[deviceId]!.layerSettings[existingIndex]!.layer = layer;
     } else {
         autoLayerSettings[deviceId].layerSettings.push({
             applicationName: appName,
+            appName: appName,
             layer
         });
     }

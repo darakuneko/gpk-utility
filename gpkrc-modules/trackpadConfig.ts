@@ -28,24 +28,24 @@ export function joinDefaultSpeed(a: number, b: number): number {
 
 export function receiveTrackpadSpecificConfig(buffer: number[]): TrackpadConfig { // buffer here is actualData
     return {
-        hf_waveform_number: buffer[0],
-        can_hf_for_layer: (buffer[1] & 0b10000000) >> 7,
-        can_drag: (buffer[1] & 0b01000000) >> 6,
-        scroll_term: joinScrollTerm(buffer[1], buffer[2]),
-        drag_term: joinDragTerm(buffer[2], buffer[3]),
-        can_trackpad_layer: (buffer[3] & 0b00000010) >> 1,
-        can_reverse_scrolling_direction: buffer[3] & 0b00000001,
-        drag_strength_mode: (buffer[4] & 0b10000000) >> 7,
-        drag_strength: (buffer[4] & 0b01111100) >> 2,
-        default_speed: joinDefaultSpeed(buffer[4], buffer[5]),
-        scroll_step: buffer[5] & 0b00001111,
-        can_short_scroll: (buffer[6] & 0b10000000) >> 7,
-        tap_term: (buffer[7] << 8) | buffer[8],
-        swipe_term: (buffer[9] << 8) | buffer[10],
-        pinch_term: (buffer[11] << 8) | buffer[12],
-        gesture_term: (buffer[13] << 8) | buffer[14],
-        short_scroll_term: (buffer[15] << 8) | buffer[16],
-        pinch_distance: (buffer[17] << 8) | buffer[18]
+        hf_waveform_number: buffer[0] || 0,
+        can_hf_for_layer: ((buffer[1] || 0) & 0b10000000) >> 7,
+        can_drag: ((buffer[1] || 0) & 0b01000000) >> 6,
+        scroll_term: joinScrollTerm(buffer[1] || 0, buffer[2] || 0),
+        drag_term: joinDragTerm(buffer[2] || 0, buffer[3] || 0),
+        can_trackpad_layer: ((buffer[3] || 0) & 0b00000010) >> 1,
+        can_reverse_scrolling_direction: (buffer[3] || 0) & 0b00000001,
+        drag_strength_mode: ((buffer[4] || 0) & 0b10000000) >> 7,
+        drag_strength: ((buffer[4] || 0) & 0b01111100) >> 2,
+        default_speed: joinDefaultSpeed(buffer[4] || 0, buffer[5] || 0),
+        scroll_step: (buffer[5] || 0) & 0b00001111,
+        can_short_scroll: ((buffer[6] || 0) & 0b10000000) >> 7,
+        tap_term: ((buffer[7] || 0) << 8) | (buffer[8] || 0),
+        swipe_term: ((buffer[9] || 0) << 8) | (buffer[10] || 0),
+        pinch_term: ((buffer[11] || 0) << 8) | (buffer[12] || 0),
+        gesture_term: ((buffer[13] || 0) << 8) | (buffer[14] || 0),
+        short_scroll_term: ((buffer[15] || 0) << 8) | (buffer[16] || 0),
+        pinch_distance: ((buffer[17] || 0) << 8) | (buffer[18] || 0)
     };
 }
 

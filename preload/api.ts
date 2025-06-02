@@ -57,14 +57,14 @@ export const exposeAPI = (): void => {
                     const autoLayerSettings = cachedStoreSettings.autoLayerSettings || {};
                     if (autoLayerSettings[device.id]) {
                         if (!device.config.trackpad) device.config.trackpad = {};
-                        device.config.trackpad.auto_layer_enabled = autoLayerSettings[device.id].enabled ? 1 : 0;
-                        device.config.trackpad.auto_layer_settings = autoLayerSettings[device.id].layerSettings || [];
+                        device.config.trackpad.auto_layer_enabled = autoLayerSettings[device.id]!.enabled ? 1 : 0;
+                        device.config.trackpad.auto_layer_settings = autoLayerSettings[device.id]!.layerSettings || [];
                     }
                     
                     // Apply OLED settings
                     const oledSettings = cachedStoreSettings.oledSettings || {};
                     if (oledSettings[device.id]) {
-                        device.config.oled_enabled = oledSettings[device.id].enabled ? 1 : 0;
+                        device.config.oled_enabled = oledSettings[device.id]!.enabled ? 1 : 0;
                     }
                     
                     // Apply pomodoro notification settings
@@ -86,7 +86,7 @@ export const exposeAPI = (): void => {
                 
                 // Export the enhanced data
                 return await command.exportFile(exportData);
-            } catch (err: Error) {
+            } catch (err) {
                 console.error("Error in exportFile:", err);
                 return { success: false, error: err instanceof Error ? err.message : String(err) };
             }
@@ -155,10 +155,10 @@ export const exposeAPI = (): void => {
                                             };
                                         }
                                         if (matchingConfig.config.trackpad.auto_layer_enabled !== undefined) {
-                                            autoLayerSettings[cd.id].enabled = matchingConfig.config.trackpad.auto_layer_enabled === 1;
+                                            autoLayerSettings[cd.id]!.enabled = matchingConfig.config.trackpad.auto_layer_enabled === 1;
                                         }
                                         if (matchingConfig.config.trackpad.auto_layer_settings) {
-                                            autoLayerSettings[cd.id].layerSettings = matchingConfig.config.trackpad.auto_layer_settings;
+                                            autoLayerSettings[cd.id]!.layerSettings = matchingConfig.config.trackpad.auto_layer_settings;
                                         }
                                     }
                                     
@@ -167,7 +167,7 @@ export const exposeAPI = (): void => {
                                         if (!oledSettings[cd.id]) {
                                             oledSettings[cd.id] = { enabled: false };
                                         }
-                                        oledSettings[cd.id].enabled = matchingConfig.config.oled_enabled === 1;
+                                        oledSettings[cd.id]!.enabled = matchingConfig.config.oled_enabled === 1;
                                     }
                                     
                                     // Extract pomodoro notification settings
@@ -219,7 +219,7 @@ export const exposeAPI = (): void => {
                     return { success: false, error: "Invalid JSON format" };
                 }
                 
-            } catch (err: Error) {
+            } catch (err) {
                 console.error("Import file error:", err);
                 return { success: false, error: err instanceof Error ? err.message : "Unknown error during import" };
             }

@@ -46,8 +46,10 @@ const store = new Store<StoreSchema>({
         oledSettings: {},
         pomodoroDesktopNotificationsSettings: {},
         savedNotifications: [],
-        minimizeToTray: true,
-        backgroundStart: false,
+        traySettings: {
+            minimizeToTray: true,
+            backgroundStart: false
+        },
         windowBounds: { width: 1280, height: 800, x: undefined, y: undefined },
         locale: 'en',
         notificationApiEndpoint: 'https://getnotifications-svtx62766a-uc.a.run.app'
@@ -57,18 +59,18 @@ const store = new Store<StoreSchema>({
 // Translation utility function
 const translate = (key: string, params: Record<string, string | number> = {}): string => {
     const locale = store.get('locale') || 'en';
-    const translations: Record<string, string | Record<string, string>> = enTranslations;
+    const translations = enTranslations as any;
     
     // Get nested value from translations using key path
-    const getValue = (obj: Record<string, string | Record<string, string>>, path: string): string | undefined => {
-        return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
+    const getValue = (obj: any, path: string): string | undefined => {
+        return path.split('.').reduce((o: any, i: string) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
     };
     
     let text = getValue(translations, key);
     
     // Fall back to English if translation not found
     if (text === undefined && locale !== 'en') {
-        text = getValue(enTranslations, key);
+        text = getValue(enTranslations as any, key);
     }
     
     // If still undefined, return key
