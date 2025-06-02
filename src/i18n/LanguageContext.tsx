@@ -18,7 +18,7 @@ interface LanguageProviderProps {
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const [locale, setLocale] = useState<string>(defaultLocale);
-  const [translations, setTranslations] = useState<LocaleMessages>({});
+  const [translations, setTranslations] = useState<LocaleMessages>({} as LocaleMessages);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {

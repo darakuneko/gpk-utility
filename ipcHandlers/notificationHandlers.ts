@@ -43,7 +43,7 @@ const translate = (key: string, params: Record<string, unknown> = {}): string =>
         }, obj);
     };
     
-    const text = getValue(translations, key);
+    const text = getValue(translations as any, key);
     
     // If still undefined, return key
     if (text === undefined) {
