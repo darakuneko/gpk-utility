@@ -69,11 +69,11 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     
     // Use dot notation to access nested keys
     const keys = key.split('.');
-    let value: any = translations;
+    let value: unknown = translations;
     
     for (const k of keys) {
-      if (value && Object.prototype.hasOwnProperty.call(value, k)) {
-        value = value[k];
+      if (value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, k)) {
+        value = (value as Record<string, unknown>)[k];
       } else {
         // Only log warning if we actually have translations loaded
         // This prevents warning spam during initial load
@@ -82,10 +82,10 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
       }
     }
 
-    let result: string = value || key;
+    let result: string = typeof value === 'string' ? value : key;
     
     // Replace parameters in the translation string
-    if (typeof result === 'string' && params && typeof params === 'object') {
+    if (params && typeof params === 'object') {
       Object.keys(params).forEach(paramKey => {
         const placeholder = `{{${paramKey}}}`;
         result = result.replace(new RegExp(placeholder, 'g'), String(params[paramKey]));

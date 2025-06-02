@@ -9,12 +9,12 @@ import { setupStoreHandlers, setStore as setStoreInStoreHandlers, setMainWindow 
 import { setupNotificationHandlers, setupNotificationEvents, setStore as setNotificationStore, setMainWindow as setNotificationMainWindow } from './ipcHandlers/notificationHandlers';
 
 // Module state - maintained for compatibility with existing code
-let mainWindow: BrowserWindow | null = null;
-let store: Store<Record<string, unknown>> | null = null;
+let _mainWindow: BrowserWindow | null = null;
+let _store: Store<Record<string, unknown>> | null = null;
 
 // Set references from main process
 export const setMainWindow = (window: BrowserWindow | null): void => {
-    mainWindow = window;
+    _mainWindow = window;
     
     // Pass mainWindow to all handler modules
     setDeviceMainWindow(window);
@@ -24,12 +24,12 @@ export const setMainWindow = (window: BrowserWindow | null): void => {
 };
 
 export const setStore = (storeInstance: Store<Record<string, unknown>>): void => {
-    store = storeInstance;
+    _store = storeInstance;
     
     // Pass store to modules that need it
-    setConfigStore(storeInstance as any);
-    setStoreInStoreHandlers(storeInstance as any);
-    setNotificationStore(storeInstance as any);
+    setConfigStore(storeInstance);
+    setStoreInStoreHandlers(storeInstance);
+    setNotificationStore(storeInstance);
 };
 
 // Setup all IPC handlers
@@ -50,5 +50,5 @@ export const setupIpcEvents = (activePomodoroDevices: Map<string, unknown>, tray
     setupDeviceEvents();
     
     // Setup notification events
-    setupNotificationEvents(activePomodoroDevices as any, tray, createTrayMenuTemplate);
+    setupNotificationEvents(activePomodoroDevices as Map<string, { name: string; phase: number }>, tray, createTrayMenuTemplate);
 };

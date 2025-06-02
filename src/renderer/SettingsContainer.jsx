@@ -11,7 +11,7 @@ import { getSupportedSettingTabs } from "./SettingsDeviceUtils.ts"
 const SettingsContainer = () => {
     const {state, dispatch} = useStateContext();
     const DeviceType = useDeviceType();
-    const { t, locale, changeLocale, isLoading } = useLanguage();
+    const { t, locale, changeLocale, isLoading: _isLoading } = useLanguage();
     
     const [activeDeviceId, setActiveDeviceId] = useState(null)
     const [activeSettingTab, setActiveSettingTab] = useState("mouse")

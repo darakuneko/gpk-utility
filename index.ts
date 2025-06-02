@@ -59,18 +59,23 @@ const store = new Store<StoreSchema>({
 // Translation utility function
 const translate = (key: string, params: Record<string, string | number> = {}): string => {
     const locale = store.get('locale') || 'en';
-    const translations = enTranslations as any;
+    const translations = enTranslations as Record<string, unknown>;
     
     // Get nested value from translations using key path
-    const getValue = (obj: any, path: string): string | undefined => {
-        return path.split('.').reduce((o: any, i: string) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
+    const getValue = (obj: Record<string, unknown>, path: string): string | undefined => {
+        return path.split('.').reduce((o: unknown, i: string) => {
+            if (o && typeof o === 'object' && i in o) {
+                return (o as Record<string, unknown>)[i];
+            }
+            return undefined;
+        }, obj) as string | undefined;
     };
     
     let text = getValue(translations, key);
     
     // Fall back to English if translation not found
     if (text === undefined && locale !== 'en') {
-        text = getValue(enTranslations as any, key);
+        text = getValue(enTranslations, key);
     }
     
     // If still undefined, return key
@@ -113,7 +118,7 @@ const createTrayMenuTemplate = (): Electron.MenuItemConstructorOptions[] => {
         menuItems.push({ label: 'Active Pomodoro Timers', enabled: false });
         
         // Add an entry for each active pomodoro device
-        activePomodoroDevices.forEach((deviceInfo, _deviceId) => {
+        activePomodoroDevices.forEach((deviceInfo, __deviceId) => {
             const { name, phase } = deviceInfo;
             let phaseText = '';
             
@@ -210,19 +215,19 @@ const createWindow = async (): Promise<void> => {
     
     // Pass the store reference to modules
     updateAutoLayerSettings(store);
-    setIpcStore(store as any);
+    setIpcStore(store);
     
     // Re-inject window monitoring dependencies with the actual store
     injectWindowMonitoringDependencies({
-        deviceStatusMap: deviceStatusMap as any,
-        settingsStore: store as any,
+        deviceStatusMap: deviceStatusMap as Record<string, DeviceStatus>,
+        settingsStore: store,
         writeCommand,
-        mainWindow: mainWindow as any
+        mainWindow: mainWindow
     });
     
     // Monitor window size and position changes
     (['resize', 'move'] as const).forEach(eventName => {
-        mainWindow!.on(eventName as any, () => {
+        mainWindow!.on(eventName, () => {
             if (!mainWindow!.isMinimized() && !mainWindow!.isMaximized()) {
                 const bounds = mainWindow!.getBounds();
                 store.set('windowBounds', bounds);
@@ -278,12 +283,12 @@ app.on('ready', async () => {
     // Setup IPC handlers and events
     setupIpcHandlers();
     if (tray) {
-        setupIpcEvents(activePomodoroDevices, tray, createTrayMenuTemplate);
+        setupIpcEvents(activePomodoroDevices, tray, createTrayMenuTemplate as () => Electron.MenuItemConstructorOptions[]);
     }
     
     // Start window monitoring for automatic layer switching
     try {
-        startWindowMonitoring(ActiveWindow as any);
+        startWindowMonitoring(ActiveWindow);
     } catch (error) {
         console.error('[ERROR] Failed to start window monitoring:', error);
     }

@@ -14,8 +14,8 @@ const exportFile = async (data: ExportData): Promise<void> => {
                 { name: 'All Files', extensions: ['*'] }
             ]
         });
-        if (!(result as any).canceled && (result as any).filePath) {
-            await fs.writeFile((result as any).filePath, JSON.stringify(data, null, 2))
+        if (!result.canceled && result.filePath) {
+            await fs.writeFile(result.filePath, JSON.stringify(data, null, 2))
         }
     } catch (err) {
         // Ignore errors
@@ -34,11 +34,11 @@ const importFile = async (): Promise<string | null> => {
             properties: ['openFile']
         });
 
-        if ((result as any).canceled || (result as any).filePaths.length === 0) {
+        if (result.canceled || result.filePaths.length === 0) {
             return null;
         }
         
-        const filePath = (result as any).filePaths[0];
+        const filePath = result.filePaths[0];
         try {
             const fileContent = await fs.readFile(filePath, 'utf-8');
             return fileContent;
@@ -54,6 +54,6 @@ const importFile = async (): Promise<string | null> => {
 
 export const setupFileHandlers = (): void => {
     // File operations
-    ipcMain.handle('exportFile', async (event, data: ExportData) => await exportFile(data));
-    ipcMain.handle('importFile', async (event, fn?: string) => await importFile());
+    ipcMain.handle('exportFile', async (_event, data: ExportData) => await exportFile(data));
+    ipcMain.handle('importFile', async (_event, _fn?: string) => await importFile());
 };

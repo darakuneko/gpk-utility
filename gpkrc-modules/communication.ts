@@ -54,10 +54,15 @@ interface ParsedDevice {
 // Type guard for devices with required encoding properties
 export const hasRequiredDeviceProperties = (device: unknown): device is HIDDevice & { manufacturer: string; product: string } => {
     return Boolean(device && 
-           typeof (device as any).manufacturer === 'string' && 
-           typeof (device as any).product === 'string' && 
-           typeof (device as any).vendorId === 'number' && 
-           typeof (device as any).productId === 'number');
+           typeof device === 'object' &&
+           'manufacturer' in device &&
+           'product' in device &&
+           'vendorId' in device &&
+           'productId' in device &&
+           typeof device.manufacturer === 'string' && 
+           typeof device.product === 'string' && 
+           typeof device.vendorId === 'number' && 
+           typeof device.productId === 'number');
 };
 
 export const dataToBytes = (data: string | number[] | undefined): number[] => {

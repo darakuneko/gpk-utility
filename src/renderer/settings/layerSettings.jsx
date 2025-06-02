@@ -8,7 +8,7 @@ import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 const { api } = window;
 
-const LayerSettings = ({ device, handleChange }) => {
+const LayerSettings = ({ device, handleChange: _handleChange }) => {
     const { state, setState } = useStateContext();
     const DeviceType = useDeviceType();
     const { t } = useLanguage();
@@ -222,7 +222,7 @@ const LayerSettings = ({ device, handleChange }) => {
         await saveSettingsToStore(isEnabled, settings);
     };
 
-    const getAppOptions = (currentAppName, index) => {
+    const getAppOptions = (currentAppName, _index) => {
         const windowsList = [
             ...new Set([
                 ...(localActiveWindows || []),
@@ -265,7 +265,7 @@ const LayerSettings = ({ device, handleChange }) => {
         return [...baseOptions, ...windowOptions];
     };
     
-    const handleEditMode = () => {
+    const _handleEditMode = () => {
         setIsEditing(!isEditing);
     };
     

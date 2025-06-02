@@ -38,14 +38,14 @@ export const setupDeviceHandlers = (): void => {
         await stop(device)
     });
     
-    ipcMain.handle('close', async (event) => {
+    ipcMain.handle('close', async (_event) => {
         await close()
     });
     
-    ipcMain.handle('encodeDeviceId', async (event, device: Device) => await encodeDeviceId(device));
-    ipcMain.handle('getKBDList', async (event) => await getKBDList());
-    ipcMain.handle('getDeviceType', (event) => getDeviceType());
-    ipcMain.handle('getConnectKbd', async (event, id: string) => await getConnectKbd(id));
+    ipcMain.handle('encodeDeviceId', async (_event, device: Device) => await encodeDeviceId(device));
+    ipcMain.handle('getKBDList', async (_event) => await getKBDList());
+    ipcMain.handle('getDeviceType', (_event) => getDeviceType());
+    ipcMain.handle('getConnectKbd', async (_event, id: string) => await getConnectKbd(id));
     
     ipcMain.on("changeConnectDevice", (e, data: Device) => {
         if (mainWindow) {
@@ -55,7 +55,7 @@ export const setupDeviceHandlers = (): void => {
     
     ipcMain.handle('getDeviceConfig', async (event, device: Device) => {
         try {
-            const result = await getDeviceConfig(device);
+            const _result = await getDeviceConfig(device);
             return { success: true };
         } catch (error) {
             console.error(`IPC handler: Error getting device config for ${device.id}:`, error);
@@ -87,16 +87,16 @@ export const setupDeviceHandlers = (): void => {
     });
 
     // Window monitoring control
-    ipcMain.handle('startWindowMonitoring', async (event) => {
+    ipcMain.handle('startWindowMonitoring', async (_event) => {
         try {
-            await startWindowMonitoring(ActiveWindow as any);
+            await startWindowMonitoring(ActiveWindow);
         } catch (error) {
             console.error('[ERROR] IPC handler: startWindowMonitoring failed:', error);
         }
     });
 
     // Active window list retrieval handler
-    ipcMain.handle('getActiveWindows', async (event) => {
+    ipcMain.handle('getActiveWindows', async (_event) => {
         return getActiveWindows();
     });
 

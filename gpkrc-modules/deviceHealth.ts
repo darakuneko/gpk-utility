@@ -77,7 +77,9 @@ export const checkDeviceHealth = async (): Promise<void> => {
                 try {
                     (hidInstance as unknown as { removeAllListeners: () => void; close: () => void }).removeAllListeners();
                     (hidInstance as unknown as { removeAllListeners: () => void; close: () => void }).close();
-                } catch (e) {}
+                } catch (e) {
+                    // Ignore cleanup errors - device is being disconnected
+                }
                 hidDeviceInstances[deviceId] = null;
                 
                 // Notify UI about disconnection

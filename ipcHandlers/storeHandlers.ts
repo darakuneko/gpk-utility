@@ -31,9 +31,9 @@ const translate = (key: string, params: Record<string, unknown> = {}): string =>
     
     // Get nested value from translations using key path
     const getValue = (obj: unknown, path: string): unknown => {
-        return path.split('.').reduce((o: any, i: string) => {
+        return path.split('.').reduce((o: unknown, i: string) => {
             if (o && typeof o === 'object' && i in o) {
-                return o[i];
+                return (o as Record<string, unknown>)[i];
             }
             return undefined;
         }, obj);
@@ -114,7 +114,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Tray settings loading
-    ipcMain.handle('loadTraySettings', async (event) => {
+    ipcMain.handle('loadTraySettings', async (_event) => {
         try {
             // Load settings from electron-store
             return { 
@@ -140,7 +140,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Window position and size loading
-    ipcMain.handle('loadWindowBounds', async (event) => {
+    ipcMain.handle('loadWindowBounds', async (_event) => {
         try {
             // Load window position and size from electron-store
             const bounds = store.get('windowBounds');
@@ -166,7 +166,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Get application locale
-    ipcMain.handle('getAppLocale', async (event) => {
+    ipcMain.handle('getAppLocale', async (_event) => {
         try {
             // Return current locale from electron-store
             return store.get('locale') || 'en';
@@ -228,7 +228,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Get all store settings at once
-    ipcMain.handle('getAllStoreSettings', async (event) => {
+    ipcMain.handle('getAllStoreSettings', async (_event) => {
         try {
             // Get all relevant settings from store
             const settings = {

@@ -439,6 +439,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                     if (!(hidDeviceInstances[newId!] as HID.HID & { read?: () => void }).read) {
                         console.warn(`Device ${newId!} HID instance not fully ready after timeout`);
                     } else {
+                        // HID instance is ready, continue normal operation
                     }
                 } catch (hidTestError) {
                     console.warn(`Device ${newId!} HID instance validation failed:`, hidTestError);
@@ -654,7 +655,7 @@ export const initializeDependencies = (): void => {
     });
 
     // Inject dependencies for OLED display
-    injectOledDependencies(writeCommand as any);
+    injectOledDependencies(writeCommand);
 
     // Inject dependencies for pomodoro config
     injectPomodoroDependencies(writeCommand);
@@ -665,9 +666,9 @@ export const initializeDependencies = (): void => {
     // Inject dependencies for window monitoring
     injectWindowMonitoringDependencies({
         deviceStatusMap: deviceStatusMap as Record<string, DeviceStatus>,
-        settingsStore: settingsStore as any,
+        settingsStore: settingsStore,
         writeCommand,
-        mainWindow: mainWindow as any
+        mainWindow: mainWindow || undefined
     });
 };
 

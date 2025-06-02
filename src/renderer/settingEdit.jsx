@@ -58,12 +58,13 @@ const SettingEdit = ((props) => {
                 return updatedConfig.config;
             }
         } catch (error) {
+            // Ignore config processing errors - return original config
         }
     };
 
     const handleChange = (pType, id) => async (event) => {
         // Create a new array to ensure immutability
-        const updatedDevices = await Promise.all(state.devices.map(async (d) => {
+        const _updatedDevices = await Promise.all(state.devices.map(async (d) => {
             if(d.id === id) {
                 // Create a new object to avoid modifying the original device
                 const updatedDevice = {...d};

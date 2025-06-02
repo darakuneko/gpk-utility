@@ -12,16 +12,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         startKeyboardPolling(keyboardSendLoop);
         
         // Start window monitoring with the command from device module
-        startWindowMonitoring(command.startWindowMonitoring as any);
+        startWindowMonitoring(command.startWindowMonitoring);
         
         const result = await command.getNotifications();
         const latestNotification = result?.notifications[0] || {} as Record<string, unknown>;
         const savedNotifications = cachedStoreSettings?.savedNotifications || [];
 
         if (latestNotification?.id) {
-            const isDifferent = !savedNotifications.length || !savedNotifications.some((n: any) => n.id === latestNotification.id);
+            const isDifferent = !savedNotifications.length || !savedNotifications.some((n: { id: unknown }) => n.id === latestNotification.id);
             if (isDifferent) {       
-                await saveStoreSetting('savedNotifications', result.notifications as any);
+                await saveStoreSetting('savedNotifications', result.notifications as NotificationData[]);
                 window.dispatchEvent(new CustomEvent('showUpdatesNotificationModal', {
                     detail: {
                         notifications: [latestNotification]
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Listen for polling interval changes
 window.addEventListener('restartPollingIntervals', () => {
     startKeyboardPolling(keyboardSendLoop);
-    startWindowMonitoring(command.startWindowMonitoring as any);
+    startWindowMonitoring(command.startWindowMonitoring);
 });
 
 // Setup event listeners once when the script loads
@@ -48,6 +48,7 @@ exposeAPI();
 
 // Cleanup handlers
 process.on('exit', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { keyboardPollingInterval, windowMonitoringInterval } = require('./preload/core');
     if (keyboardPollingInterval) {
         clearInterval(keyboardPollingInterval);

@@ -30,20 +30,20 @@ export const setMainWindow = (window: BrowserWindow | null): void => {
 
 // Translation utility function
 const translate = (key: string, params: Record<string, unknown> = {}): string => {
-    const locale = store.get('locale') || 'en';
+    const _locale = store.get('locale') || 'en';
     const translations: LocaleMessages = enTranslations;
     
     // Get nested value from translations using key path
     const getValue = (obj: Record<string, unknown>, path: string): string | undefined => {
-        return path.split('.').reduce((o: any, i: string) => {
+        return path.split('.').reduce((o: unknown, i: string) => {
             if (o && typeof o === 'object' && i in o) {
-                return o[i];
+                return (o as Record<string, unknown>)[i];
             }
             return undefined;
-        }, obj);
+        }, obj) as string | undefined;
     };
     
-    const text = getValue(translations as any, key);
+    const text = getValue(translations as Record<string, unknown>, key);
     
     // If still undefined, return key
     if (text === undefined) {

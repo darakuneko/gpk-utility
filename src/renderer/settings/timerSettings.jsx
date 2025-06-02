@@ -344,7 +344,7 @@ const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEn
       setDesktopNotificationsEnabled(isEnabled);
       
       // Update UI state only, do not send to device
-      const oldValue = device.config.pomodoro_notifications_enabled;
+      const _oldValue = device.config.pomodoro_notifications_enabled;
       device.config.pomodoro_notifications_enabled = isEnabled ? 1 : 0;
       
       // Dispatch update event to the switch element

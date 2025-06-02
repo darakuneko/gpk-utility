@@ -14,7 +14,7 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
 }
 
 // Initialize API check - wait for preload script
-const api = window.api
+const _api = window.api
 
 const App = () => {
     const [isUpdatesNotificationModalOpen, setIsUpdatesNotificationModalOpen] = useState(false)

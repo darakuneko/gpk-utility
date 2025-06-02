@@ -3,7 +3,7 @@ import { CustomSwitch, CustomSelect } from "../../components/CustomComponents.ts
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
 
-const HapticSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
+const HapticSettings = ({ device, handleChange, handleSliderStart: _handleSliderStart, handleSliderEnd: _handleSliderEnd }) => {
   const { t } = useLanguage();
   
   // Get trackpad configuration or empty object if not defined

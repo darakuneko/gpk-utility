@@ -15,8 +15,8 @@ const CustomButton = ({ onClick, children }) => (
 const SettingFiles = (() => {
     const { t } = useLanguage();
     
-    const handleImport = async (event) => await api.importFile()
-    const handleExport = async (event) => await api.exportFile()
+    const handleImport = async (_event) => await api.importFile()
+    const handleExport = async (_event) => await api.exportFile()
 
     return (
         <div className="pt-4 pl-16 text-text-primary dark:text-white">

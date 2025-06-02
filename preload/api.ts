@@ -291,7 +291,7 @@ export const exposeAPI = (): void => {
                 // Type-safe callback invocation based on channel
                 (func as GenericEventCallback)(...args);
             };
-            listeners.set(func as GenericEventCallback, listener as any);
+            listeners.set(func as GenericEventCallback, listener as EventCallback<unknown[]>);
             ipcRenderer.on(channel, listener);
         },
         off: <T extends keyof EventCallbackMap>(channel: T, func: EventCallbackMap[T]): void => {
