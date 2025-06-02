@@ -1,9 +1,4 @@
-import { ipcMain, dialog, Notification, Menu, BrowserWindow } from "electron";
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fetch from 'node-fetch';
-import ActiveWindow from '@paymoapp/active-window';
+import { BrowserWindow } from "electron";
 import Store from 'electron-store';
 
 // Import all handler modules
@@ -13,9 +8,7 @@ import { setupFileHandlers } from './ipcHandlers/fileHandlers';
 import { setupStoreHandlers, setStore as setStoreInStoreHandlers, setMainWindow as setStoreMainWindow } from './ipcHandlers/storeHandlers';
 import { setupNotificationHandlers, setupNotificationEvents, setStore as setNotificationStore, setMainWindow as setNotificationMainWindow } from './ipcHandlers/notificationHandlers';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+// Module state - maintained for compatibility with existing code
 let mainWindow: BrowserWindow | null = null;
 let store: Store<Record<string, unknown>> | null = null;
 
@@ -49,10 +42,7 @@ export const setupIpcHandlers = (): void => {
     setupNotificationHandlers();
 };
 
-interface TrayMenuTemplate {
-    // Define the interface based on your actual menu template structure
-    [key: string]: unknown;
-}
+// Removed unused interface - TrayMenuTemplate is not used in this file
 
 // Setup event handlers (non-handle IPC events)
 export const setupIpcEvents = (activePomodoroDevices: Map<string, unknown>, tray: Electron.Tray, createTrayMenuTemplate: () => Electron.MenuItemConstructorOptions[]): void => {

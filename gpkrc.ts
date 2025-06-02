@@ -1,5 +1,4 @@
 import HID from 'node-hid';
-import dayjs from 'dayjs';
 
 // Import all modules
 import { DeviceType, getDeviceType, stringToDeviceType } from './gpkrc-modules/deviceTypes';

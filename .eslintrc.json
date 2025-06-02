@@ -6,7 +6,7 @@
   },
   "extends": [
     "eslint:recommended",
-    "@typescript-eslint/recommended"
+    "plugin:@typescript-eslint/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
@@ -16,15 +16,21 @@
   },
   "plugins": [
     "@typescript-eslint",
-    "import"
+    "import",
+    "unused-imports"
   ],
   "rules": {
     "import/no-cycle": "error",
     "@typescript-eslint/no-unused-vars": "error",
     "@typescript-eslint/explicit-function-return-type": "warn",
     "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/prefer-const": "error",
     "@typescript-eslint/no-var-requires": "error",
+    "@typescript-eslint/no-unused-expressions": "error",
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": [
+      "warn",
+      { "vars": "all", "varsIgnorePattern": "^_", "args": "after-used", "argsIgnorePattern": "^_" }
+    ],
     "no-console": "off"
   },
   "ignorePatterns": [

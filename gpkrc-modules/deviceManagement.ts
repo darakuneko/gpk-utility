@@ -1,7 +1,7 @@
 import HID from 'node-hid'
 import Store from 'electron-store';
 import { DeviceType, stringToDeviceType } from './deviceTypes';
-import { commandId, actionId, commandToBytes, encodeDeviceId, parseDeviceId, DEFAULT_USAGE, PACKET_PADDING } from './communication';
+import { commandId, actionId, encodeDeviceId, DEFAULT_USAGE, PACKET_PADDING } from './communication';
 import { 
     startDeviceHealthMonitoring, 
     isDeviceHealthMonitoringActive,
@@ -19,8 +19,7 @@ import type {
     DeviceConfig, 
     DeviceStatus,
     CommandResult,
-    PomodoroConfig,
-    WriteCommandFunction
+    PomodoroConfig
 } from '../src/types/device';
 import type { StoreSchema } from '../src/types/store';
 
@@ -30,13 +29,14 @@ interface Command {
 }
 
 // Type conversion utilities
-const hidDeviceToGPKDevice = (hidDevice: HID.Device, id: string): GPKDevice => ({
-    ...hidDevice,
-    id,
-    manufacturer: hidDevice.manufacturer || '',
-    product: hidDevice.product || '',
-    connected: true
-});
+// Currently unused - remove if not needed in future
+// const hidDeviceToGPKDevice = (hidDevice: HID.Device, id: string): GPKDevice => ({
+//     ...hidDevice,
+//     id,
+//     manufacturer: hidDevice.manufacturer || '',
+//     product: hidDevice.product || '',
+//     connected: true
+// });
 
 interface WriteCommandResult {
     success: boolean;
@@ -50,10 +50,10 @@ interface ElectronWindow {
 }
 
 // Global variables with proper types
-let deviceStatusMap: Record<string, DeviceStatus | undefined> = {}
-let hidDeviceInstances: Record<string, HID.HID | null> = {}
-let activeTabPerDevice: Record<string, string> = {}
-let isEditingPomodoroPerDevice: Record<string, boolean> = {}
+const deviceStatusMap: Record<string, DeviceStatus | undefined> = {}
+const hidDeviceInstances: Record<string, HID.HID | null> = {}
+const activeTabPerDevice: Record<string, string> = {}
+const isEditingPomodoroPerDevice: Record<string, boolean> = {}
 let settingsStore: Store<StoreSchema> | null = null
 let mainWindow: ElectronWindow | null = null
 

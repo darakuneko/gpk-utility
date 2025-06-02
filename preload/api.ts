@@ -98,7 +98,7 @@ export const exposeAPI = (): void => {
                 }
                 
                 try {
-                    let json = JSON.parse(dat);
+                    const json = JSON.parse(dat);
                     
                     // Handle new format (object with devices and appSettings) or legacy format (array of devices)
                     const isNewFormat = json.devices && Array.isArray(json.devices);
@@ -127,9 +127,9 @@ export const exposeAPI = (): void => {
                     }
                     
                     // Build settings objects from imported device data
-                    let autoLayerSettings = { ...cachedStoreSettings.autoLayerSettings };
-                    let oledSettings = { ...cachedStoreSettings.oledSettings };
-                    let pomodoroNotifSettings = { ...cachedStoreSettings.pomodoroDesktopNotificationsSettings };
+                    const autoLayerSettings = { ...cachedStoreSettings.autoLayerSettings };
+                    const oledSettings = { ...cachedStoreSettings.oledSettings };
+                    const pomodoroNotifSettings = { ...cachedStoreSettings.pomodoroDesktopNotificationsSettings };
                     
                     // Apply configurations to matching devices
                     const updatedDevices = await Promise.all(cachedDeviceRegistry.map(async (cd) => {

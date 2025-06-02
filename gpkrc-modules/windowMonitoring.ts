@@ -1,7 +1,6 @@
 import Store from 'electron-store';
 import { commandId, actionId, parseDeviceId } from './communication';
 import type { 
-    Device, 
     DeviceStatus, 
     AutoLayerSettings, 
     LayerSetting, 
@@ -25,8 +24,8 @@ export const injectWindowMonitoringDependencies = (deps: WindowMonitoringDepende
 };
 
 // Store active windows history
-export let activeWindows: string[] = [];
-export let currentLayers: { [deviceId: string]: number } = {}; // Track current layer for each device
+export const activeWindows: string[] = [];
+export const currentLayers: { [deviceId: string]: number } = {}; // Track current layer for each device
 
 // Function for monitoring active windows and switching layers
 export const startWindowMonitoring = async (ActiveWindow: { getActiveWindow: () => Promise<{ title: string; name: string }> }): Promise<void> => {    

@@ -27,7 +27,7 @@ export const setMainWindow = (window: BrowserWindow): void => {
 // Translation utility function
 const translate = (key: string, params: Record<string, unknown> = {}): string => {
     const locale = store.get('locale') || 'en';
-    let translations = enTranslations;
+    const translations = enTranslations;
     
     // Get nested value from translations using key path
     const getValue = (obj: unknown, path: string): unknown => {

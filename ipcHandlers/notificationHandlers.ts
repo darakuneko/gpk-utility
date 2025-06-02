@@ -30,14 +30,14 @@ export const setMainWindow = (window: BrowserWindow): void => {
 // Translation utility function
 const translate = (key: string, params: Record<string, unknown> = {}): string => {
     const locale = store.get('locale') || 'en';
-    let translations: LocaleMessages = enTranslations;
+    const translations: LocaleMessages = enTranslations;
     
     // Get nested value from translations using key path
     const getValue = (obj: Record<string, unknown>, path: string): string | undefined => {
         return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
     };
     
-    let text = getValue(translations, key);
+    const text = getValue(translations, key);
     
     // If still undefined, return key
     if (text === undefined) {
@@ -156,8 +156,8 @@ export const setupNotificationEvents = (
         const isTimerActive = pomodoroConfig.timer_active === 1;
         
         // Force update on timer state change (active/inactive)
-        let prevTimerState = activePomodoroDevices.has(deviceId);
-        let menuNeedsUpdate = prevTimerState !== isTimerActive;
+        const prevTimerState = activePomodoroDevices.has(deviceId);
+        const menuNeedsUpdate = prevTimerState !== isTimerActive;
         
         if (isTimerActive) {
             // Get device name

@@ -1,5 +1,5 @@
 import { ipcRenderer, IpcRendererEvent } from 'electron';
-import type { Device, DeviceConfig, PomodoroConfig } from './types';
+import type { DeviceConfig, PomodoroConfig } from './types';
 import { cachedDeviceRegistry, setEventListenersRegistered, eventListenersRegistered } from './core';
 import { command } from './device';
 

@@ -1,5 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, Event, Rectangle, NativeImage } from "electron";
-import { promises as fs } from 'fs';
+import { app, BrowserWindow, Tray, Menu, nativeImage } from "electron";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Store from 'electron-store';
@@ -18,7 +17,6 @@ import {
     setMainWindow, 
     updateAutoLayerSettings,
 } from './gpkrc';
-import ActiveWindow from '@paymoapp/active-window';
 import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, setStore as setIpcStore } from './ipcHandlers';
 
 // ActiveWindow is already initialized as an instance, no need to call initialize()
@@ -54,7 +52,7 @@ const store = new Store<StoreSchema>({
 // Translation utility function
 const translate = (key: string, params: Record<string, string | number> = {}): string => {
     const locale = store.get('locale') || 'en';
-    let translations: Record<string, string | Record<string, string>> = enTranslations;
+    const translations: Record<string, string | Record<string, string>> = enTranslations;
     
     // Get nested value from translations using key path
     const getValue = (obj: Record<string, string | Record<string, string>>, path: string): string | undefined => {
@@ -92,7 +90,7 @@ const createTrayMenuTemplate = (): Electron.MenuItemConstructorOptions[] => {
     const menuItems: Electron.MenuItemConstructorOptions[] = [
         { 
             label: 'Show Window', 
-            click: () => {
+            click: (): void => {
                 if (mainWindow) {
                     mainWindow.show();
                 } else {
@@ -108,7 +106,7 @@ const createTrayMenuTemplate = (): Electron.MenuItemConstructorOptions[] => {
         menuItems.push({ label: 'Active Pomodoro Timers', enabled: false });
         
         // Add an entry for each active pomodoro device
-        activePomodoroDevices.forEach((deviceInfo, deviceId) => {
+        activePomodoroDevices.forEach((deviceInfo, _deviceId) => {
             const { name, phase } = deviceInfo;
             let phaseText = '';
             

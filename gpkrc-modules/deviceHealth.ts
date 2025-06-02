@@ -1,10 +1,10 @@
 import { DeviceType } from './deviceTypes';
-import { encodeDeviceId, parseDeviceId } from './communication';
-import type { Device, DeviceStatus, CommandResult } from '../src/types/device';
+import { parseDeviceId } from './communication';
+import type { Device, DeviceStatus } from '../src/types/device';
 
 // Device health monitoring variables
 let deviceHealthMonitor: NodeJS.Timeout | null = null;
-let deviceHealthCheckInterval = 10000; // Check every 10 seconds
+const deviceHealthCheckInterval = 10000; // Check every 10 seconds
 
 // Dependency injection interfaces
 interface DeviceHealthDependencies {
