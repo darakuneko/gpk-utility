@@ -27,9 +27,9 @@ export const setStore = (storeInstance: Store<Record<string, unknown>>): void =>
     store = storeInstance;
     
     // Pass store to modules that need it
-    setConfigStore(storeInstance);
-    setStoreInStoreHandlers(storeInstance);
-    setNotificationStore(storeInstance);
+    setConfigStore(storeInstance as any);
+    setStoreInStoreHandlers(storeInstance as any);
+    setNotificationStore(storeInstance as any);
 };
 
 // Setup all IPC handlers
@@ -50,5 +50,5 @@ export const setupIpcEvents = (activePomodoroDevices: Map<string, unknown>, tray
     setupDeviceEvents();
     
     // Setup notification events
-    setupNotificationEvents(activePomodoroDevices, tray, createTrayMenuTemplate);
+    setupNotificationEvents(activePomodoroDevices as any, tray, createTrayMenuTemplate);
 };

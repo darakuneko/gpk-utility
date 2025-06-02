@@ -19,12 +19,12 @@ import {
     getTrackpadConfigData
 } from '../gpkrc';
 
-let mainWindow: BrowserWindow;
+let mainWindow: BrowserWindow | null;
 
 // Use proper Device type from types/device.ts
 import type { Device } from '../src/types/device';
 
-export const setMainWindow = (window: BrowserWindow): void => {
+export const setMainWindow = (window: BrowserWindow | null): void => {
     mainWindow = window;
 };
 
@@ -48,7 +48,9 @@ export const setupDeviceHandlers = (): void => {
     ipcMain.handle('getConnectKbd', async (event, id: string) => await getConnectKbd(id));
     
     ipcMain.on("changeConnectDevice", (e, data: Device) => {
-        mainWindow.webContents.send("changeConnectDevice", data)
+        if (mainWindow) {
+            mainWindow.webContents.send("changeConnectDevice", data);
+        }
     });
     
     ipcMain.handle('getDeviceConfig', async (event, device: Device) => {
@@ -126,6 +128,8 @@ export const setupDeviceHandlers = (): void => {
 
 export const setupDeviceEvents = (): void => {
     ipcMain.on("connectDevice", (e, data: Device) => {
-        mainWindow.webContents.send("isConnectDevice", data)
+        if (mainWindow) {
+            mainWindow.webContents.send("isConnectDevice", data);
+        }
     });
 };

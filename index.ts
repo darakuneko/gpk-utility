@@ -277,11 +277,13 @@ app.on('ready', async () => {
     
     // Setup IPC handlers and events
     setupIpcHandlers();
-    setupIpcEvents(activePomodoroDevices, tray, createTrayMenuTemplate);
+    if (tray) {
+        setupIpcEvents(activePomodoroDevices, tray, createTrayMenuTemplate);
+    }
     
     // Start window monitoring for automatic layer switching
     try {
-        startWindowMonitoring(ActiveWindow);
+        startWindowMonitoring(ActiveWindow as any);
     } catch (error) {
         console.error('[ERROR] Failed to start window monitoring:', error);
     }

@@ -7,10 +7,10 @@ import {
 } from '../gpkrc';
 import type { StoreSchema } from '../src/types/store';
 
-let mainWindow: BrowserWindow;
+let mainWindow: BrowserWindow | null;
 let store: Store<StoreSchema>;
 
-export const setMainWindow = (window: BrowserWindow): void => {
+export const setMainWindow = (window: BrowserWindow | null): void => {
     mainWindow = window;
 };
 
@@ -136,7 +136,7 @@ export const setupConfigHandlers = (): void => {
             const trackpadBytes = buildTrackpadConfigByteArray(device.config.trackpad);
             
             // Call GPKRC to send settings to the device
-            await saveTrackpadConfig(device, trackpadBytes);
+            await saveTrackpadConfig(device as any, trackpadBytes);
             return { success: true };
         } catch (error) {
             console.error("Error in saveTrackpadConfig:", error);
@@ -146,7 +146,7 @@ export const setupConfigHandlers = (): void => {
     
     ipcMain.handle('savePomodoroConfigData', async (event, device: Device, pomodoroDataBytes: number[]) => {
         try {
-            await savePomodoroConfigData(device, pomodoroDataBytes);
+            await savePomodoroConfigData(device as any, pomodoroDataBytes);
             return { success: true };
         } catch (error) {
             console.error("Error in savePomodoroConfigData:", error);
@@ -171,23 +171,25 @@ export const setupConfigHandlers = (): void => {
             if ((updateAll || typesToUpdate.includes('trackpad')) && deviceWithConfig.config.trackpad) {
                 // Use the existing local function
                 const trackpadBytes = buildTrackpadConfigByteArray(deviceWithConfig.config.trackpad);
-                saveTrackpadConfig(deviceWithConfig as Device, trackpadBytes); // Deliberately not awaiting to prevent UI sluggishness
+                saveTrackpadConfig(deviceWithConfig as any, trackpadBytes); // Deliberately not awaiting to prevent UI sluggishness
                 trackpadSaved = true;
             }
 
             // Handle pomodoro config
             if ((updateAll || typesToUpdate.includes('pomodoro')) && deviceWithConfig.config.pomodoro) {
                 const pomodoroBytes = buildPomodoroConfigByteArray(deviceWithConfig.config.pomodoro);
-                savePomodoroConfigData(deviceWithConfig as Device, pomodoroBytes); // Deliberately not awaiting to prevent UI sluggishness
+                savePomodoroConfigData(deviceWithConfig as any, pomodoroBytes); // Deliberately not awaiting to prevent UI sluggishness
                 pomodoroSaved = true;
             }
 
             if (trackpadSaved || pomodoroSaved) {
                 // Send configUpdated event to UI for immediate feedback before device state updates
-                mainWindow.webContents.send("configUpdated", {
-                    deviceId: deviceWithConfig.id,
-                    config: deviceWithConfig.config // Send the config that was intended to be saved
-                });
+                if (mainWindow) {
+                    mainWindow.webContents.send("configUpdated", {
+                        deviceId: deviceWithConfig.id,
+                        config: deviceWithConfig.config // Send the config that was intended to be saved
+                    });
+                }
                 return { 
                     success: true, 
                     message: "Device config dispatched for saving.",
@@ -217,12 +219,14 @@ export const setupConfigHandlers = (): void => {
             
             // Send save completion notification to devices with changed settings
             for (const deviceId in settings) {
-                mainWindow.webContents.send("configSaveComplete", {
-                    deviceId,
-                    success: true,
-                    timestamp: Date.now(),
-                    settingType: 'autoLayer'
-                });
+                if (mainWindow) {
+                    mainWindow.webContents.send("configSaveComplete", {
+                        deviceId,
+                        success: true,
+                        timestamp: Date.now(),
+                        settingType: 'autoLayer'
+                    });
+                }
             }
             
             return { success: true };

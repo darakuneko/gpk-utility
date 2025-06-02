@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let store: Store<StoreSchema>;
-let mainWindow: BrowserWindow;
+let mainWindow: BrowserWindow | null;
 
 // Import translation utilities
 import enTranslations from '../src/i18n/locales/en.ts';
@@ -20,7 +20,7 @@ export const setStore = (storeInstance: Store<StoreSchema>): void => {
     store = storeInstance;
 };
 
-export const setMainWindow = (window: BrowserWindow): void => {
+export const setMainWindow = (window: BrowserWindow | null): void => {
     mainWindow = window;
 };
 
@@ -69,7 +69,9 @@ export const setupStoreHandlers = (): void => {
             store.set('oledSettings', currentSettings);
             
             // Notify OLED settings change
-            mainWindow.webContents.send("oledSettingsChanged", { deviceId, enabled });
+            if (mainWindow) {
+                mainWindow.webContents.send("oledSettingsChanged", { deviceId, enabled });
+            }
             
             return { success: true };
         } catch (error) {
@@ -263,12 +265,14 @@ export const setupStoreHandlers = (): void => {
                 
                 // Notify when Auto Layer settings are updated
                 for (const deviceId in value as Record<string, AutoLayerSetting>) {
-                    mainWindow.webContents.send("configSaveComplete", {
-                        deviceId,
-                        success: true,
-                        timestamp: Date.now(),
-                        settingType: 'autoLayer'
-                    });
+                    if (mainWindow) {
+                        mainWindow.webContents.send("configSaveComplete", {
+                            deviceId,
+                            success: true,
+                            timestamp: Date.now(),
+                            settingType: 'autoLayer'
+                        });
+                    }
                 }
             } else if (key === 'oledSettings' && typeof value === 'object' && value !== null) {
                 // Find the changed device ID and enabled status
@@ -276,29 +280,33 @@ export const setupStoreHandlers = (): void => {
                 const oledSettings = value as Record<string, { enabled: boolean }>;
                 for (const deviceId in oledSettings) {
                     if (previousSettings[deviceId]?.enabled !== oledSettings[deviceId]?.enabled) {
-                        mainWindow.webContents.send("oledSettingsChanged", { 
-                            deviceId, 
-                            enabled: oledSettings[deviceId]?.enabled 
-                        });
-                        
-                        // Notify that the settings have been saved
-                        mainWindow.webContents.send("configSaveComplete", {
-                            deviceId,
-                            success: true,
-                            timestamp: Date.now(),
-                            settingType: 'oled'
-                        });
+                        if (mainWindow) {
+                            mainWindow.webContents.send("oledSettingsChanged", { 
+                                deviceId, 
+                                enabled: oledSettings[deviceId]?.enabled 
+                            });
+                            
+                            // Notify that the settings have been saved
+                            mainWindow.webContents.send("configSaveComplete", {
+                                deviceId,
+                                success: true,
+                                timestamp: Date.now(),
+                                settingType: 'oled'
+                            });
+                        }
                     }
                 }
             } else if (key === 'pomodoroDesktopNotificationsSettings' && typeof value === 'object' && value !== null) {
                 // Notify when pomodoro notification settings are updated
                 for (const deviceId in value as Record<string, boolean>) {
-                    mainWindow.webContents.send("configSaveComplete", {
-                        deviceId,
-                        success: true,
-                        timestamp: Date.now(),
-                        settingType: 'pomodoroNotifications'
-                    });
+                    if (mainWindow) {
+                        mainWindow.webContents.send("configSaveComplete", {
+                            deviceId,
+                            success: true,
+                            timestamp: Date.now(),
+                            settingType: 'pomodoroNotifications'
+                        });
+                    }
                 }
             }
             

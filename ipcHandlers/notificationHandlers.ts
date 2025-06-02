@@ -24,7 +24,7 @@ export const setStore = (storeInstance: Store<StoreSchema>): void => {
     store = storeInstance;
 };
 
-export const setMainWindow = (window: BrowserWindow): void => {
+export const setMainWindow = (window: BrowserWindow | null): void => {
     mainWindow = window;
 };
 
