@@ -9,11 +9,6 @@ import type {
 } from '../src/types/device';
 import type { StoreSchema } from '../src/types/store';
 
-// Extended LayerSetting to support legacy appName property
-interface LayerSettingWithLegacy extends LayerSetting {
-    appName?: string; // Legacy property name
-}
-
 // Dependency injection
 interface WindowMonitoringDependencies {
     deviceStatusMap: Record<string, DeviceStatus>;
@@ -114,7 +109,7 @@ export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
         }
         
         // Find matching setting for the current application
-        const matchingSetting = settings.layerSettings.find((s: LayerSettingWithLegacy) => 
+        const matchingSetting = settings.layerSettings.find((s: LayerSetting) => 
             s.applicationName === appName || s.appName === appName
         );
         const deviceInfo = parseDeviceId(id);

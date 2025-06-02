@@ -131,6 +131,7 @@ export interface DeviceStatus {
 
 export interface LayerSetting {
     applicationName: string;
+    appName: string;
     layer: number;
 }
 
