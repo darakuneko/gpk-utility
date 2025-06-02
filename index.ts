@@ -20,6 +20,7 @@ import {
     deviceStatusMap,
     writeCommand,
 } from './gpkrc';
+import type { DeviceStatus } from './src/types/device';
 import { injectWindowMonitoringDependencies } from './gpkrc-modules/windowMonitoring';
 import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, setStore as setIpcStore } from './ipcHandlers';
 
@@ -59,7 +60,7 @@ const store = new Store<StoreSchema>({
 // Translation utility function
 const translate = (key: string, params: Record<string, string | number> = {}): string => {
     const locale = store.get('locale') || 'en';
-    const translations = enTranslations as Record<string, unknown>;
+    const translations = enTranslations as unknown as Record<string, unknown>;
     
     // Get nested value from translations using key path
     const getValue = (obj: Record<string, unknown>, path: string): string | undefined => {
@@ -75,7 +76,7 @@ const translate = (key: string, params: Record<string, string | number> = {}): s
     
     // Fall back to English if translation not found
     if (text === undefined && locale !== 'en') {
-        text = getValue(enTranslations, key);
+        text = getValue(enTranslations as unknown as Record<string, unknown>, key);
     }
     
     // If still undefined, return key
@@ -226,13 +227,18 @@ const createWindow = async (): Promise<void> => {
     });
     
     // Monitor window size and position changes
-    (['resize', 'move'] as const).forEach(eventName => {
-        mainWindow!.on(eventName, () => {
-            if (!mainWindow!.isMinimized() && !mainWindow!.isMaximized()) {
-                const bounds = mainWindow!.getBounds();
-                store.set('windowBounds', bounds);
-            }
-        });
+    mainWindow!.on('resize', () => {
+        if (!mainWindow!.isMinimized() && !mainWindow!.isMaximized()) {
+            const bounds = mainWindow!.getBounds();
+            store.set('windowBounds', bounds);
+        }
+    });
+    
+    mainWindow!.on('move', () => {
+        if (!mainWindow!.isMinimized() && !mainWindow!.isMaximized()) {
+            const bounds = mainWindow!.getBounds();
+            store.set('windowBounds', bounds);
+        }
     });
 
     mainWindow.on('close', (event) => {
@@ -288,7 +294,19 @@ app.on('ready', async () => {
     
     // Start window monitoring for automatic layer switching
     try {
-        startWindowMonitoring(ActiveWindow);
+        startWindowMonitoring({
+            getActiveWindow: async () => {
+                const result = await ActiveWindow.getActiveWindow();
+                return {
+                    title: result.title,
+                    application: result.application,
+                    name: result.application,
+                    path: result.path,
+                    pid: result.pid,
+                    icon: result.icon
+                };
+            }
+        });
     } catch (error) {
         console.error('[ERROR] Failed to start window monitoring:', error);
     }

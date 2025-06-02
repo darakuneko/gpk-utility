@@ -666,7 +666,7 @@ export const initializeDependencies = (): void => {
     // Inject dependencies for window monitoring
     injectWindowMonitoringDependencies({
         deviceStatusMap: deviceStatusMap as Record<string, DeviceStatus>,
-        settingsStore: settingsStore,
+        settingsStore: settingsStore!,
         writeCommand,
         mainWindow: mainWindow || undefined
     });

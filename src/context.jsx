@@ -26,7 +26,7 @@ const reducer = (state, action) => {
                 devices: Array.isArray(action.payload) ? action.payload : state.devices
             };
             
-        case ACTION_TYPES.UPDATE_DEVICE_CONFIG:
+        case ACTION_TYPES.UPDATE_DEVICE_CONFIG: {
             const { deviceId, config } = action.payload;
             return {
                 ...state,
@@ -39,6 +39,7 @@ const reducer = (state, action) => {
                         : device
                 )
             };
+        }
             
         case ACTION_TYPES.SET_ACTIVE_WINDOW:
             return {

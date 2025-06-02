@@ -5,7 +5,7 @@ import type { ExportData } from '../preload/types';
 // File operations
 const exportFile = async (data: ExportData): Promise<void> => {
     try {
-        const result = await dialog.showSaveDialog({
+        const result: Electron.SaveDialogReturnValue = await dialog.showSaveDialog({
             title: 'Export Config File',
             defaultPath: 'gpk_utility.json',
             buttonLabel: 'Save',
@@ -24,7 +24,7 @@ const exportFile = async (data: ExportData): Promise<void> => {
 
 const importFile = async (): Promise<string | null> => {
     try {
-        const result = await dialog.showOpenDialog({
+        const result: Electron.OpenDialogReturnValue = await dialog.showOpenDialog({
             title: 'Import Config File',
             buttonLabel: 'Open',
             filters: [
@@ -38,7 +38,7 @@ const importFile = async (): Promise<string | null> => {
             return null;
         }
         
-        const filePath = result.filePaths[0];
+        const filePath = result.filePaths[0]!;
         try {
             const fileContent = await fs.readFile(filePath, 'utf-8');
             return fileContent;

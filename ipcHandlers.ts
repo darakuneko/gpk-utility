@@ -1,5 +1,6 @@
 import { BrowserWindow } from "electron";
 import Store from 'electron-store';
+import type { StoreSchema } from './src/types/store';
 
 // Import all handler modules
 import { setupDeviceHandlers, setupDeviceEvents, setMainWindow as setDeviceMainWindow } from './ipcHandlers/deviceHandlers';
@@ -10,7 +11,7 @@ import { setupNotificationHandlers, setupNotificationEvents, setStore as setNoti
 
 // Module state - maintained for compatibility with existing code
 let _mainWindow: BrowserWindow | null = null;
-let _store: Store<Record<string, unknown>> | null = null;
+let _store: Store<StoreSchema> | null = null;
 
 // Set references from main process
 export const setMainWindow = (window: BrowserWindow | null): void => {
@@ -23,7 +24,7 @@ export const setMainWindow = (window: BrowserWindow | null): void => {
     setNotificationMainWindow(window);
 };
 
-export const setStore = (storeInstance: Store<Record<string, unknown>>): void => {
+export const setStore = (storeInstance: Store<StoreSchema>): void => {
     _store = storeInstance;
     
     // Pass store to modules that need it

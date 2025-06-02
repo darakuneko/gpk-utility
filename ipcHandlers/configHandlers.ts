@@ -6,6 +6,7 @@ import {
     updateAutoLayerSettings
 } from '../gpkrc';
 import type { StoreSchema } from '../src/types/store';
+import type { Device } from '../src/types/device';
 
 let mainWindow: BrowserWindow | null;
 let store: Store<StoreSchema>;

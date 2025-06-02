@@ -89,7 +89,19 @@ export const setupDeviceHandlers = (): void => {
     // Window monitoring control
     ipcMain.handle('startWindowMonitoring', async (_event) => {
         try {
-            await startWindowMonitoring(ActiveWindow);
+            await startWindowMonitoring({
+                getActiveWindow: async () => {
+                    const result = await ActiveWindow.getActiveWindow();
+                    return {
+                        title: result.title,
+                        application: result.application,
+                        name: result.application,
+                        path: result.path,
+                        pid: result.pid,
+                        icon: result.icon
+                    };
+                }
+            });
         } catch (error) {
             console.error('[ERROR] IPC handler: startWindowMonitoring failed:', error);
         }
