@@ -1,5 +1,5 @@
 import { ipcMain, BrowserWindow } from "electron";
-import ActiveWindow from '@paymoapp/active-window';
+import { ActiveWindow } from '@paymoapp/active-window';
 import {
     start, 
     stop, 
@@ -86,7 +86,11 @@ export const setupDeviceHandlers = (): void => {
 
     // Window monitoring control
     ipcMain.handle('startWindowMonitoring', async (event) => {
-        startWindowMonitoring(ActiveWindow);
+        try {
+            await startWindowMonitoring(ActiveWindow);
+        } catch (error) {
+            console.error('[ERROR] IPC handler: startWindowMonitoring failed:', error);
+        }
     });
 
     // Active window list retrieval handler

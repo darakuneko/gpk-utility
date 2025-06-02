@@ -9,32 +9,71 @@ import type {
 } from '../src/types/device';
 import type { StoreSchema } from '../src/types/store';
 
+// Extended LayerSetting to support legacy appName property
+interface LayerSettingWithLegacy extends LayerSetting {
+    appName?: string; // Legacy property name
+}
+
 // Dependency injection
 interface WindowMonitoringDependencies {
     deviceStatusMap: Record<string, DeviceStatus>;
     settingsStore: Store<StoreSchema>;
     writeCommand: WriteCommandFunction;
-    mainWindow?: Electron.BrowserWindow;
+    mainWindow?: {
+        webContents: {
+            send: (channel: string, data: unknown) => void;
+        };
+    } | null;
 }
 
 let dependencies: WindowMonitoringDependencies | null = null;
 
 export const injectWindowMonitoringDependencies = (deps: WindowMonitoringDependencies): void => {
     dependencies = deps;
+    
+    // Clean up any undefined entries in activeWindows
+    for (let i = activeWindows.length - 1; i >= 0; i--) {
+        if (!activeWindows[i]) {
+            activeWindows.splice(i, 1);
+        }
+    }
 };
 
 // Store active windows history
 export const activeWindows: string[] = [];
 export const currentLayers: { [deviceId: string]: number } = {}; // Track current layer for each device
 
+// ActiveWindow type definition
+interface ActiveWindowModule {
+    getActiveWindow: () => Promise<{
+        title: string;
+        application?: string;
+        name?: string;
+        path?: string;
+        pid?: number;
+        icon?: string;
+    }>;
+}
+
 // Function for monitoring active windows and switching layers
-export const startWindowMonitoring = async (ActiveWindow: { getActiveWindow: () => Promise<{ title: string; name: string }> }): Promise<void> => {    
+export const startWindowMonitoring = async (ActiveWindow: ActiveWindowModule): Promise<void> => {    
     try {
-        const result: ActiveWindowResult = await ActiveWindow.getActiveWindow();
-        if (!result) return;
+        const rawResult = await ActiveWindow.getActiveWindow();
+        
+        if (!rawResult) {
+            return;
+        }
+        
+        // Map the result to ActiveWindowResult format
+        const result: ActiveWindowResult = {
+            title: rawResult.title,
+            executableName: rawResult.application || rawResult.name,
+            application: rawResult.application || rawResult.name
+        };
+        
         const appName = result.application;
 
-        if (!activeWindows.includes(appName)) {
+        if (appName && !activeWindows.includes(appName)) {
             activeWindows.push(appName);
             if (activeWindows.length > 10) {
                 activeWindows.shift();
@@ -44,13 +83,12 @@ export const startWindowMonitoring = async (ActiveWindow: { getActiveWindow: () 
             if (dependencies?.mainWindow) {
                 dependencies.mainWindow.webContents.send('activeWindow', appName);
             }
-            
         }
+        
         // Always switch layers based on active application
         checkAndSwitchLayer(appName);
     } catch (error) {
-       // Uncomment for debugging   
-       //  console.error("Error in window monitoring:", error);
+        console.error('[ERROR] Error in window monitoring:', error);
     }
 };
 
@@ -64,7 +102,9 @@ export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
     
     Object.keys(deviceStatusMap).forEach(id => {
         const device = deviceStatusMap[id] as DeviceStatus;
-        if (!device || !device.connected) return;
+        if (!device || !device.connected) {
+            return;
+        }
     
         const autoLayerSettings: AutoLayerSettings = settingsStore.get('autoLayerSettings') || {};
         const settings = autoLayerSettings[id];
@@ -74,10 +114,14 @@ export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
         }
         
         // Find matching setting for the current application
-        const matchingSetting = settings.layerSettings.find((s: LayerSetting) => s.applicationName === appName);
+        const matchingSetting = settings.layerSettings.find((s: LayerSettingWithLegacy) => 
+            s.applicationName === appName || s.appName === appName
+        );
         const deviceInfo = parseDeviceId(id);
         
-        if (!deviceInfo) return;
+        if (!deviceInfo) {
+            return;
+        }
         
         // Initialize current layer tracking if needed
         if (currentLayers[id] === undefined) {
@@ -86,14 +130,18 @@ export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
         
         // Determine target layer (0 is default if no matching setting)
         const targetLayer = matchingSetting ? (matchingSetting.layer || 0) : 0;
+        const currentLayer = currentLayers[id];
         
         // Only switch if current layer is different
-        if (currentLayers[id] !== targetLayer) {
+        if (currentLayer !== targetLayer) {
             try {
                 writeCommand(deviceInfo, [commandId.gpkRCOperation, actionId.layerMove, targetLayer])
-                    .then(() => {
-                        // Update current layer after successful switch
-                        currentLayers[id] = targetLayer;
+                    .then((result) => {
+                        if (result.success) {
+                            currentLayers[id] = targetLayer;
+                        } else {
+                            console.error(`Error switching layer for device ${id}:`, result.error);
+                        }
                     }).catch((err: Error) => {
                         console.error(`Error switching layer for device ${id}:`, err);
                     });
@@ -127,7 +175,7 @@ export const getSelectedAppSettings = async (deviceId: string, appName: string):
 
 // Function to add new application to settings that isn't in the list
 export const addNewAppToAutoLayerSettings = async (deviceId: string, appName: string, layer: number): Promise<{ success: boolean; message?: string }> => {
-    if (!dependencies?.settingsStore) return null;
+    if (!dependencies?.settingsStore) return { success: false, message: 'Settings store not available' };
     
     const settingsStore = dependencies.settingsStore;
     
@@ -161,7 +209,7 @@ export const addNewAppToAutoLayerSettings = async (deviceId: string, appName: st
     // Save changes
     settingsStore.set('autoLayerSettings', autoLayerSettings);
     
-    return autoLayerSettings[deviceId];
+    return { success: true, message: 'Auto layer settings updated successfully' };
 };
 
 // Function to clean up layer tracking for a device

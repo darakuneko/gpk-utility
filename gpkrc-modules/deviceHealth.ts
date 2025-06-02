@@ -6,13 +6,17 @@ import type { Device, DeviceStatus } from '../src/types/device';
 let deviceHealthMonitor: NodeJS.Timeout | null = null;
 const deviceHealthCheckInterval = 10000; // Check every 10 seconds
 
-// Dependency injection interfaces
+// Dependency injection interfaces  
 interface DeviceHealthDependencies {
     deviceStatusMap: Record<string, DeviceStatus>;
     hidDeviceInstances: Record<string, unknown>;
-    getKBD: (deviceInfo: Device) => Promise<HIDDevice>;
-    addKbd: (deviceInfo: Device) => Promise<string>;
-    mainWindow?: Electron.BrowserWindow;
+    getKBD: (device: unknown, retryCount?: number) => Promise<unknown>;
+    addKbd: (device: unknown) => Promise<string>;
+    mainWindow?: {
+        webContents: {
+            send: (channel: string, data: unknown) => void;
+        };
+    } | null;
 }
 
 let dependencies: DeviceHealthDependencies | null = null;
@@ -63,7 +67,7 @@ export const checkDeviceHealth = async (): Promise<void> => {
             }
             
             // Check if HID instance exists but is marked as closed
-            if (hidInstance && (hidInstance as HIDDevice & { closed?: boolean }).closed) {
+            if (hidInstance && (hidInstance as unknown as { closed?: boolean }).closed) {
                 console.warn(`Device ${deviceId} HID instance is closed, attempting recovery...`);
                 
                 // Mark device as disconnected
@@ -71,8 +75,8 @@ export const checkDeviceHealth = async (): Promise<void> => {
                 
                 // Clean up closed instance
                 try {
-                    hidInstance.removeAllListeners();
-                    hidInstance.close();
+                    (hidInstance as unknown as { removeAllListeners: () => void; close: () => void }).removeAllListeners();
+                    (hidInstance as unknown as { removeAllListeners: () => void; close: () => void }).close();
                 } catch (e) {}
                 hidDeviceInstances[deviceId] = null;
                 

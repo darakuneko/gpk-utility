@@ -16,10 +16,15 @@ import {
     close, 
     setMainWindow, 
     updateAutoLayerSettings,
+    startWindowMonitoring,
+    deviceStatusMap,
+    writeCommand,
 } from './gpkrc';
+import { injectWindowMonitoringDependencies } from './gpkrc-modules/windowMonitoring';
 import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, setStore as setIpcStore } from './ipcHandlers';
 
 // ActiveWindow is already initialized as an instance, no need to call initialize()
+import { ActiveWindow } from '@paymoapp/active-window';
 
 // Types
 import type { StoreSchema } from './src/types/store';
@@ -90,11 +95,11 @@ const createTrayMenuTemplate = (): Electron.MenuItemConstructorOptions[] => {
     const menuItems: Electron.MenuItemConstructorOptions[] = [
         { 
             label: 'Show Window', 
-            click: (): void => {
+            click: async (): Promise<void> => {
                 if (mainWindow) {
                     mainWindow.show();
                 } else {
-                    createWindow();
+                    await createWindow();
                 }
             } 
         }
@@ -159,7 +164,7 @@ const createTray = (): void => {
     tray.setToolTip(translate('header.title'));
     
     // Set up click handler
-    tray.on('click', () => {
+    tray.on('click', async () => {
         if (mainWindow) {
             if (mainWindow.isVisible()) {
                 mainWindow.hide();
@@ -167,12 +172,12 @@ const createTray = (): void => {
                 mainWindow.show();
             }
         } else {
-            createWindow();
+            await createWindow();
         }
     });
 };
 
-const createWindow = (): void => {
+const createWindow = async (): Promise<void> => {
     // Get window position and size from store
     const windowBounds = store.get('windowBounds');
     const minWidth = 800;
@@ -204,6 +209,14 @@ const createWindow = (): void => {
     // Pass the store reference to modules
     updateAutoLayerSettings(store);
     setIpcStore(store);
+    
+    // Re-inject window monitoring dependencies with the actual store
+    injectWindowMonitoringDependencies({
+        deviceStatusMap,
+        settingsStore: store,
+        writeCommand,
+        mainWindow
+    });
     
     // Monitor window size and position changes
     (['resize', 'move'] as const).forEach(eventName => {
@@ -257,21 +270,28 @@ app.on('window-all-closed', () => {
     }
 });
 
-app.on('ready', () => {
+app.on('ready', async () => {
     createTray();
-    createWindow();
+    await createWindow();
     
     // Setup IPC handlers and events
     setupIpcHandlers();
     setupIpcEvents(activePomodoroDevices, tray, createTrayMenuTemplate);
+    
+    // Start window monitoring for automatic layer switching
+    try {
+        startWindowMonitoring(ActiveWindow);
+    } catch (error) {
+        console.error('[ERROR] Failed to start window monitoring:', error);
+    }
     
     if (process.env.NODE_ENV === 'development') {
         mainWindow!.webContents.openDevTools();
     }
 });
 
-app.on('activate', () => {
-    if (mainWindow === null) createWindow();
+app.on('activate', async () => {
+    if (mainWindow === null) await createWindow();
 });
 
 // Export handleDeviceDisconnect for use by IPC handlers

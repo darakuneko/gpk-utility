@@ -47,6 +47,7 @@ interface ElectronWindow {
     webContents: {
         send: (channel: string, data: unknown) => void;
     };
+    restore?: () => void; // Add missing property from BrowserWindow
 }
 
 // Global variables with proper types
@@ -204,7 +205,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                     break;
                 }
                 throw new Error(`HID instance not created despite successful addKbd call`);
-            } catch (addError: Error) {
+            } catch (addError: unknown) {
                 retryCount++;
                 console.warn(`Failed to add device ${id} (attempt ${retryCount}/${maxRetries}):`, addError instanceof Error ? addError.message : String(addError));
                 
@@ -313,7 +314,15 @@ const start = async (device: HIDDevice): Promise<string> => {
                                         if(oledSettings[id].enabled) {
                                             // Note: writeTimeToOled function will be imported from oledDisplay.js
                                             // Use imported writeTimeToOled function
-                                            writeTimeToOled(device); 
+                                            // Convert HIDDevice to Device
+                                            const gpkDevice: GPKDevice = {
+                                                ...device,
+                                                id,
+                                                manufacturer: device.manufacturer || '',
+                                                product: device.product || '',
+                                                connected: true
+                                            };
+                                            writeTimeToOled(gpkDevice); 
                                         }
                                         deviceStatusMap[id]!.config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
                                     }
@@ -398,7 +407,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                             }
                         }
                     }
-                } catch (dataProcessingError: Error) {
+                } catch (dataProcessingError: unknown) {
                     console.error(`Error processing device data for ${newId}:`, dataProcessingError);
                     
                     const errorMessage = dataProcessingError instanceof Error ? dataProcessingError.message : String(dataProcessingError);
@@ -555,7 +564,7 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
         await hidDeviceInstances[id]!.write(bytes);    
 
         return { success: true };
-    } catch (err: Error) {
+    } catch (err: unknown) {
         console.error(`Error writing command to device ${id} (attempt ${retryCount + 1}):`, err);
         
         // If write fails, mark device as potentially disconnected
