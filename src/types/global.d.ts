@@ -26,6 +26,9 @@ declare global {
       storeDelete: (key: string) => Promise<void>;
       storeClear: () => Promise<void>;
       
+      // Locale operations
+      setAppLocale: (locale: string) => Promise<{ success: boolean; error?: string }>;
+      
       // Notification operations
       showNotification: (title: string, body: string) => void;
       

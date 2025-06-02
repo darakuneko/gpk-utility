@@ -244,9 +244,8 @@ const createWindow = async (): Promise<void> => {
         }
     });
     
-    mainWindow.on('minimize', (event) => {
+    mainWindow.on('minimize', () => {
         if (store.get('minimizeToTray')) {
-            event.preventDefault();
             mainWindow!.hide();
         }
     });

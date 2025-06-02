@@ -10,6 +10,7 @@ import type {
     StoreSettings,
     AutoLayerSetting
 } from './types';
+import type { NotificationData } from '../src/types/notification';
 import { command } from './device';
 import { cachedDeviceRegistry, cachedStoreSettings, listeners } from './core';
 import { saveStoreSetting } from './core';

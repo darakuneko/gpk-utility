@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { updateAutoLayerSettings } from '../gpkrc';
 import type Store from 'electron-store';
 import type { StoreSchema } from '../src/types/store';
-import type { StoreSettings } from '../preload/types';
+import type { StoreSettings, AutoLayerSetting } from '../preload/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,23 +31,28 @@ const translate = (key: string, params: Record<string, unknown> = {}): string =>
     
     // Get nested value from translations using key path
     const getValue = (obj: unknown, path: string): unknown => {
-        return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
+        return path.split('.').reduce((o: any, i: string) => {
+            if (o && typeof o === 'object' && i in o) {
+                return o[i];
+            }
+            return undefined;
+        }, obj);
     };
     
     let text = getValue(translations, key);
     
     // Fall back to English if translation not found
-    if (text === undefined && locale !== 'en') {
+    if ((text === undefined || text === null) && locale !== 'en') {
         text = getValue(enTranslations, key);
     }
     
-    // If still undefined, return key
-    if (text === undefined) {
+    // If still undefined or null, return key
+    if (text === undefined || text === null || typeof text !== 'string') {
         return key;
     }
     
     // Replace parameters
-    return text.replace(/\{\{(\w+)\}\}/g, (match: string, param: string) => params[param] !== undefined ? params[param] : match);
+    return text.replace(/\{\{(\w+)\}\}/g, (match: string, param: string) => params[param] !== undefined ? String(params[param]) : match);
 };
 
 export const setupStoreHandlers = (): void => {
@@ -253,11 +258,11 @@ export const setupStoreHandlers = (): void => {
             store.set(key, value);
             
             // Special handling for certain settings
-            if (key === 'autoLayerSettings') {
+            if (key === 'autoLayerSettings' && typeof value === 'object' && value !== null) {
                 updateAutoLayerSettings(store);
                 
                 // Notify when Auto Layer settings are updated
-                for (const deviceId in value) {
+                for (const deviceId in value as Record<string, AutoLayerSetting>) {
                     mainWindow.webContents.send("configSaveComplete", {
                         deviceId,
                         success: true,
@@ -265,14 +270,15 @@ export const setupStoreHandlers = (): void => {
                         settingType: 'autoLayer'
                     });
                 }
-            } else if (key === 'oledSettings') {
+            } else if (key === 'oledSettings' && typeof value === 'object' && value !== null) {
                 // Find the changed device ID and enabled status
                 const previousSettings = store.get('oledSettings') || {};
-                for (const deviceId in value) {
-                    if (previousSettings[deviceId]?.enabled !== value[deviceId]?.enabled) {
+                const oledSettings = value as Record<string, { enabled: boolean }>;
+                for (const deviceId in oledSettings) {
+                    if (previousSettings[deviceId]?.enabled !== oledSettings[deviceId]?.enabled) {
                         mainWindow.webContents.send("oledSettingsChanged", { 
                             deviceId, 
-                            enabled: value[deviceId]?.enabled 
+                            enabled: oledSettings[deviceId]?.enabled 
                         });
                         
                         // Notify that the settings have been saved
@@ -284,9 +290,9 @@ export const setupStoreHandlers = (): void => {
                         });
                     }
                 }
-            } else if (key === 'pomodoroDesktopNotificationsSettings') {
+            } else if (key === 'pomodoroDesktopNotificationsSettings' && typeof value === 'object' && value !== null) {
                 // Notify when pomodoro notification settings are updated
-                for (const deviceId in value) {
+                for (const deviceId in value as Record<string, boolean>) {
                     mainWindow.webContents.send("configSaveComplete", {
                         deviceId,
                         success: true,

@@ -47,7 +47,8 @@ export const getSupportedSettingTabs = (device: Device, t: TranslationFunction, 
     // Longer debounce is used to handle unstable HID communication during device initialization
         
     const hasTrackpadConfig = isTrackpadDevice && 
-                             device.config?.trackpad?.default_speed > 0 &&
+                             device.config?.trackpad?.default_speed !== undefined &&
+                             device.config.trackpad.default_speed > 0 &&
                              device.connected === true &&
                              device.initialized !== false && // Change back to !== false instead of === true
                              typeof device.config?.trackpad?.default_speed === 'number' &&

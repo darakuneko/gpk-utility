@@ -39,7 +39,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
         
         // Notify main process about locale change
         if (window.api && window.api.setAppLocale) {
-          window.api.setAppLocale(locale).catch(err => {
+          window.api.setAppLocale(locale).catch((err: unknown) => {
             console.error('Error updating app locale:', err);
           });
         }

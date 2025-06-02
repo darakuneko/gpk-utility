@@ -12,6 +12,7 @@ import type {
 } from '../src/types/ipc';
 import type { LocaleMessages } from '../src/types/i18n';
 import type { StoreSchema } from '../src/types/store';
+import type { Device } from '../src/types/device';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,7 +35,12 @@ const translate = (key: string, params: Record<string, unknown> = {}): string =>
     
     // Get nested value from translations using key path
     const getValue = (obj: Record<string, unknown>, path: string): string | undefined => {
-        return path.split('.').reduce((o, i) => (o && o[i] !== undefined) ? o[i] : undefined, obj);
+        return path.split('.').reduce((o: any, i: string) => {
+            if (o && typeof o === 'object' && i in o) {
+                return o[i];
+            }
+            return undefined;
+        }, obj);
     };
     
     const text = getValue(translations, key);
@@ -45,7 +51,7 @@ const translate = (key: string, params: Record<string, unknown> = {}): string =>
     }
     
     // Replace parameters
-    return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? params[param] : match);
+    return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? String(params[param]) : match);
 };
 
 export const setupNotificationHandlers = (): void => {

@@ -40,7 +40,7 @@ const importFile = async (): Promise<string | null> => {
         
         const filePath = (result as Electron.OpenDialogReturnValue).filePaths[0];
         try {
-            const fileContent = await fs.readFile(filePath, 'utf-8');
+            const fileContent = await fs.readFile(filePath!, 'utf-8');
             return fileContent;
         } catch (readErr) {
             console.error(`Error reading file ${filePath}:`, readErr);
