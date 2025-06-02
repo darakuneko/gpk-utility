@@ -1,6 +1,6 @@
 import { DeviceType } from './deviceTypes';
 import { parseDeviceId } from './communication';
-import type { Device, DeviceStatus } from '../src/types/device';
+import type { DeviceStatus } from '../src/types/device';
 
 // Device health monitoring variables
 let deviceHealthMonitor: NodeJS.Timeout | null = null;
