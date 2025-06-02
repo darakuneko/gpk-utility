@@ -2,7 +2,9 @@ import { ipcRenderer } from 'electron';
 import type { Device, StoreSettings, CommandResult } from './types';
 
 // Global state variables
-export const listeners = new Map<(...args: unknown[]) => void, (...args: unknown[]) => void>();
+import type { GenericEventCallback } from './eventTypes';
+
+export const listeners = new Map<GenericEventCallback, GenericEventCallback>();
 export let cachedDeviceRegistry: Device[] = [];
 export let keyboardPollingInterval: NodeJS.Timeout | null = null;
 export let windowMonitoringInterval: NodeJS.Timeout | null = null;

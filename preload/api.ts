@@ -13,6 +13,7 @@ import type {
 import { command } from './device';
 import { cachedDeviceRegistry, cachedStoreSettings, listeners } from './core';
 import { saveStoreSetting } from './core';
+import type { EventCallbackMap, GenericEventCallback } from './eventTypes';
 
 export const exposeAPI = (): void => {
     contextBridge.exposeInMainWorld("api", {
@@ -283,17 +284,20 @@ export const exposeAPI = (): void => {
             };
         },
         
-        // Event listeners
-        on: (channel: string, func: (...args: unknown[]) => void): void => {
-            const listener = (event: Electron.IpcRendererEvent, ...args: unknown[]) => func(...args);
-            listeners.set(func, listener);
+        // Event listeners with proper typing
+        on: <T extends keyof EventCallbackMap>(channel: T, func: EventCallbackMap[T]): void => {
+            const listener = (event: Electron.IpcRendererEvent, ...args: unknown[]) => {
+                // Type-safe callback invocation based on channel
+                (func as GenericEventCallback)(...args);
+            };
+            listeners.set(func as GenericEventCallback, listener);
             ipcRenderer.on(channel, listener);
         },
-        off: (channel: string, func: (...args: unknown[]) => void): void => {
-            const listener = listeners.get(func);
+        off: <T extends keyof EventCallbackMap>(channel: T, func: EventCallbackMap[T]): void => {
+            const listener = listeners.get(func as GenericEventCallback);
             if (listener) {
                 ipcRenderer.removeListener(channel, listener);
-                listeners.delete(func);
+                listeners.delete(func as GenericEventCallback);
             }
         },
         
