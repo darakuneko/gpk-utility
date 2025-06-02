@@ -2,7 +2,7 @@ import { ipcRenderer } from 'electron';
 import type { Device, StoreSettings, CommandResult } from './types';
 
 // Global state variables
-export const listeners = new Map<(...args: any[]) => void, (...args: any[]) => void>();
+export const listeners = new Map<(...args: unknown[]) => void, (...args: unknown[]) => void>();
 export let cachedDeviceRegistry: Device[] = [];
 export let keyboardPollingInterval: NodeJS.Timeout | null = null;
 export let windowMonitoringInterval: NodeJS.Timeout | null = null;
@@ -126,7 +126,7 @@ export const saveStoreSetting = async <K extends keyof StoreSettings>(key: K, va
             }
         }
         return result;
-    } catch (err: Error) {
+    } catch (err) {
         console.error(`[ERROR] saveStoreSetting ${key}:`, err);
         return { success: false, error: err instanceof Error ? err.message : String(err) };
     }

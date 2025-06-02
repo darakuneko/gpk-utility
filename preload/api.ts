@@ -284,12 +284,12 @@ export const exposeAPI = (): void => {
         },
         
         // Event listeners
-        on: (channel: string, func: (...args: any[]) => void): void => {
-            const listener = (event: Electron.IpcRendererEvent, ...args: any[]) => func(...args);
+        on: (channel: string, func: (...args: unknown[]) => void): void => {
+            const listener = (event: Electron.IpcRendererEvent, ...args: unknown[]) => func(...args);
             listeners.set(func, listener);
             ipcRenderer.on(channel, listener);
         },
-        off: (channel: string, func: (...args: any[]) => void): void => {
+        off: (channel: string, func: (...args: unknown[]) => void): void => {
             const listener = listeners.get(func);
             if (listener) {
                 ipcRenderer.removeListener(channel, listener);
