@@ -6,6 +6,12 @@
     "start": "vite build && npx electron dist-electron/index.js",
     "start:dev": "cross-env NODE_ENV=development vite",
     "start:electron": "vite build && cross-env NODE_ENV=development npx electron dist-electron/index.js",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "check": "npm run type-check && npm run lint",
+    "check:force": "npm run type-check; npm run lint",
     "dist:win": "npm run build:win && electron-builder -w",
     "dist:mac": "npm run build && electron-builder -m",
     "dist:linux": "npm run build && electron-builder -l"
