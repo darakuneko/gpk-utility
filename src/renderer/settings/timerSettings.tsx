@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import type { JSX } from 'react';
 
 import { CustomSlider, CustomSelect, CustomSwitch } from "../../components/CustomComponents.tsx";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
@@ -22,7 +23,7 @@ interface PomodoroActiveDisplayProps {
   desktopNotificationsEnabled: boolean;
 }
 
-const PomodoroActiveDisplay: React.FC<PomodoroActiveDisplayProps> = ({ device, formatTime, desktopNotificationsEnabled }) => {
+const PomodoroActiveDisplay: React.FC<PomodoroActiveDisplayProps> = ({ device, formatTime, desktopNotificationsEnabled }): JSX.Element => {
   const { t } = useLanguage();
   
   // Object with default values for safely accessing pomodoro settings
@@ -109,7 +110,7 @@ const PomodoroActiveDisplay: React.FC<PomodoroActiveDisplayProps> = ({ device, f
 };
 
 // Pomodoro inactive state settings component
-const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, desktopNotificationsEnabled, hapticNotificationsEnabled, continuousModeEnabled }) => {
+const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, desktopNotificationsEnabled, hapticNotificationsEnabled, continuousModeEnabled }): JSX.Element => {
   const { t } = useLanguage();
   
   const pomodoroConfig = device.config?.pomodoro || {
@@ -303,7 +304,7 @@ interface TimerSettingsProps {
   formatTime: (minutes: number, seconds: number) => string;
 }
 
-const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, formatTime }) => {
+const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, formatTime }): JSX.Element => {
   const [desktopNotificationsEnabled, setDesktopNotificationsEnabled] = useState(true);
   const [hapticNotificationsEnabled, setHapticNotificationsEnabled] = useState(false);
   const [continuousModeEnabled, setContinuousModeEnabled] = useState(false);
@@ -350,7 +351,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
     void loadNotificationSettings();
   }, [device]);
 
-  useEffect(() => {
+  useEffect((): (() => void) => {
     const handleSwitchUpdate = (event: CustomEvent<{ id: string; value: boolean | number }>): void => {
       if (event.detail && event.detail.id === "config-pomodoro_notify_notifications_enable") {
         setDesktopNotificationsEnabled(Boolean(event.detail.value));
@@ -408,7 +409,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
     }
     
     // Send the updated config to device - update only pomodoro settings
-    window.api.dispatchSaveDeviceConfig(device);
+    void window.api.dispatchSaveDeviceConfig(device);
     
     // Dispatch update event to the switch element
     const switchElement = document.getElementById("config-pomodoro_notify_haptic_enable");
@@ -436,7 +437,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
     }
     
     // Send the updated config to device - update only pomodoro settings
-    window.api.dispatchSaveDeviceConfig(device);
+    void window.api.dispatchSaveDeviceConfig(device);
     
     // Dispatch update event to the switch element
     const switchElement = document.getElementById("config-pomodoro_continuous_mode");

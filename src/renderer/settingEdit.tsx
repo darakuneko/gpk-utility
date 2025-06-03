@@ -3,7 +3,6 @@ import type { JSX } from 'react';
 
 import type { Device, DeviceConfig } from '../types/device';
 import { useStateContext } from "../context.tsx";
-import { fullHapticOptions } from "../data/hapticOptions.js";
 
 // Import setting components for each tab
 import MouseSettings from "./settings/mouseSettings.tsx";
@@ -36,7 +35,6 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
         try {
             // Determine which configuration type to update based on the active tab
             // Update only pomodoro settings for "timer" tab, otherwise update only trackpad settings
-            const configType = activeTab === "timer" ? 'pomodoro' : 'trackpad';
             const updatedConfig = await api.dispatchSaveDeviceConfig(updatedDevice);
             
             if (updatedConfig && typeof updatedConfig === 'object' && 'success' in updatedConfig && updatedConfig.success) {

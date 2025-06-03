@@ -2,12 +2,10 @@
   "license": "MIT",
   "scripts": {
     "build": "rm -rf ./dist && rm -rf ./dist-electron && npm run check && vite build && cp -r dist dist-electron/",
-    "build:nolint": "rm -rf ./dist && rm -rf ./dist-electron && vite build && cp -r dist dist-electron/",
     "build:win": "del /s /q dist && del /s /q dist-electron && type-check && vite build && xcopy dist dist-electron\\dist /e /i",
     "start": "npm run build && vite build && npx electron dist-electron/index.js",
     "start:dev": "npm run build && cross-env NODE_ENV=development vite",
     "start:electron": "npm run build && cross-env NODE_ENV=development npx electron dist-electron/index.js",
-    "start:nolint": "npm run build:nolint && cross-env NODE_ENV=development npx electron dist-electron/index.js",
     "type-check": "tsc --noEmit",
     "type-check:watch": "./node_modules/.bin/tsc --noEmit --watch",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",

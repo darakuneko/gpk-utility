@@ -32,7 +32,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
     // Get trackpad configuration or empty object if not defined
     const trackpadConfig = device.config?.trackpad || {};
 
-    useEffect(() => {
+    useEffect((): (() => void) => {
         const fetchActiveWindows = async (): Promise<void> => {
             if (!api || !api.getActiveWindows) return;
             
@@ -49,10 +49,10 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         void fetchActiveWindows();
         
         const intervalId = setInterval(fetchActiveWindows, 1000);
-        return () => clearInterval(intervalId);
+        return (): void => clearInterval(intervalId);
     }, []);
 
-    useEffect(() => {
+    useEffect((): void => {
         const loadSettingsFromStore = async (): Promise<void> => {
             try {
                 if (api && device && device.id) { 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react"
+import type { JSX } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import Content from "./content.tsx"
@@ -6,7 +7,6 @@ import { AppProvider } from "./context.tsx"
 import { LanguageProvider } from "./i18n/LanguageContext.tsx"
 import UpdatesNotificationModal from "./components/UpdatesNotificationModal.tsx"
 import "./styles.css"
-import type { Device, DeviceConfig, AppInfo } from './types/device';
 
 // Set initial background color immediately
 document.documentElement.style.backgroundColor = '#f0f0f0'
@@ -15,18 +15,6 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
     document.documentElement.classList.add('dark')
 }
 
-// Type definitions for this component
-interface UpdatesNotificationEvent extends CustomEvent {
-  detail: {
-    notifications: Array<{
-      title: string;
-      body: string;
-      publishedAt: {
-        _seconds: number;
-      };
-    }>;
-  };
-}
 
 // Types are defined in src/types/global.d.ts
 
@@ -49,7 +37,7 @@ declare global {
 // Initialize API check - wait for preload script
 const _api = window.api
 
-const App: React.FC = () => {
+const App: React.FC = (): JSX.Element => {
     const [isUpdatesNotificationModalOpen, setIsUpdatesNotificationModalOpen] = useState<boolean>(false)
     const [updates, setUpdates] = useState<Array<{
         title: string;
