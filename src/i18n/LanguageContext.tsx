@@ -17,7 +17,7 @@ interface LanguageProviderProps {
   children: ReactNode;
 }
 
-export function LanguageProvider({ children }: LanguageProviderProps): JSX.Element {
+export function LanguageProvider({ children }: LanguageProviderProps): React.ReactElement {
   const [locale, setLocale] = useState<string>(defaultLocale);
   const [translations, setTranslations] = useState<LocaleMessages>({} as LocaleMessages);
   const [isLoading, setIsLoading] = useState<boolean>(true);

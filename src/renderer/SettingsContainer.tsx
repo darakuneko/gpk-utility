@@ -15,7 +15,7 @@ const SettingsContainer: React.FC = () => {
     const DeviceType = useDeviceType();
     const { t, locale, changeLocale, isLoading: _isLoading } = useLanguage();
     
-    const [activeDeviceId, setActiveDeviceId] = useState(null)
+    const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null)
     const [activeSettingTab, setActiveSettingTab] = useState("mouse")
     const [userSelectedTab, setUserSelectedTab] = useState(false) // Flag to track manual tab selection
     const [menuOpen, setMenuOpen] = useState(false)
@@ -66,9 +66,9 @@ const SettingsContainer: React.FC = () => {
                 const currentDeviceIsConnected = connectedDevices.some(d => d.id === activeDeviceId);
                 // If currently selected device is not connected or no device is selected, select the first device
                 if (!currentDeviceIsConnected) {
-                    setActiveDeviceId(connectedDevices[0].id);
+                    setActiveDeviceId(connectedDevices[0]?.id || null);
                     setUserSelectedTab(false); // Reset flag when switching devices
-                    const supportedTabs = getSupportedSettingTabs(connectedDevices[0], t, DeviceType);
+                    const supportedTabs = getSupportedSettingTabs(connectedDevices[0] || null, t, DeviceType || null);
                     // For TP devices, prioritize mouse tab if available, otherwise use first tab
                     const preferredTab = supportedTabs.find(tab => tab.id === "mouse") || supportedTabs[0];
                     setActiveSettingTab(preferredTab?.id || "layer");
@@ -77,7 +77,7 @@ const SettingsContainer: React.FC = () => {
                 // Check if active device's deviceType has been updated and current tab is not appropriate
                 const activeDevice = connectedDevices.find(d => d.id === activeDeviceId);
                 if (activeDevice && activeDevice.deviceType) {
-                    const supportedTabs = getSupportedSettingTabs(activeDevice, t, DeviceType);
+                    const supportedTabs = getSupportedSettingTabs(activeDevice, t, DeviceType || null);
                     const currentTabSupported = supportedTabs.some(tab => tab.id === activeSettingTab);
                     
                     // For TP devices, always prefer mouse tab even if current tab is supported
@@ -91,7 +91,7 @@ const SettingsContainer: React.FC = () => {
                                            activeSettingTab === "layer" && 
                                            supportedTabs.find(tab => tab.id === "mouse") && 
                                            !userSelectedTab &&
-                                           activeDevice.config?.trackpad?.default_speed > 0);
+                                           (activeDevice.config?.trackpad?.default_speed || 0) > 0);
                     
                     if (shouldSwitchTab) {
                         // Current tab is not supported by this device type, or switch from layer to mouse for TP devices (only if not manually selected)
@@ -118,7 +118,7 @@ const SettingsContainer: React.FC = () => {
 
         // Enhanced debounce with longer delay to handle unstable device communication
         const timeoutId = setTimeout(() => {
-            const supportedTabs = getSupportedSettingTabs(activeDevice, t, DeviceType);
+            const supportedTabs = getSupportedSettingTabs(activeDevice, t, DeviceType || null);
             const currentTabSupported = supportedTabs.some(tab => tab.id === activeSettingTab);
             
             if (!currentTabSupported) {
@@ -135,7 +135,7 @@ const SettingsContainer: React.FC = () => {
     }, [
         connectedDevices.find(d => d.id === activeDeviceId)?.config?.trackpad?.default_speed, 
         connectedDevices.find(d => d.id === activeDeviceId)?.connected,
-        connectedDevices.find(d => d.id === activeDeviceId)?.initialized,
+        connectedDevices.find(d => d.id === activeDeviceId)?.initializing,
         connectedDevices.find(d => d.id === activeDeviceId)?.deviceType, // Add deviceType to dependencies
         activeDeviceId, 
         activeSettingTab, 
@@ -145,14 +145,14 @@ const SettingsContainer: React.FC = () => {
 
     // Setup API event listeners
     useEffect(() => {
-        window.api.on("configUpdated", ({ deviceId, config }) => {
+        window.api.on("configUpdated", ({ deviceId, config }: { deviceId: string; config: Record<string, unknown> }) => {
             dispatch({
                 type: "UPDATE_DEVICE_CONFIG",
                 payload: { deviceId, config }
             });
         });
         
-        window.api.on("changeConnectDevice", (devices) => {
+        window.api.on("changeConnectDevice", (devices: any) => {
             dispatch({
                 type: "SET_DEVICES",
                 payload: devices
@@ -160,7 +160,7 @@ const SettingsContainer: React.FC = () => {
         });
         
         // Listen for showUpdatesNotificationModal event
-        const handleUpdatesNotificationModalEvent = (event) => {
+        const handleUpdatesNotificationModalEvent = (event: any) => {
             setUpdates(event.detail.notifications);
             setIsUpdatesNotificationModalOpen(true);
         };
@@ -195,7 +195,7 @@ const SettingsContainer: React.FC = () => {
     }
 
     // Tray setting change handler
-    const handleTraySettingChange = async (key, value) => {
+    const handleTraySettingChange = async (key: string, value: boolean) => {
         try {
             // Update local state
             setTraySettings(prev => ({ ...prev, [key]: value }));
@@ -210,14 +210,14 @@ const SettingsContainer: React.FC = () => {
     }
 
     // Handle language change
-    const handleLanguageChange = (languageCode) => {
+    const handleLanguageChange = (languageCode: string) => {
         changeLocale(languageCode);
         setLanguageMenuOpen(false);
         setMenuOpen(false);
     };
 
     // Toggle language submenu
-    const toggleLanguageMenu = (e) => {
+    const toggleLanguageMenu = (e: React.MouseEvent) => {
         e.stopPropagation();
         setLanguageMenuOpen(!languageMenuOpen);
     };
@@ -235,7 +235,7 @@ const SettingsContainer: React.FC = () => {
 
     // Handler to close menu when clicking outside
     useEffect(() => {
-        const handleClickOutside = (event) => {
+        const handleClickOutside = (event: MouseEvent) => {
             if (menuOpen && !event.target.closest('.menu-container')) {
                 setMenuOpen(false);
                 setLanguageMenuOpen(false);
@@ -273,7 +273,7 @@ const SettingsContainer: React.FC = () => {
     };
 
     // Set active setting tab and notify API
-    const handleSettingTabChange = (tabId) => {
+    const handleSettingTabChange = (tabId: string) => {
         setActiveSettingTab(tabId);
         setUserSelectedTab(true); // Mark that user has manually selected a tab
         const device = getActiveDevice();

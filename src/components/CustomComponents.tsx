@@ -59,7 +59,7 @@ export const CustomSlider: React.FC<CustomSliderProps> = ({
       />
       {marks && marks.length > 0 && (
         <div className="absolute flex justify-between w-full px-2 mt-1 text-xs text-gray-600 dark:text-gray-300">
-          {marks.map((mark): JSX.Element => (
+          {marks.map((mark): React.ReactElement => (
             <span key={mark.value} style={{left: `${((mark.value - safeMin) / (safeMax - safeMin)) * 100}%`}}>
               {mark.label}
             </span>
@@ -172,7 +172,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         onChange={onChange}
         className="block w-full px-3 py-2 text-base bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
       >
-        {options ? options.map((option): JSX.Element => (
+        {options ? options.map((option): React.ReactElement => (
           <option key={option.value} value={option.value}>{option.label}</option>
         )) : children}
       </select>

@@ -3,14 +3,11 @@ interface Tab {
     label: string;
 }
 
-interface Device {
-    deviceType: string;
-    config?: {
-        trackpad?: {
-            default_speed: number;
-        };
-    };
-    connected: boolean;
+import type { Device as BaseDevice } from '../types/device';
+
+interface Device extends BaseDevice {
+    deviceType?: string;
+    connected?: boolean;
     initialized?: boolean;
 }
 
@@ -23,7 +20,7 @@ interface DeviceType {
 
 type TranslationFunction = (key: string) => string;
 
-export const getSupportedSettingTabs = (device: Device, t: TranslationFunction, DeviceType: DeviceType): Tab[] => {
+export const getSupportedSettingTabs = (device: Device | null, t: TranslationFunction, DeviceType: DeviceType | null): Tab[] => {
     if (!device || !DeviceType) return [];
 
     const tabs: Record<string, Tab> = {
