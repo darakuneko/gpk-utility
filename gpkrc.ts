@@ -61,13 +61,8 @@ import {
     cleanupDeviceLayerTracking
 } from './gpkrc-modules/windowMonitoring';
 // Re-export Device type from types/device.ts
-import type { Device } from './src/types/device';
+import type { Device, CommandResult } from './src/types/device';
 
-interface CommandResult {
-    success: boolean;
-    message?: string;
-    data?: unknown;
-}
 
 // Device config functions
 const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<CommandResult> => {

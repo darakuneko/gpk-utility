@@ -1,6 +1,8 @@
 import { ipcRenderer } from 'electron';
 
-import type { Device, StoreSettings, CommandResult } from './types';
+import type { CommandResult } from '../src/types/device';
+
+import type { Device, StoreSettings } from './types';
 import type { GenericEventCallback } from './eventTypes';
 
 // Global state variables

@@ -1,10 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 import type { NotificationData } from '../src/types/notification';
+import type { CommandResult } from '../src/types/device';
 
 import type { 
     Device, 
-    CommandResult, 
     ConfigSaveCompleteDetail, 
     ExportData, 
     ImportResult,

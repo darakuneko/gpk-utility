@@ -1,6 +1,5 @@
 // Type definitions for device and configuration structures
 import type { LayerSetting } from '../src/types/trackpad';
-import type { CommandData } from '../src/types/command';
 import type { NotificationData } from '../src/types/notification';
 export interface Device {
     id: string;
@@ -86,13 +85,6 @@ export interface ImportResult {
     devicesUpdated?: number;
 }
 
-export interface CommandResult {
-    success: boolean;
-    error?: string;
-    data?: CommandData;
-    // Additional command result properties
-    [key: string]: boolean | string | CommandData | undefined;
-}
 
 export interface PomodoroNotificationData {
     deviceName: string;
