@@ -35,6 +35,8 @@
     "src/**/*",
     "*.js",
     "*.ts",
+    "*.jsx",
+    "*.tsx",
     "ipcHandlers/**/*",
     "gpkrc-modules/**/*"
   ],

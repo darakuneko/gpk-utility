@@ -1,14 +1,20 @@
 import React, {useEffect, useState, useCallback, useRef} from 'react'
 
-import SettingsContainer from "./renderer/SettingsContainer.jsx"
-import {useStateContext} from "./context.jsx"
-import { useLanguage } from "./i18n/LanguageContext.jsx"
+import SettingsContainer from "./renderer/SettingsContainer.tsx"
+import {useStateContext} from "./context.tsx"
+import { useLanguage } from "./i18n/LanguageContext.tsx"
 
-const api = window.api;
+interface SaveStatus {
+    visible: boolean;
+    success: boolean;
+    timestamp: number | null;
+}
+
+const api = window.api as any;
 const hasApi = !!api;
 
-const Content = () => {
-    const {state, setState} = useStateContext()
+const Content: React.FC = () => {
+    const {state, setState} = useStateContext();
     const stateRef = useRef(state);
     const { t } = useLanguage(); // Hook for internationalization
 
@@ -19,14 +25,13 @@ const Content = () => {
     useEffect(() => {
         if (!hasApi) return;
         
-        const handleDeviceChange = (dat) => {
+        const handleDeviceChange = (dat: any) => {
             if (!dat || !Array.isArray(dat)) return;
 
-            setState(prev => ({
-                ...prev,
+            setState({
                 init: false,
                 devices: dat
-            }));
+            });
         };
 
         api.on("changeConnectDevice", handleDeviceChange);
@@ -36,22 +41,19 @@ const Content = () => {
         };
     }, []);
 
-    const handleActiveWindow = useCallback((dat) => {
+    const handleActiveWindow = useCallback((dat: string) => {
         if (!dat) return;
     
-        setState(prev => {
-            if (!prev.activeWindow.includes(dat)) {
-                const activeWindows = [...prev.activeWindow, dat];
-                if (activeWindows.length > 10) activeWindows.shift();
+        const currentState = stateRef.current;
+        if (!currentState.activeWindow.includes(dat)) {
+            const activeWindows = [...currentState.activeWindow, dat];
+            if (activeWindows.length > 10) activeWindows.shift();
             
-                return {
-                    ...prev,
-                 activeWindow: activeWindows
-                };
-            }
-            return prev;
-        });
-    }, [])
+            setState({
+                activeWindow: activeWindows
+            });
+        }
+    }, [setState])
 
     useEffect(() => {
             if (!hasApi) return;
@@ -63,7 +65,7 @@ const Content = () => {
     }, [handleActiveWindow]);
 
     // Monitor config save completion event
-    const [saveStatus, setSaveStatus] = useState({
+    const [saveStatus, setSaveStatus] = useState<SaveStatus>({
         visible: false,
         success: false,
         timestamp: null
@@ -72,7 +74,7 @@ const Content = () => {
     useEffect(() => {
         if (!hasApi || !api.onConfigSaveComplete) return;
         
-        api.onConfigSaveComplete(({ success, timestamp }) => {
+        api.onConfigSaveComplete(({ success, timestamp }: { success: boolean; timestamp: number }) => {
             // Ignore updates within 500ms of the previous notification to prevent continuous notifications
             if (saveStatus.timestamp && timestamp - saveStatus.timestamp < 500) {
                 return;

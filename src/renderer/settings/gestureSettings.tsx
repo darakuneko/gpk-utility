@@ -1,9 +1,17 @@
 import React from "react";
 
 import { CustomSlider } from "../../components/CustomComponents.tsx";
-import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import { useLanguage } from "../../i18n/LanguageContext.tsx";
+import { Device } from "../../types/device";
 
-const GestureSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
+interface GestureSettingsProps {
+  device: Device;
+  handleChange: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
+  handleSliderStart: () => void;
+  handleSliderEnd: () => void;
+}
+
+const GestureSettings: React.FC<GestureSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
   const { t } = useLanguage();
   
   // Get trackpad configuration or empty object if not defined

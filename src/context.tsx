@@ -1,8 +1,26 @@
 import React from 'react'
 import {createContext, useContext, useEffect, useReducer, useRef, useState} from 'react'
 
-const stateContext = createContext({})
-const deviceTypeContext = createContext(null)
+interface Device {
+    id: string;
+    config: Record<string, any>;
+}
+
+interface AppState {
+    init: boolean;
+    devices: Device[];
+    activeWindow: string[];
+}
+
+interface StateContextValue {
+    state: AppState;
+    setState: (obj: Partial<AppState>) => void;
+    updateDeviceConfig: (deviceId: string, configUpdates: Record<string, any>) => void;
+    dispatch: React.Dispatch<any>;
+}
+
+const stateContext = createContext<StateContextValue | null>(null)
+const deviceTypeContext = createContext<any>(null)
 
 const ACTION_TYPES = {
     SET_DEVICES: 'SET_DEVICES',
@@ -11,14 +29,14 @@ const ACTION_TYPES = {
     SET_INIT: 'SET_INIT'
 }
 
-const initialState = {
+const initialState: AppState = {
     init: true,
     devices: [],
     activeWindow: []
 };
 
 // Implementation of reducer
-const reducer = (state, action) => {
+const reducer = (state: AppState, action: any): AppState => {
     switch (action.type) {
         case ACTION_TYPES.SET_DEVICES:
             return {
@@ -58,25 +76,29 @@ const reducer = (state, action) => {
     }
 };
 
-export function useStateContext() {
-    return useContext(stateContext)
+export function useStateContext(): StateContextValue {
+    const context = useContext(stateContext);
+    if (!context) {
+        throw new Error('useStateContext must be used within a StateProvider');
+    }
+    return context;
 }
 
-export function useDeviceType() {
-    return useContext(deviceTypeContext)
+export function useDeviceType(): any {
+    return useContext(deviceTypeContext);
 }
 
-export function StateProvider({children}) {
+export function StateProvider({children}: {children: React.ReactNode}) {
     const [state, dispatch] = useReducer(reducer, initialState);
     const stateRef = useRef(state);
-    const prevStateRef = useRef({});
+    const prevStateRef = useRef<Partial<AppState>>({});
     
     useEffect(() => {
         stateRef.current = state;
     }, [state]);
 
     // Modified setState implementation
-    const setState = (obj) => {
+    const setState = (obj: Partial<AppState>) => {
         if (!obj) {
             return;
         }
@@ -99,11 +121,13 @@ export function StateProvider({children}) {
     };
 
     // Helper function for device config updates (for slider and other settings)
-    const updateDeviceConfig = (deviceId, configUpdates) => {
+    const updateDeviceConfig = (deviceId: string, configUpdates: Record<string, any>) => {
         const deviceIndex = state.devices.findIndex(d => d.id === deviceId);
         if (deviceIndex === -1) return;
         
         const device = state.devices[deviceIndex];
+        if (!device) return;
+        
         const updatedConfig = { ...device.config, ...configUpdates, changed: true };
         
         dispatch({
@@ -112,7 +136,7 @@ export function StateProvider({children}) {
         });
     };
 
-    const value = {
+    const value: StateContextValue = {
         state,
         setState,
         updateDeviceConfig,
@@ -125,14 +149,14 @@ export function StateProvider({children}) {
 }
 
 // DeviceType Provider to cache device types
-export function DeviceTypeProvider({ children }) {
-    const [deviceType, setDeviceType] = useState(null);
+export function DeviceTypeProvider({ children }: {children: React.ReactNode}) {
+    const [deviceType, setDeviceType] = useState<any>(null);
     
     useEffect(() => {
         const initDeviceType = async () => {
             try {
-                if (window.api && window.api.getDeviceType) {
-                    const types = await window.api.getDeviceType();
+                if (window.api && (window.api as any).getDeviceType) {
+                    const types = await (window.api as any).getDeviceType();
                     setDeviceType(types);
                 }
             } catch (error) {
@@ -151,7 +175,7 @@ export function DeviceTypeProvider({ children }) {
 }
 
 // Combined provider that includes both state and device type contexts
-export function AppProvider({ children }) {
+export function AppProvider({ children }: {children: React.ReactNode}) {
     return (
         <DeviceTypeProvider>
             <StateProvider>

@@ -1,13 +1,21 @@
 import React from "react";
 
-import { CustomSlider } from "../../components/CustomComponents.tsx";
-import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import { CustomSlider } from "../../components/CustomComponents";
+import { useLanguage } from "../../i18n/LanguageContext";
+import { Device, TrackpadConfig } from "../../types/device";
 
-const MouseSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
+interface MouseSettingsProps {
+  device: Device;
+  handleChange: (property: string, deviceId: string) => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSliderStart: () => void;
+  handleSliderEnd: () => void;
+}
+
+const MouseSettings: React.FC<MouseSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd }): React.ReactElement => {
   const { t } = useLanguage();
   
   // Ensure that the device's trackpad settings exist
-  const trackpadConfig = device.config?.trackpad || {};
+  const trackpadConfig: TrackpadConfig = device.config?.trackpad || {};
   
   return (
     <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">

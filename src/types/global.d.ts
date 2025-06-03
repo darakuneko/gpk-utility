@@ -16,8 +16,8 @@ declare global {
       saveDeviceSettings: (device: Device, settings: DeviceConfig) => Promise<void>;
       
       // File operations
-      importConfigs: () => Promise<string>;
-      exportConfigs: () => Promise<void>;
+      importFile: () => Promise<unknown>;
+      exportFile: () => Promise<unknown>;
       exportDeviceJson: (device: Device, settings: DeviceConfig) => Promise<void>;
       
       // Store operations

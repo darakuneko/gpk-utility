@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 
-import { useStateContext, useDeviceType } from "../../context.jsx";
+import { useStateContext, useDeviceType } from "../../context.tsx";
 import { 
   CustomSwitch,
   CustomSelect
 } from "../../components/CustomComponents.tsx";
-import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import { useLanguage } from "../../i18n/LanguageContext.tsx";
 
 const { api } = window;
 
-const LayerSettings = ({ device, handleChange: _handleChange }) => {
+const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) => {
     const { state, setState } = useStateContext();
     const DeviceType = useDeviceType();
     const { t } = useLanguage();

@@ -1,7 +1,20 @@
 import React from "react"
 
+interface MenuItemProps {
+  onClick: () => void;
+  children: React.ReactNode;
+  isToggle?: boolean;
+  isChecked?: boolean;
+}
+
+interface LeftMenuItemProps {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}
+
 // Hamburger menu icon component
-export const HamburgerIcon = () => (
+export const HamburgerIcon: React.FC = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="3" y1="12" x2="21" y2="12"></line>
     <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -10,7 +23,7 @@ export const HamburgerIcon = () => (
 )
 
 // Menu item component with optional toggle support
-export const MenuItem = ({ onClick, children, isToggle = false, isChecked = false }) => (
+export const MenuItem: React.FC<MenuItemProps> = ({ onClick, children, isToggle = false, isChecked = false }) => (
   <button
     onClick={onClick}
     className="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
@@ -25,7 +38,7 @@ export const MenuItem = ({ onClick, children, isToggle = false, isChecked = fals
 )
 
 // Left menu item component
-export const LeftMenuItem = ({ active, onClick, children }) => (
+export const LeftMenuItem: React.FC<LeftMenuItemProps> = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
     className={`w-full text-left px-4 py-3 mb-1 text-sm font-medium rounded-md transition-colors ${

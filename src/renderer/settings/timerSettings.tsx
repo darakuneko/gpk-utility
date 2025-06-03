@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 
 import { CustomSlider, CustomSelect, CustomSwitch } from "../../components/CustomComponents.tsx";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
-import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import { useLanguage } from "../../i18n/LanguageContext.tsx";
 
 // Pomodoro active state display component
-const PomodoroActiveDisplay = ({ device, formatTime, desktopNotificationsEnabled }) => {
+const PomodoroActiveDisplay: React.FC<any> = ({ device, formatTime, desktopNotificationsEnabled }) => {
   const { t } = useLanguage();
   
   // Object with default values for safely accessing pomodoro settings
@@ -270,7 +270,7 @@ const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, han
   );
 };
 
-const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd, formatTime }) => {
+const TimerSettings: React.FC<any> = ({ device, handleChange, handleSliderStart, handleSliderEnd, formatTime }) => {
   const [desktopNotificationsEnabled, setDesktopNotificationsEnabled] = useState(true);
   const [hapticNotificationsEnabled, setHapticNotificationsEnabled] = useState(false);
   const [continuousModeEnabled, setContinuousModeEnabled] = useState(false);

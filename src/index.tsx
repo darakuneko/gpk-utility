@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react"
 import { createRoot } from 'react-dom/client'
 
-import Content from "./content.jsx"
-import { AppProvider } from "./context.jsx"
-import { LanguageProvider } from "./i18n/LanguageContext.jsx"
-import UpdatesNotificationModal from "./components/UpdatesNotificationModal.jsx"
+import Content from "./content.tsx"
+import { AppProvider } from "./context.tsx"
+import { LanguageProvider } from "./i18n/LanguageContext.tsx"
+import UpdatesNotificationModal from "./components/UpdatesNotificationModal.tsx"
 import "./styles.css"
 
 // Set initial background color immediately
@@ -14,16 +14,44 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
     document.documentElement.classList.add('dark')
 }
 
+// Type definitions for this component
+interface UpdatesNotificationEvent extends CustomEvent {
+  detail: {
+    notifications: Array<{
+      title: string;
+      body: string;
+      publishedAt: {
+        _seconds: number;
+      };
+    }>;
+  };
+}
+
+declare global {
+  interface Window {
+    api: any;
+  }
+  interface WindowEventMap {
+    'showUpdatesNotificationModal': UpdatesNotificationEvent;
+  }
+}
+
 // Initialize API check - wait for preload script
 const _api = window.api
 
-const App = () => {
-    const [isUpdatesNotificationModalOpen, setIsUpdatesNotificationModalOpen] = useState(false)
-    const [updates, setUpdates] = useState([])
+const App: React.FC = () => {
+    const [isUpdatesNotificationModalOpen, setIsUpdatesNotificationModalOpen] = useState<boolean>(false)
+    const [updates, setUpdates] = useState<Array<{
+        title: string;
+        body: string;
+        publishedAt: {
+            _seconds: number;
+        };
+    }>>([])
 
     useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-        const handleChange = (e) => {
+        const handleChange = (e: MediaQueryListEvent): void => {
             document.documentElement.style.backgroundColor = e.matches ? '#1a1a1a' : '#f0f0f0'
             document.documentElement.classList.toggle('dark', e.matches)
         }
@@ -33,7 +61,7 @@ const App = () => {
 
     // Listen for showUpdatesNotificationModal event
     useEffect(() => {
-        const handleUpdatesNotificationModalEvent = (event) => {
+        const handleUpdatesNotificationModalEvent = (event: UpdatesNotificationEvent): void => {
             setUpdates(event.detail.notifications)
             setIsUpdatesNotificationModalOpen(true)
         }
@@ -45,7 +73,7 @@ const App = () => {
         }
     }, [])
 
-    const handleCloseUpdatesNotificationModal = () => {
+    const handleCloseUpdatesNotificationModal = (): void => {
         setIsUpdatesNotificationModalOpen(false)
     }
 

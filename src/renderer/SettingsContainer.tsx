@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react"
 
-import { useStateContext, useDeviceType } from "../context.jsx"
-import { useLanguage } from "../i18n/LanguageContext.jsx"
+import { useStateContext, useDeviceType } from "../context.tsx"
+import { useLanguage } from "../i18n/LanguageContext.tsx"
 import { CustomSlider } from "../components/CustomComponents.tsx"
 import UpdatesNotificationModal from "../components/UpdatesNotificationModal.tsx"
 import VersionModal from "../components/VersionModal.tsx"
 
-import SettingEdit from "./settingEdit.jsx"
-import { HamburgerIcon, MenuItem, LeftMenuItem } from "./SettingsUIComponents.jsx"
+import SettingEdit from "./settingEdit.tsx"
+import { HamburgerIcon, MenuItem, LeftMenuItem } from "./SettingsUIComponents.tsx"
 import { getSupportedSettingTabs } from "./SettingsDeviceUtils.ts"
 
-const SettingsContainer = () => {
+const SettingsContainer: React.FC = () => {
     const {state, dispatch} = useStateContext();
     const DeviceType = useDeviceType();
     const { t, locale, changeLocale, isLoading: _isLoading } = useLanguage();

@@ -1,9 +1,17 @@
 import React from "react";
 
 import { CustomSwitch, CustomSelect, CustomSlider } from "../../components/CustomComponents.tsx";
-import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import { useLanguage } from "../../i18n/LanguageContext.tsx";
+import { Device } from "../../types/device";
 
-const DragDropSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
+interface DragDropSettingsProps {
+  device: Device;
+  handleChange: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
+  handleSliderStart: () => void;
+  handleSliderEnd: () => void;
+}
+
+const DragDropSettings: React.FC<DragDropSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd }) => {
   const { t } = useLanguage();
   
   // Ensure that the device's trackpad settings exist

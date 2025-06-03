@@ -1,11 +1,11 @@
 import React from 'react';
 
-import SettingFiles from '../settingFiles.jsx';
-import { useLanguage } from '../../i18n/LanguageContext.jsx';
+import SettingFiles from '../settingFiles';
+import { useLanguage } from '../../i18n/LanguageContext';
 
-import LanguageSettings from './languageSettings.jsx';
+import LanguageSettings from './languageSettings';
 
-export default function AppSettings() {
+const AppSettings: React.FC = (): React.ReactElement => {
   const { t } = useLanguage();
 
   return (
@@ -24,4 +24,6 @@ export default function AppSettings() {
       </div>
     </div>
   );
-}
+};
+
+export default AppSettings;

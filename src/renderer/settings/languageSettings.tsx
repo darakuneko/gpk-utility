@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
 
-import { useLanguage } from '../../i18n/LanguageContext.jsx';
+import { useLanguage } from '../../i18n/LanguageContext';
 
-export default function LanguageSettings() {
+interface AvailableLanguages {
+  [key: string]: string;
+}
+
+const LanguageSettings: React.FC = (): React.ReactElement => {
   const { locale, changeLocale, t } = useLanguage();
-  const [selectedLocale, setSelectedLocale] = useState(locale);
+  const [selectedLocale, setSelectedLocale] = useState<string>(locale);
 
-  useEffect(() => {
+  useEffect((): void => {
     setSelectedLocale(locale);
   }, [locale]);
 
-  const handleChange = (e) => {
-    const newLocale = e.target.value;
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
+    const newLocale: string = e.target.value;
     setSelectedLocale(newLocale);
     changeLocale(newLocale);
   };
 
-  const availableLanguages = {
+  const availableLanguages: AvailableLanguages = {
     en: 'English',
     ja: '日本語'
   };
@@ -33,7 +37,7 @@ export default function LanguageSettings() {
           value={selectedLocale}
           onChange={handleChange}
         >
-          {Object.keys(availableLanguages).map((code) => (
+          {Object.keys(availableLanguages).map((code: string) => (
             <option key={code} value={code}>
               {availableLanguages[code]}
             </option>
@@ -42,4 +46,6 @@ export default function LanguageSettings() {
       </div>
     </div>
   );
-}
+};
+
+export default LanguageSettings;

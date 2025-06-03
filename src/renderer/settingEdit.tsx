@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { useStateContext } from "../context.jsx";
+import { useStateContext } from "../context.tsx";
 import { fullHapticOptions } from "../data/hapticOptions.js";
 
 // Import setting components for each tab
@@ -15,7 +15,7 @@ import HapticSettings from "./settings/hapticSettings.jsx";
 
 const { api } = window;
 
-const SettingEdit = ((props) => {
+const SettingEdit: React.FC<any> = ((props: any) => {
     const { state, setState } = useStateContext();
     const device = props.device;
     const [isSliderActive, setIsSliderActive] = useState(false);
