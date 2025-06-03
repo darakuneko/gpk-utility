@@ -40,9 +40,56 @@ export interface PartialDevice extends Omit<Device, 'manufacturer' | 'product'> 
 
 export interface CommandResult {
     success: boolean;
-    data?: unknown;
+    data?: unknown; // Command responses can vary greatly, use unknown for safety
     error?: string;
     skipped?: boolean;
+}
+
+// Device configuration update types
+export interface DeviceConfigUpdate {
+    [key: string]: string | number | boolean | DeviceConfigUpdate | LayerSetting[];
+}
+
+export interface PomodoroConfigUpdate extends DeviceConfigUpdate {
+    work_time?: number;
+    break_time?: number;
+    long_break_time?: number;
+    work_interval?: number;
+    pomodoro_cycle?: number;
+    continuous_mode?: number;
+    notify_haptic_enable?: number;
+    timer_active?: number;
+    phase?: number;
+    minutes?: number;
+    seconds?: number;
+    current_work_Interval?: number;
+    current_pomodoro_cycle?: number;
+    work_hf_pattern?: number;
+    break_hf_pattern?: number;
+    notifications_enabled?: number;
+}
+
+export interface TrackpadConfigUpdate extends DeviceConfigUpdate {
+    can_hf_for_layer?: number;
+    can_drag?: number;
+    can_trackpad_layer?: number;
+    can_reverse_scrolling_direction?: number;
+    can_short_scroll?: number;
+    default_speed?: number;
+    drag_strength?: number;
+    drag_strength_mode?: number;
+    scroll_term?: number;
+    drag_term?: number;
+    tap_term?: number;
+    swipe_term?: number;
+    pinch_term?: number;
+    pinch_distance?: number;
+    gesture_term?: number;
+    short_scroll_term?: number;
+    scroll_step?: number;
+    hf_waveform_number?: number;
+    auto_layer_enabled?: number;
+    auto_layer_settings?: LayerSetting[];
 }
 
 export interface PomodoroConfig {
