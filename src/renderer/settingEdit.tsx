@@ -4,14 +4,14 @@ import { useStateContext } from "../context.tsx";
 import { fullHapticOptions } from "../data/hapticOptions.js";
 
 // Import setting components for each tab
-import MouseSettings from "./settings/mouseSettings.jsx";
-import ScrollSettings from "./settings/scrollSettings.jsx";
-import DragDropSettings from "./settings/dragDropSettings.jsx";
-import TimerSettings from "./settings/timerSettings.jsx";
-import LayerSettings from "./settings/layerSettings.jsx";
-import OLEDSettings from "./settings/OLEDSettings.jsx";
-import GestureSettings from "./settings/gestureSettings.jsx";
-import HapticSettings from "./settings/hapticSettings.jsx";
+import MouseSettings from "./settings/mouseSettings.tsx";
+import ScrollSettings from "./settings/scrollSettings.tsx";
+import DragDropSettings from "./settings/dragDropSettings.tsx";
+import TimerSettings from "./settings/timerSettings.tsx";
+import LayerSettings from "./settings/layerSettings.tsx";
+import OLEDSettings from "./settings/OLEDSettings.tsx";
+import GestureSettings from "./settings/gestureSettings.tsx";
+import HapticSettings from "./settings/hapticSettings.tsx";
 
 const { api } = window;
 
@@ -24,7 +24,7 @@ const SettingEdit: React.FC<any> = ((props: any) => {
     // Get active tab from parent component
     const activeTab = props.activeTab || "mouse";
 
-    const sendConfigToDevice = async (updatedDevice) => {
+    const sendConfigToDevice = async (updatedDevice: any): Promise<any> => {
         try {
             // Determine which configuration type to update based on the active tab
             // Update only pomodoro settings for "timer" tab, otherwise update only trackpad settings
@@ -64,7 +64,7 @@ const SettingEdit: React.FC<any> = ((props: any) => {
         }
     };
 
-    const handleChange = (pType, id) => async (event) => {
+    const handleChange = (pType: string, id: string) => async (event: any): Promise<void> => {
         // Create a new array to ensure immutability
         const _updatedDevices = await Promise.all(state.devices.map(async (d) => {
             if(d.id === id) {
@@ -165,12 +165,12 @@ const SettingEdit: React.FC<any> = ((props: any) => {
         }));
     }
 
-    const handleSliderStart = () => {
+    const handleSliderStart = (): void => {
         setIsSliderActive(true);
         api.setSliderActive(true);
     };
 
-    const handleSliderEnd = () => {
+    const handleSliderEnd = (): void => {
         setIsSliderActive(false);
         api.setSliderActive(false);
         
@@ -180,7 +180,7 @@ const SettingEdit: React.FC<any> = ((props: any) => {
         }
     };
 
-    const formatTime = (minutes, seconds) => {
+    const formatTime = (minutes: number, seconds: number): string => {
         const formattedMinutes = minutes < 10 ? `0${minutes}` : `${minutes}`;
         const formattedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
         return `${formattedMinutes}:${formattedSeconds}`;

@@ -87,7 +87,7 @@ const translate = (key: string, params: Record<string, string | number> = {}): s
     }
     
     // Replace parameters
-    return text.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] !== undefined ? String(params[param]) : match);
+    return text.replace(/\{\{(\w+)\}\}/g, (match, param): string => params[param] !== undefined ? String(params[param]) : match);
 };
 
 // Store active pomodoro devices

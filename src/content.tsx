@@ -10,7 +10,7 @@ interface SaveStatus {
     timestamp: number | null;
 }
 
-const api = window.api as any;
+const api = window.api;
 const hasApi = !!api;
 
 const Content: React.FC = () => {
@@ -25,7 +25,7 @@ const Content: React.FC = () => {
     useEffect(() => {
         if (!hasApi) return;
         
-        const handleDeviceChange = (dat: any) => {
+        const handleDeviceChange = (dat: unknown): void => {
             if (!dat || !Array.isArray(dat)) return;
 
             setState({
@@ -41,7 +41,7 @@ const Content: React.FC = () => {
         };
     }, []);
 
-    const handleActiveWindow = useCallback((dat: string) => {
+    const handleActiveWindow = useCallback((dat: string): void => {
         if (!dat) return;
     
         const currentState = stateRef.current;
@@ -74,7 +74,7 @@ const Content: React.FC = () => {
     useEffect(() => {
         if (!hasApi || !api.onConfigSaveComplete) return;
         
-        api.onConfigSaveComplete(({ success, timestamp }: { success: boolean; timestamp: number }) => {
+        api.onConfigSaveComplete(({ success, timestamp }: { success: boolean; timestamp: number }): void => {
             // Ignore updates within 500ms of the previous notification to prevent continuous notifications
             if (saveStatus.timestamp && timestamp - saveStatus.timestamp < 500) {
                 return;
@@ -86,7 +86,7 @@ const Content: React.FC = () => {
                 timestamp
             });
             
-            setTimeout(() => {
+            setTimeout((): void => {
                 setSaveStatus(prev => ({ ...prev, visible: false }));
             }, 3000); // Reduced display time from 3000ms to 1500ms
         });

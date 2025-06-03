@@ -17,30 +17,30 @@ interface LanguageProviderProps {
   children: ReactNode;
 }
 
-export function LanguageProvider({ children }: LanguageProviderProps) {
+export function LanguageProvider({ children }: LanguageProviderProps): JSX.Element {
   const [locale, setLocale] = useState<string>(defaultLocale);
   const [translations, setTranslations] = useState<LocaleMessages>({} as LocaleMessages);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  useEffect(() => {
+  useEffect((): void => {
     // Load previously selected language from localStorage
     const savedLocale = localStorage.getItem('locale') || defaultLocale;
     setLocale(savedLocale);
   }, []);
 
-  useEffect(() => {
+  useEffect((): void => {
     // Set loading state to true when starting to load new translations
     setIsLoading(true);
     
     // Update language files
     import(`./locales/${locale}.ts`)
-      .then(module => {
+      .then((module): void => {
         setTranslations(module.default);
         localStorage.setItem('locale', locale);
         
         // Notify main process about locale change
         if (window.api && window.api.setAppLocale) {
-          window.api.setAppLocale(locale).catch((err: unknown) => {
+          window.api.setAppLocale(locale).catch((err: unknown): void => {
             console.error('Error updating app locale:', err);
           });
         }
@@ -48,7 +48,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
         // Set loading to false when translations are loaded
         setIsLoading(false);
       })
-      .catch(() => {
+      .catch((): void => {
         console.error(`Could not load locale: ${locale}`);
         // If loading fails, revert to default language
         if (locale !== defaultLocale) {
@@ -87,7 +87,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     
     // Replace parameters in the translation string
     if (params && typeof params === 'object') {
-      Object.keys(params).forEach(paramKey => {
+      Object.keys(params).forEach((paramKey): void => {
         const placeholder = `{{${paramKey}}}`;
         result = result.replace(new RegExp(placeholder, 'g'), String(params[paramKey]));
       });

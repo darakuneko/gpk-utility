@@ -5,7 +5,7 @@ import { exposeAPI } from './preload/api';
 import type { NotificationData } from './src/types/notification';
 
 // Initialize polling and settings when the window is loaded
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
     try {
         await loadStoreSettings();
         
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         startKeyboardPolling(keyboardSendLoop);
         
         // Start window monitoring with the command from device module
-        startWindowMonitoring(async () => {
+        startWindowMonitoring(async (): Promise<void> => {
             await command.startWindowMonitoring();
         });
         
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const savedNotifications = cachedStoreSettings?.savedNotifications || [];
 
         if (latestNotification?.id) {
-            const isDifferent = !savedNotifications.length || !savedNotifications.some((n: { id: unknown }) => n.id === latestNotification.id);
+            const isDifferent = !savedNotifications.length || !savedNotifications.some((n: { id: unknown }): boolean => n.id === latestNotification.id);
             if (isDifferent) {       
                 await saveStoreSetting('savedNotifications', result.notifications as NotificationData[]);
                 window.dispatchEvent(new CustomEvent('showUpdatesNotificationModal', {
@@ -38,9 +38,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Listen for polling interval changes
-window.addEventListener('restartPollingIntervals', () => {
+window.addEventListener('restartPollingIntervals', (): void => {
     startKeyboardPolling(keyboardSendLoop);
-    startWindowMonitoring(async () => {
+    startWindowMonitoring(async (): Promise<void> => {
         await command.startWindowMonitoring();
     });
 });
@@ -52,7 +52,7 @@ setupEventListeners();
 exposeAPI();
 
 // Cleanup handlers
-process.on('exit', () => {
+process.on('exit', (): void => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { keyboardPollingInterval, windowMonitoringInterval } = require('./preload/core');
     if (keyboardPollingInterval) {

@@ -24,17 +24,17 @@ export const CustomSlider: React.FC<CustomSliderProps> = ({
   // Calculate thumb position safely
   const thumbPosition = `${((safeValue - safeMin) / (safeMax - safeMin)) * 100}%`;
   
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     const slider = sliderRef.current;
     if (!slider) return undefined;
     
-    const handleUpdate = () => {
+    const handleUpdate = (): void => {
       // Force re-render on update event
       slider.style.setProperty('--thumb-position', thumbPosition);
     };
     
     slider.addEventListener('update', handleUpdate);
-    return () => {
+    return (): void => {
       slider.removeEventListener('update', handleUpdate);
     };
   }, [safeValue, safeMin, safeMax, thumbPosition]);
@@ -59,7 +59,7 @@ export const CustomSlider: React.FC<CustomSliderProps> = ({
       />
       {marks && marks.length > 0 && (
         <div className="absolute flex justify-between w-full px-2 mt-1 text-xs text-gray-600 dark:text-gray-300">
-          {marks.map(mark => (
+          {marks.map((mark): JSX.Element => (
             <span key={mark.value} style={{left: `${((mark.value - safeMin) / (safeMax - safeMin)) * 100}%`}}>
               {mark.label}
             </span>
@@ -82,29 +82,29 @@ export const CustomSwitch: React.FC<CustomSwitchProps> = ({
   // Ensure checked is a boolean
   const safeChecked = checked === true;
   
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     const switchEl = switchRef.current;
     if (!switchEl) return undefined;
     
-    const handleUpdate = () => {
+    const handleUpdate = (): void => {
       // Force immediate visual feedback
-      setTimeout(() => {
+      setTimeout((): void => {
         switchEl.checked = safeChecked;
       }, 0);
     };
     
     switchEl.addEventListener('update', handleUpdate);
-    return () => {
+    return (): void => {
       switchEl.removeEventListener('update', handleUpdate);
     };
   }, [safeChecked, id]);
   
-  const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (onChange) {
       onChange(e);
       
       // Force UI update immediately after the onChange event
-      setTimeout(() => {
+      setTimeout((): void => {
         if (switchRef.current) {
           const event = new Event('update', { bubbles: true });
           switchRef.current.dispatchEvent(event);
@@ -143,17 +143,17 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   // Ensure value is a valid string
   const safeValue = value !== undefined && value !== null ? String(value) : '';
   
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     const select = selectRef.current;
     if (!select) return undefined;
     
-    const handleUpdate = () => {
+    const handleUpdate = (): void => {
       // Ensure UI is updated
       select.value = safeValue;
     };
     
     select.addEventListener('update', handleUpdate);
-    return () => {
+    return (): void => {
       select.removeEventListener('update', handleUpdate);
     };
   }, [safeValue]);
@@ -172,7 +172,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         onChange={onChange}
         className="block w-full px-3 py-2 text-base bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
       >
-        {options ? options.map(option => (
+        {options ? options.map((option): JSX.Element => (
           <option key={option.value} value={option.value}>{option.label}</option>
         )) : children}
       </select>

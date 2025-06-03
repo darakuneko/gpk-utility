@@ -298,7 +298,7 @@ const SettingsContainer: React.FC = () => {
                                     ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-500"
                                     : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                             }`}
-                            onClick={() => {
+                            onClick={(): void => {
                                 setActiveDeviceId(device.id);
                                 setUserSelectedTab(false); // Reset flag when switching devices
                                 // When switching devices, select the first available settings tab for that device

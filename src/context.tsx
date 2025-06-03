@@ -3,7 +3,7 @@ import {createContext, useContext, useEffect, useReducer, useRef, useState} from
 
 interface Device {
     id: string;
-    config: Record<string, any>;
+    config: Record<string, unknown>;
 }
 
 interface AppState {
@@ -12,15 +12,21 @@ interface AppState {
     activeWindow: string[];
 }
 
+type AppAction = 
+    | { type: 'SET_DEVICES'; payload: Device[] }
+    | { type: 'UPDATE_DEVICE_CONFIG'; payload: { deviceId: string; configUpdates: Record<string, unknown> } }
+    | { type: 'SET_ACTIVE_WINDOW'; payload: string[] }
+    | { type: 'SET_INIT'; payload: boolean };
+
 interface StateContextValue {
     state: AppState;
     setState: (obj: Partial<AppState>) => void;
-    updateDeviceConfig: (deviceId: string, configUpdates: Record<string, any>) => void;
-    dispatch: React.Dispatch<any>;
+    updateDeviceConfig: (deviceId: string, configUpdates: Record<string, unknown>) => void;
+    dispatch: React.Dispatch<AppAction>;
 }
 
 const stateContext = createContext<StateContextValue | null>(null)
-const deviceTypeContext = createContext<any>(null)
+const deviceTypeContext = createContext<string | null>(null)
 
 const ACTION_TYPES = {
     SET_DEVICES: 'SET_DEVICES',
@@ -36,7 +42,7 @@ const initialState: AppState = {
 };
 
 // Implementation of reducer
-const reducer = (state: AppState, action: any): AppState => {
+const reducer = (state: AppState, action: AppAction): AppState => {
     switch (action.type) {
         case ACTION_TYPES.SET_DEVICES:
             return {
@@ -84,11 +90,11 @@ export function useStateContext(): StateContextValue {
     return context;
 }
 
-export function useDeviceType(): any {
+export function useDeviceType(): string | null {
     return useContext(deviceTypeContext);
 }
 
-export function StateProvider({children}: {children: React.ReactNode}) {
+export function StateProvider({children}: {children: React.ReactNode}): JSX.Element {
     const [state, dispatch] = useReducer(reducer, initialState);
     const stateRef = useRef(state);
     const prevStateRef = useRef<Partial<AppState>>({});
@@ -98,7 +104,7 @@ export function StateProvider({children}: {children: React.ReactNode}) {
     }, [state]);
 
     // Modified setState implementation
-    const setState = (obj: Partial<AppState>) => {
+    const setState = (obj: Partial<AppState>): void => {
         if (!obj) {
             return;
         }
@@ -121,7 +127,7 @@ export function StateProvider({children}: {children: React.ReactNode}) {
     };
 
     // Helper function for device config updates (for slider and other settings)
-    const updateDeviceConfig = (deviceId: string, configUpdates: Record<string, any>) => {
+    const updateDeviceConfig = (deviceId: string, configUpdates: Record<string, unknown>): void => {
         const deviceIndex = state.devices.findIndex(d => d.id === deviceId);
         if (deviceIndex === -1) return;
         
@@ -149,14 +155,14 @@ export function StateProvider({children}: {children: React.ReactNode}) {
 }
 
 // DeviceType Provider to cache device types
-export function DeviceTypeProvider({ children }: {children: React.ReactNode}) {
-    const [deviceType, setDeviceType] = useState<any>(null);
+export function DeviceTypeProvider({ children }: {children: React.ReactNode}): JSX.Element {
+    const [deviceType, setDeviceType] = useState<string | null>(null);
     
     useEffect(() => {
-        const initDeviceType = async () => {
+        const initDeviceType = async (): Promise<void> => {
             try {
-                if (window.api && (window.api as any).getDeviceType) {
-                    const types = await (window.api as any).getDeviceType();
+                if (window.api && window.api.getDeviceType) {
+                    const types = await window.api.getDeviceType();
                     setDeviceType(types);
                 }
             } catch (error) {
@@ -175,7 +181,7 @@ export function DeviceTypeProvider({ children }: {children: React.ReactNode}) {
 }
 
 // Combined provider that includes both state and device type contexts
-export function AppProvider({ children }: {children: React.ReactNode}) {
+export function AppProvider({ children }: {children: React.ReactNode}): JSX.Element {
     return (
         <DeviceTypeProvider>
             <StateProvider>

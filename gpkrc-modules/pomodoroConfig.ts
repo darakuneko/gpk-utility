@@ -48,7 +48,7 @@ export const savePomodoroConfigData = async (device: Device, pomodoroDataBytes: 
         if (!result.success) {
             throw new Error(result.error || "Failed to save pomodoro config");
         }
-        await new Promise<void>(resolve => setTimeout(resolve, 500)); // Add 500ms delay
+        await new Promise<void>((resolve): void => setTimeout(resolve, 500)); // Add 500ms delay
         return result;
     } catch (error) {
         console.error("Error saving pomodoro config data:", error);

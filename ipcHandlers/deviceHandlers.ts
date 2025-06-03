@@ -31,30 +31,30 @@ export const setMainWindow = (window: BrowserWindow | null): void => {
 
 export const setupDeviceHandlers = (): void => {
     // Device control handlers
-    ipcMain.handle('start', async (event, device: Device) => {
+    ipcMain.handle('start', async (event, device: Device): Promise<void> => {
         await start(device)
     });
     
-    ipcMain.handle('stop', async (event, device: Device) => {
+    ipcMain.handle('stop', async (event, device: Device): Promise<void> => {
         await stop(device)
     });
     
-    ipcMain.handle('close', async (_event) => {
+    ipcMain.handle('close', async (_event): Promise<void> => {
         await close()
     });
     
-    ipcMain.handle('encodeDeviceId', async (_event, device: Device) => await encodeDeviceId(device));
-    ipcMain.handle('getKBDList', async (_event) => await getKBDList());
-    ipcMain.handle('getDeviceType', (_event) => getDeviceType());
-    ipcMain.handle('getConnectKbd', async (_event, id: string) => await getConnectKbd(id));
+    ipcMain.handle('encodeDeviceId', async (_event, device: Device): Promise<string> => await encodeDeviceId(device));
+    ipcMain.handle('getKBDList', async (_event): Promise<Device[]> => await getKBDList());
+    ipcMain.handle('getDeviceType', (_event): DeviceType => getDeviceType());
+    ipcMain.handle('getConnectKbd', async (_event, id: string): Promise<Device | undefined> => await getConnectKbd(id));
     
-    ipcMain.on("changeConnectDevice", (e, data: Device) => {
+    ipcMain.on("changeConnectDevice", (e, data: Device): void => {
         if (mainWindow) {
             mainWindow.webContents.send("changeConnectDevice", data);
         }
     });
     
-    ipcMain.handle('getDeviceConfig', async (event, device: Device) => {
+    ipcMain.handle('getDeviceConfig', async (event, device: Device): Promise<CommandResult> => {
         try {
             const _result = await getDeviceConfig(device);
             return { success: true };
@@ -76,7 +76,7 @@ export const setupDeviceHandlers = (): void => {
             return { success: false, error: errorMessage };
         }
     });
-    ipcMain.handle('getPomodoroConfig', async (event, device: Device) => await getPomodoroConfig(device));
+    ipcMain.handle('getPomodoroConfig', async (event, device: Device): Promise<CommandResult> => await getPomodoroConfig(device));
     
     // Device config data handlers
     ipcMain.handle('getPomodoroActiveStatus', async (event, device: Device) => await getPomodoroActiveStatus(device));
