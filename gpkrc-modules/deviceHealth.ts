@@ -85,7 +85,7 @@ export const checkDeviceHealth = async (): Promise<void> => {
                 try {
                     hidInstance.removeAllListeners?.();
                     hidInstance.close?.();
-                } catch (e) {
+                } catch {
                     // Ignore cleanup errors - device is being disconnected
                 }
                 hidDeviceInstances[deviceId] = null;

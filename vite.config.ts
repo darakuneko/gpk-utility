@@ -24,9 +24,7 @@ const config: UserConfig = defineConfig({
                 'electron',
                 'node-hid',
                 '@paymoapp/active-window',
-                'active-win',
                 'electron-store',
-                'firebase',
                 'node-fetch',
                 'dotenv'
               ]
@@ -79,9 +77,7 @@ const config: UserConfig = defineConfig({
                 'electron',
                 'node-hid',
                 '@paymoapp/active-window',
-                'active-win',
                 'electron-store',
-                'firebase',
                 'node-fetch',
                 'dotenv'
               ],

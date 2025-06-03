@@ -180,7 +180,7 @@ export const setupStoreHandlers = (): void => {
         try {
             // Return current locale from electron-store
             return store.get('locale') || 'en';
-        } catch (error) {
+        } catch {
             return 'en'; // Default to English on error
         }
     });

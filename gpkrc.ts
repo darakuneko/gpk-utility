@@ -106,7 +106,7 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
                 try {
                     hidDeviceInstances[id].removeAllListeners();
                     hidDeviceInstances[id].close();
-                } catch (e) {
+                } catch {
                     // Ignore cleanup errors during initialization failure
                 }
                 hidDeviceInstances[id] = null;

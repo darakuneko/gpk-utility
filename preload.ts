@@ -53,7 +53,8 @@ exposeAPI();
 
 // Cleanup handlers
 process.on('exit', (): void => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // Dynamic require is necessary here for cleanup during process exit
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
     const { keyboardPollingInterval, windowMonitoringInterval } = require('./preload/core');
     if (keyboardPollingInterval) {
         clearInterval(keyboardPollingInterval);

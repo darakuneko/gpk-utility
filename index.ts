@@ -153,7 +153,7 @@ const createTrayMenuTemplate = (): Electron.MenuItemConstructorOptions[] => {
         click: (): void => {
             try {
                 void close();
-            } catch (e) {
+            } catch {
                 // Ignored
             }
             app.exit(0);
@@ -260,7 +260,7 @@ const createWindow = async (): Promise<void> => {
         
         try {
             void close();
-        } catch (e) {
+        } catch {
             // Ignored
         }
     });
@@ -285,7 +285,7 @@ app.on('window-all-closed', (): void => {
         
         try{
             void close();
-        } catch (e) {
+        } catch {
             // Ignored
         }
         app.quit();

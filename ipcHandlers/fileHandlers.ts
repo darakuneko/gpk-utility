@@ -20,7 +20,7 @@ const exportFile = async (data: ExportData): Promise<void> => {
         if (!dialogResult.canceled && dialogResult.filePath) {
             await fs.writeFile(dialogResult.filePath, JSON.stringify(data, null, 2))
         }
-    } catch (err) {
+    } catch {
         // Ignore errors
     }
 };
@@ -50,9 +50,9 @@ const importFile = async (): Promise<string | null> => {
             console.error(`Error reading file ${filePath}:`, readErr);
             throw new Error(`Failed to read file: ${readErr instanceof Error ? readErr.message : String(readErr)}`);
         }
-    } catch (err) {
-        console.error("Error in import file dialog:", err);
-        throw err;
+    } catch {
+        console.error("Error in import file dialog");
+        throw new Error("Failed to import file");
     }
 };
 

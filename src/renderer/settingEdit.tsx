@@ -64,7 +64,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                 
                 return updatedConfig.config;
             }
-        } catch (error) {
+        } catch {
             // Ignore config processing errors - return original config
         }
         return undefined;
@@ -170,7 +170,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                         // For normal operations (non-slider or not during slider operation), send immediately
                         await sendConfigToDevice(updatedDevice);
                     }
-                } catch (error) {
+                } catch {
                     // Add state updates for UI error display if needed
                     return d; // Return original device state in case of error
                 }
