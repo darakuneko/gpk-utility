@@ -59,7 +59,7 @@ const config: UserConfig = defineConfig({
       },
       {
         entry: 'preload.ts',
-        onstart(options) {
+        onstart(options): void {
           // Notify the Renderer-Process to reload the page when the Preload-Scripts build is complete
           options.reload();
         },
