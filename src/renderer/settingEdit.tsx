@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import type { Device } from '../types/device';
 
 import { useStateContext } from "../context.tsx";
 import { fullHapticOptions } from "../data/hapticOptions.js";
@@ -15,11 +16,15 @@ import HapticSettings from "./settings/hapticSettings.tsx";
 
 const { api } = window;
 
-const SettingEdit: React.FC<any> = ((props: any) => {
+interface SettingEditProps {
+    device: Device;
+}
+
+const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
     const { state, setState } = useStateContext();
     const device = props.device;
     const [isSliderActive, setIsSliderActive] = useState(false);
-    const [pendingChanges, setPendingChanges] = useState<any>({});
+    const [pendingChanges, setPendingChanges] = useState<Record<string, unknown>>({});
     
     // Get active tab from parent component
     const activeTab = props.activeTab || "mouse";
