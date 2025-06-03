@@ -2,6 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { app, BrowserWindow, Tray, Menu, nativeImage } from "electron";
 import Store from 'electron-store';
+import type { ActiveWindowResult } from './src/types/device';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -303,7 +304,7 @@ app.on('ready', async (): Promise<void> => {
     // Start window monitoring for automatic layer switching
     try {
         void startWindowMonitoring({
-            getActiveWindow: async (): Promise<any> => {
+            getActiveWindow: async (): Promise<ActiveWindowResult> => {
                 const result = await ActiveWindow.getActiveWindow();
                 return {
                     title: result.title,

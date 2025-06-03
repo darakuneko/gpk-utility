@@ -6,6 +6,7 @@ import { AppProvider } from "./context.tsx"
 import { LanguageProvider } from "./i18n/LanguageContext.tsx"
 import UpdatesNotificationModal from "./components/UpdatesNotificationModal.tsx"
 import "./styles.css"
+import type { Device, DeviceConfig, AppInfo } from './types/device';
 
 // Set initial background color immediately
 document.documentElement.style.backgroundColor = '#f0f0f0'
@@ -29,7 +30,27 @@ interface UpdatesNotificationEvent extends CustomEvent {
 
 declare global {
   interface Window {
-    api: any;
+    api: {
+      getConnectedDevices: () => Promise<Device[]>;
+      connectDevice: (device: Device) => Promise<void>;
+      disconnectDevice: (device: Device) => Promise<void>;
+      sendCommand: (command: unknown[]) => Promise<unknown>;
+      getDeviceSettings: (device: Device) => Promise<DeviceConfig>;
+      saveDeviceSettings: (device: Device, settings: DeviceConfig) => Promise<void>;
+      importFile: () => Promise<unknown>;
+      exportFile: () => Promise<unknown>;
+      exportDeviceJson: (device: Device, settings: DeviceConfig) => Promise<void>;
+      storeGet: (key: string) => Promise<unknown>;
+      storeSet: (key: string, value: unknown) => Promise<void>;
+      storeDelete: (key: string) => Promise<void>;
+      storeClear: () => Promise<void>;
+      setAppLocale: (locale: string) => Promise<{ success: boolean; error?: string }>;
+      showNotification: (title: string, body: string) => void;
+      getVersion: () => Promise<string>;
+      getAppInfo: () => Promise<AppInfo>;
+      getStoreFilePath: () => Promise<{ success: boolean; path?: string }>;
+      openExternalLink: (url: string) => void;
+    };
   }
   interface WindowEventMap {
     'showUpdatesNotificationModal': UpdatesNotificationEvent;

@@ -7,7 +7,7 @@ import type { Device } from '../types/device';
 
 type TranslationFunction = (key: string) => string;
 
-export const getSupportedSettingTabs = (device: Device | null, t: TranslationFunction, DeviceType: any): Tab[] => {
+export const getSupportedSettingTabs = (device: Device | null, t: TranslationFunction, DeviceType: typeof import('../../gpkrc-modules/deviceTypes').DeviceType): Tab[] => {
     if (!device || !DeviceType) return [];
 
     const tabs: Record<string, Tab> = {
