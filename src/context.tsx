@@ -1,5 +1,6 @@
 import React from 'react'
 import {createContext, useContext, useEffect, useReducer, useRef, useState} from 'react'
+
 import type { Device } from './types/device';
 
 interface AppState {

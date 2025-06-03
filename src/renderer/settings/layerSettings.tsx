@@ -6,7 +6,7 @@ import {
   CustomSelect
 } from "../../components/CustomComponents.tsx";
 import { useLanguage } from "../../i18n/LanguageContext.tsx";
-import type { Device, LayerSetting, ActiveWindowResult } from "../../types/device";
+import type { LayerSetting, ActiveWindowResult } from "../../types/device";
 
 const { api } = window;
 

@@ -1,6 +1,5 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
-
 import { app, BrowserWindow, Tray, Menu, nativeImage } from "electron";
 import Store from 'electron-store';
 
@@ -12,6 +11,7 @@ if(process.platform==='linux') {
 }
 
 // Import translation utilities
+
 import { ActiveWindow } from '@paymoapp/active-window';
 
 import enTranslations from './src/i18n/locales/en';
@@ -26,11 +26,10 @@ import {
 import type { DeviceStatus } from './src/types/device';
 import { injectWindowMonitoringDependencies } from './gpkrc-modules/windowMonitoring';
 import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, setStore as setIpcStore } from './ipcHandlers';
-
-// ActiveWindow is already initialized as an instance, no need to call initialize()
-
 // Types
 import type { StoreSchema } from './src/types/store';
+
+// ActiveWindow is already initialized as an instance, no need to call initialize()
 
 interface PomodoroDeviceInfo {
     name: string;
@@ -66,7 +65,7 @@ const translate = (key: string, params: Record<string, string | number> = {}): s
     
     // Get nested value from translations using key path
     const getValue = (obj: Record<string, unknown>, path: string): string | undefined => {
-        return path.split('.').reduce((o: unknown, i: string) => {
+        return path.split('.').reduce((o: unknown, i: string): unknown => {
             if (o && typeof o === 'object' && i in o) {
                 return (o as Record<string, unknown>)[i];
             }
@@ -121,7 +120,7 @@ const createTrayMenuTemplate = (): Electron.MenuItemConstructorOptions[] => {
         menuItems.push({ label: 'Active Pomodoro Timers', enabled: false });
         
         // Add an entry for each active pomodoro device
-        activePomodoroDevices.forEach((deviceInfo, __deviceId) => {
+        activePomodoroDevices.forEach((deviceInfo, __deviceId): void => {
             const { name, phase } = deviceInfo;
             let phaseText = '';
             
@@ -149,7 +148,7 @@ const createTrayMenuTemplate = (): Electron.MenuItemConstructorOptions[] => {
     menuItems.push({ type: 'separator' });
     menuItems.push({ 
         label: 'Quit', 
-        click: () => {
+        click: (): void => {
             try {
                 void close();
             } catch (e) {
@@ -174,7 +173,7 @@ const createTray = (): void => {
     tray.setToolTip(translate('header.title'));
     
     // Set up click handler
-    tray.on('click', async () => {
+    tray.on('click', async (): Promise<void> => {
         if (mainWindow) {
             if (mainWindow.isVisible()) {
                 mainWindow.hide();
@@ -236,21 +235,21 @@ const createWindow = async (): Promise<void> => {
     });
     
     // Monitor window size and position changes
-    mainWindow!.on('resize', () => {
+    mainWindow!.on('resize', (): void => {
         if (!mainWindow!.isMinimized() && !mainWindow!.isMaximized()) {
             const bounds = mainWindow!.getBounds();
             store.set('windowBounds', bounds);
         }
     });
     
-    mainWindow!.on('move', () => {
+    mainWindow!.on('move', (): void => {
         if (!mainWindow!.isMinimized() && !mainWindow!.isMaximized()) {
             const bounds = mainWindow!.getBounds();
             store.set('windowBounds', bounds);
         }
     });
 
-    mainWindow.on('close', (event) => {
+    mainWindow.on('close', (event): void => {
         if (store.get('minimizeToTray')) {
             event.preventDefault();
             mainWindow!.hide();
@@ -264,7 +263,7 @@ const createWindow = async (): Promise<void> => {
         }
     });
     
-    mainWindow.on('minimize', () => {
+    mainWindow.on('minimize', (): void => {
         if (store.get('minimizeToTray')) {
             mainWindow!.hide();
         }
@@ -276,7 +275,7 @@ if (!doubleBoot) app.quit();
 
 app.setName(translate('header.title'));
 
-app.on('window-all-closed', () => {
+app.on('window-all-closed', (): void => {
     if (process.platform !== 'darwin') {
         if (store.get('minimizeToTray')) {
             return;
@@ -291,7 +290,7 @@ app.on('window-all-closed', () => {
     }
 });
 
-app.on('ready', async () => {
+app.on('ready', async (): Promise<void> => {
     createTray();
     await createWindow();
     
@@ -304,7 +303,7 @@ app.on('ready', async () => {
     // Start window monitoring for automatic layer switching
     try {
         void startWindowMonitoring({
-            getActiveWindow: async () => {
+            getActiveWindow: async (): Promise<any> => {
                 const result = await ActiveWindow.getActiveWindow();
                 return {
                     title: result.title,
@@ -325,7 +324,7 @@ app.on('ready', async () => {
     }
 });
 
-app.on('activate', async () => {
+app.on('activate', async (): Promise<void> => {
     if (mainWindow === null) await createWindow();
 });
 

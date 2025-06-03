@@ -60,7 +60,6 @@ import {
     addNewAppToAutoLayerSettings,
     cleanupDeviceLayerTracking
 } from './gpkrc-modules/windowMonitoring';
-
 // Re-export Device type from types/device.ts
 import type { Device } from './src/types/device';
 

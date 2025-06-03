@@ -1,22 +1,18 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 import { fileURLToPath } from 'url';
-
 import { ipcMain, BrowserWindow } from "electron";
 import type Store from 'electron-store';
-
 import { updateAutoLayerSettings } from '../gpkrc';
 import type { StoreSchema } from '../src/types/store';
 import type { StoreSettings, AutoLayerSetting } from '../preload/types';
+import enTranslations from '../src/i18n/locales/en.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let store: Store<StoreSchema>;
 let mainWindow: BrowserWindow | null;
-
-// Import translation utilities
-import enTranslations from '../src/i18n/locales/en.ts';
 
 export const setStore = (storeInstance: Store<StoreSchema>): void => {
     store = storeInstance;

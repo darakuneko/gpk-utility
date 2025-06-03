@@ -1,6 +1,5 @@
 import { BrowserWindow } from "electron";
 import Store from 'electron-store';
-
 import type { StoreSchema } from './src/types/store';
 
 // Import all handler modules
