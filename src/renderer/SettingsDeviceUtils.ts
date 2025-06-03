@@ -7,7 +7,7 @@ import type { Device } from '../types/device';
 
 type TranslationFunction = (key: string) => string;
 
-export const getSupportedSettingTabs = (device: Device | null, t: TranslationFunction, DeviceType: typeof import('../../gpkrc-modules/deviceTypes').DeviceType): Tab[] => {
+export const getSupportedSettingTabs = (device: Device | null, t: TranslationFunction, DeviceType: string | null): Tab[] => {
     if (!device || !DeviceType) return [];
 
     const tabs: Record<string, Tab> = {
@@ -44,12 +44,12 @@ export const getSupportedSettingTabs = (device: Device | null, t: TranslationFun
         : []; // Always show layer tab, even without trackpad config
 
     const tabDefinitions: Record<string, Tab[]> = {
-        [DeviceType.MACROPAD_TP]: tpTabs,
-        [DeviceType.MACROPAD_TP_BTNS]: hasTrackpadConfig 
+        'macropad_tp': tpTabs,
+        'macropad_tp_btns': hasTrackpadConfig 
             ? [tabs.mouse, tabs.scroll, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer] as Tab[]
             : [], // Always show layer tab, even without trackpad config
-        [DeviceType.KEYBOARD_TP]: tpTabs,
-        [DeviceType.KEYBOARD_OLED]: [tabs.layer, tabs.oled] as Tab[]
+        'keyboard_tp': tpTabs,
+        'keyboard_oled': [tabs.layer, tabs.oled] as Tab[]
     };
     return tabDefinitions[device.deviceType || ''] || [];
 };

@@ -25,7 +25,7 @@ interface StateContextValue {
 const stateContext = createContext<StateContextValue | null>(null)
 const deviceTypeContext = createContext<string | null>(null)
 
-const ACTION_TYPES = {
+const _ACTION_TYPES = {
     SET_DEVICES: 'SET_DEVICES',
     UPDATE_DEVICE_CONFIG: 'UPDATE_DEVICE_CONFIG',
     SET_ACTIVE_WINDOW: 'SET_ACTIVE_WINDOW',
@@ -51,7 +51,7 @@ const reducer = (state: AppState, action: AppAction): AppState => {
             const { deviceId, config } = action.payload;
             return {
                 ...state,
-                devices: state.devices.map(device => 
+                devices: state.devices.map((device): Device => 
                     device.id === deviceId 
                         ? { 
                             ...device, 
@@ -96,7 +96,7 @@ export function StateProvider({children}: {children: React.ReactNode}): React.Re
     const stateRef = useRef(state);
     const prevStateRef = useRef<Partial<AppState>>({});
     
-    useEffect(() => {
+    useEffect((): void => {
         stateRef.current = state;
     }, [state]);
 
@@ -125,7 +125,7 @@ export function StateProvider({children}: {children: React.ReactNode}): React.Re
 
     // Helper function for device config updates (for slider and other settings)
     const updateDeviceConfig = (deviceId: string, configUpdates: Record<string, unknown>): void => {
-        const deviceIndex = state.devices.findIndex(d => d.id === deviceId);
+        const deviceIndex = state.devices.findIndex((d): boolean => d.id === deviceId);
         if (deviceIndex === -1) return;
         
         const device = state.devices[deviceIndex];
@@ -155,7 +155,7 @@ export function StateProvider({children}: {children: React.ReactNode}): React.Re
 export function DeviceTypeProvider({ children }: {children: React.ReactNode}): React.ReactElement {
     const [deviceType, setDeviceType] = useState<string | null>(null);
     
-    useEffect(() => {
+    useEffect((): void => {
         const initDeviceType = async (): Promise<void> => {
             try {
                 if (window.api && window.api.getDeviceType) {

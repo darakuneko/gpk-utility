@@ -80,11 +80,11 @@ export const command = {
 export const keyboardSendLoop = async (): Promise<void> => {
     try {
         const kbdList = await command.getKBDList();
-        const connectedIds = new Set(kbdList.map(device => device.id));
+        const connectedIds = new Set(kbdList.map((device): string => device.id));
 
         // Update existing devices and add new ones
-        kbdList.forEach(device => {
-            const existingDevice = cachedDeviceRegistry.find(cd => cd.id === device.id);
+        kbdList.forEach((device): void => {
+            const existingDevice = cachedDeviceRegistry.find((cd): boolean => cd.id === device.id);
             if (!existingDevice) {
                 // New device detected - mark as NOT connected until initialization is complete
                 device.connected = false;
@@ -113,7 +113,7 @@ export const keyboardSendLoop = async (): Promise<void> => {
 
         // Mark disconnected devices and collect their IDs
         const disconnectedDeviceIds: string[] = [];
-        cachedDeviceRegistry.forEach(device => {
+        cachedDeviceRegistry.forEach((device): void => {
             if (!connectedIds.has(device.id)) {
                 if (device.connected !== false) {
                     ipcRenderer.send('deviceDisconnected', device.id);
@@ -128,8 +128,8 @@ export const keyboardSendLoop = async (): Promise<void> => {
         // Remove disconnected devices from cachedDeviceRegistry after a delay
         // This prevents UI flickering during temporary disconnections
         if (disconnectedDeviceIds.length > 0) {
-            setTimeout(() => {
-                const filteredRegistry = cachedDeviceRegistry.filter(device => 
+            setTimeout((): void => {
+                const filteredRegistry = cachedDeviceRegistry.filter((device): boolean => 
                     connectedIds.has(device.id) || device.connected !== false
                 );
                 updateCachedDeviceRegistry(filteredRegistry);
@@ -154,7 +154,7 @@ export const keyboardSendLoop = async (): Promise<void> => {
             if (device.needsRestart) {
                 try {
                     await command.stop(device);
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay before restart
+                    await new Promise((resolve): void => {setTimeout(resolve, 1000);}); // Increased delay before restart
 
                     // Attempt to start device with retry logic
                     let startSuccess = false;
@@ -170,13 +170,13 @@ export const keyboardSendLoop = async (): Promise<void> => {
                             console.warn(`Failed to start device ${device.id} (attempt ${startAttempts}/${maxStartAttempts}):`, startError instanceof Error ? startError.message : String(startError));
                             
                             if (startAttempts < maxStartAttempts) {
-                                await new Promise(resolve => setTimeout(resolve, 1000 * startAttempts)); // Progressive delay
+                                await new Promise((resolve): void => {setTimeout(resolve, 1000 * startAttempts);}); // Progressive delay
                             }
                         }
                     }
                     
                     if (startSuccess) {
-                        await new Promise(resolve => setTimeout(resolve, 1500)); // Increased delay after restart
+                        await new Promise((resolve): void => {setTimeout(resolve, 1500);}); // Increased delay after restart
                         device.needsRestart = false;
                         device.initializing = true; // Mark as initializing after restart
                         device.checkDevice = false;
@@ -199,7 +199,7 @@ export const keyboardSendLoop = async (): Promise<void> => {
             if (!connectKbd) {
                 device.initializing = true;
                 await command.start(device);
-                await new Promise(resolve => setTimeout(resolve, 800)); // Wait for device to initialize
+                await new Promise((resolve): void => {setTimeout(resolve, 800);}); // Wait for device to initialize
             } else {
                 // Device is connected, check if we need to initialize configuration
                 const existConfingInit = device.config?.init;
@@ -211,7 +211,7 @@ export const keyboardSendLoop = async (): Promise<void> => {
                     device.initializing = true;
                     
                     try {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        await new Promise((resolve): void => {setTimeout(resolve, 1000);});
                         await command.getDeviceConfig(device);
                     } catch (error) {
                         console.error(`Failed to get device config for ${device.id}:`, error);

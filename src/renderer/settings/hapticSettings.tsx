@@ -1,4 +1,5 @@
 import React from "react";
+import type { JSX } from 'react';
 
 import { CustomSwitch, CustomSelect } from "../../components/CustomComponents.tsx";
 import { useLanguage } from "../../i18n/LanguageContext.tsx";
@@ -12,7 +13,7 @@ interface HapticSettingsProps {
   handleSliderEnd: () => void;
 }
 
-const HapticSettings: React.FC<HapticSettingsProps> = ({ device, handleChange, handleSliderStart: _handleSliderStart, handleSliderEnd: _handleSliderEnd }) => {
+const HapticSettings: React.FC<HapticSettingsProps> = ({ device, handleChange, handleSliderStart: _handleSliderStart, handleSliderEnd: _handleSliderEnd }): JSX.Element => {
   const { t } = useLanguage();
   
   // Get trackpad configuration or empty object if not defined

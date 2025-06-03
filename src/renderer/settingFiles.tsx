@@ -1,4 +1,5 @@
 import React, { ReactNode } from "react"
+import type { JSX } from 'react';
 
 import { useLanguage } from "../i18n/LanguageContext";
 
@@ -18,7 +19,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({ onClick, children }): React
   </button>
 )
 
-const SettingFiles: React.FC = (() => {
+const SettingFiles: React.FC = ((): JSX.Element => {
     const { t } = useLanguage();
     
     const handleImport = async (): Promise<void> => { await api.importFile(); }

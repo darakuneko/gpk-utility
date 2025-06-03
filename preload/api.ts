@@ -38,7 +38,7 @@ export const exposeAPI = (): void => {
         
         // Method to listen for config save completion events
         onConfigSaveComplete: (callback: (detail: ConfigSaveCompleteDetail) => void): void => {
-            window.addEventListener('configSaveComplete', (event: Event) => {
+            window.addEventListener('configSaveComplete', (event: Event): void => {
                 const customEvent = event as CustomEvent<ConfigSaveCompleteDetail>;
                 callback(customEvent.detail);
             });
@@ -51,7 +51,7 @@ export const exposeAPI = (): void => {
                 const devicesToExport: Device[] = JSON.parse(JSON.stringify(cachedDeviceRegistry));
                 
                 // Apply store settings to each device
-                await Promise.all(devicesToExport.map(async (device) => {
+                await Promise.all(devicesToExport.map(async (device): Promise<void> => {
                     if (!device.config) {
                         device.config = { pomodoro: {}, trackpad: {} };
                     }
@@ -136,8 +136,8 @@ export const exposeAPI = (): void => {
                     const pomodoroNotifSettings = { ...cachedStoreSettings.pomodoroDesktopNotificationsSettings };
                     
                     // Apply configurations to matching devices
-                    const updatedDevices = await Promise.all(cachedDeviceRegistry.map(async (cd) => {
-                        const matchingConfig = devices.find(j => 
+                    const updatedDevices = await Promise.all(cachedDeviceRegistry.map(async (cd): Promise<Device> => {
+                        const matchingConfig = devices.find((j): boolean => 
                             j.id === cd.id && 
                             j.manufacturer === cd.manufacturer && 
                             j.product === cd.product && 
@@ -212,7 +212,7 @@ export const exposeAPI = (): void => {
                     }
                     
                     // Update cached device registry
-                    const filteredDevices = updatedDevices.filter(device => device !== undefined);
+                    const filteredDevices = updatedDevices.filter((device): boolean => device !== undefined);
                     command.changeConnectDevice(filteredDevices);
                     
                     return { success: true, devicesUpdated: filteredDevices.length };
@@ -252,7 +252,7 @@ export const exposeAPI = (): void => {
             const current = cachedStoreSettings.oledSettings || {};
             // If enabling OLED and it wasn't enabled before, write time immediately
             if (!current[deviceId]?.enabled && enabled) {
-                await command.dateTimeOledWrite(cachedDeviceRegistry.find(d => d.id === deviceId)!, true);
+                await command.dateTimeOledWrite(cachedDeviceRegistry.find((d): boolean => d.id === deviceId)!, true);
             }
             current[deviceId] = { enabled };
             return await saveStoreSetting('oledSettings', current, deviceId);
@@ -290,7 +290,7 @@ export const exposeAPI = (): void => {
         
         // Event listeners with proper typing
         on: <T extends keyof EventCallbackMap>(channel: T, func: EventCallbackMap[T]): void => {
-            const ipcListener = (event: Electron.IpcRendererEvent, ...args: unknown[]) => {
+            const ipcListener = (event: Electron.IpcRendererEvent, ...args: unknown[]): void => {
                 // Type-safe callback invocation based on channel
                 (func as GenericEventCallback)(...args);
             };

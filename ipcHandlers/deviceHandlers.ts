@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow } from "electron";
 import { ActiveWindow } from '@paymoapp/active-window';
+
 import {
     start, 
     stop, 
@@ -18,12 +19,10 @@ import {
     getPomodoroActiveStatus,
     getTrackpadConfigData
 } from '../gpkrc';
+import type { Device, DeviceWithId, DeviceStatus, CommandResult, ActiveWindowResult } from '../src/types/device';
+import { DeviceType } from '../gpkrc-modules/deviceTypes';
 
 let mainWindow: BrowserWindow | null;
-
-// Use proper Device type from types/device.ts
-import type { Device, DeviceWithId, DeviceStatus, CommandResult } from '../src/types/device';
-import { DeviceType } from '../gpkrc-modules/deviceTypes';
 
 export const setMainWindow = (window: BrowserWindow | null): void => {
     mainWindow = window;
@@ -77,27 +76,25 @@ export const setupDeviceHandlers = (): void => {
     ipcMain.handle('getPomodoroConfig', async (event, device: Device): Promise<CommandResult> => await getPomodoroConfig(device));
     
     // Device config data handlers
-    ipcMain.handle('getPomodoroActiveStatus', async (event, device: Device) => await getPomodoroActiveStatus(device));
-    ipcMain.handle('getTrackpadConfigData', async (event, device: Device) => await getTrackpadConfigData(device));
+    ipcMain.handle('getPomodoroActiveStatus', async (event, device: Device): Promise<CommandResult> => await getPomodoroActiveStatus(device));
+    ipcMain.handle('getTrackpadConfigData', async (event, device: Device): Promise<CommandResult> => await getTrackpadConfigData(device));
 
     // Tab switch handler
-    ipcMain.handle('setActiveTab', async (event, device: Device, tabName: string) => {
+    ipcMain.handle('setActiveTab', async (event, device: Device, tabName: string): Promise<void> => {
         setActiveTab(device, tabName)
     });
 
     // Window monitoring control
-    ipcMain.handle('startWindowMonitoring', async (_event) => {
+    ipcMain.handle('startWindowMonitoring', async (_event): Promise<void> => {
         try {
             await startWindowMonitoring({
-                getActiveWindow: async () => {
+                getActiveWindow: async (): Promise<ActiveWindowResult> => {
                     const result = await ActiveWindow.getActiveWindow();
                     return {
                         title: result.title,
                         application: result.application,
                         name: result.application,
-                        path: result.path,
-                        pid: result.pid,
-                        icon: result.icon
+                        executableName: result.application
                     };
                 }
             });
@@ -107,11 +104,11 @@ export const setupDeviceHandlers = (): void => {
     });
 
     // Active window list retrieval handler
-    ipcMain.handle('getActiveWindows', async (_event) => {
+    ipcMain.handle('getActiveWindows', async (_event): Promise<string[]> => {
         return getActiveWindows();
     });
 
-    ipcMain.handle('getDeviceInitConfig', async (event, device: Device) => {
+    ipcMain.handle('getDeviceInitConfig', async (event, device: Device): Promise<CommandResult> => {
         try {
             return await getDeviceInitConfig(device);
         } catch (error) {
@@ -120,7 +117,7 @@ export const setupDeviceHandlers = (): void => {
     });
 
     // Write to OLED
-    ipcMain.handle('dateTimeOledWrite', async (event, device: Device, forceWrite?: boolean) => {
+    ipcMain.handle('dateTimeOledWrite', async (event, device: Device, forceWrite?: boolean): Promise<CommandResult> => {
         try {
             const result = await writeTimeToOled(device, forceWrite);        
             
@@ -138,7 +135,7 @@ export const setupDeviceHandlers = (): void => {
 };
 
 export const setupDeviceEvents = (): void => {
-    ipcMain.on("connectDevice", (e, data: Device) => {
+    ipcMain.on("connectDevice", (e, data: Device): void => {
         if (mainWindow) {
             mainWindow.webContents.send("isConnectDevice", data);
         }

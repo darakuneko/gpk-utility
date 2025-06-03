@@ -1,4 +1,5 @@
 import React, {useEffect, useState, useCallback, useRef} from 'react'
+import type { JSX } from 'react';
 
 import SettingsContainer from "./renderer/SettingsContainer.tsx"
 import {useStateContext} from "./context.tsx"
@@ -13,16 +14,16 @@ interface SaveStatus {
 const api = window.api;
 const hasApi = !!api;
 
-const Content: React.FC = () => {
+const Content: React.FC = (): JSX.Element => {
     const {state, setState} = useStateContext();
     const stateRef = useRef(state);
     const { t } = useLanguage(); // Hook for internationalization
 
-    useEffect(() => {
+    useEffect((): void => {
         stateRef.current = state;
     }, [state]);
 
-    useEffect(() => {
+    useEffect((): (() => void) | void => {
         if (!hasApi) return;
         
         const handleDeviceChange = (dat: unknown): void => {
@@ -36,7 +37,7 @@ const Content: React.FC = () => {
 
         api.on("changeConnectDevice", handleDeviceChange);
         
-        return () => {
+        return (): void => {
             api.off("changeConnectDevice", handleDeviceChange);
         };
     }, []);
@@ -55,12 +56,18 @@ const Content: React.FC = () => {
         }
     }, [setState])
 
-    useEffect(() => {
+    useEffect((): (() => void) | void => {
             if (!hasApi) return;
 
-        api.on("activeWindow", handleActiveWindow);
-        return () => {
-            api.off("activeWindow", handleActiveWindow);
+        api.on("activeWindow", (...args: unknown[]): void => {
+            const data = args[0] as string;
+            handleActiveWindow(data);
+        });
+        return (): void => {
+            api.off("activeWindow", (...args: unknown[]): void => {
+                const data = args[0] as string;
+                handleActiveWindow(data);
+            });
         };
     }, [handleActiveWindow]);
 
@@ -71,7 +78,7 @@ const Content: React.FC = () => {
         timestamp: null
     });
 
-    useEffect(() => {
+    useEffect((): void => {
         if (!hasApi || !api.onConfigSaveComplete) return;
         
         api.onConfigSaveComplete(({ success, timestamp }: { success: boolean; timestamp: number }): void => {
@@ -87,7 +94,7 @@ const Content: React.FC = () => {
             });
             
             setTimeout((): void => {
-                setSaveStatus(prev => ({ ...prev, visible: false }));
+                setSaveStatus((prev): SaveStatus => ({ ...prev, visible: false }));
             }, 3000); // Reduced display time from 3000ms to 1500ms
         });
     }, []);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react"
+import type { JSX } from 'react';
 
 import { useStateContext, useDeviceType } from "../context.tsx"
 import type { Device } from "../types/device"
@@ -11,7 +12,7 @@ import SettingEdit from "./settingEdit.tsx"
 import { HamburgerIcon, MenuItem, LeftMenuItem } from "./SettingsUIComponents.tsx"
 import { getSupportedSettingTabs } from "./SettingsDeviceUtils.ts"
 
-const SettingsContainer: React.FC = () => {
+const SettingsContainer: React.FC = (): JSX.Element => {
     const {state, dispatch} = useStateContext();
     const DeviceType = useDeviceType();
     const { t, locale, changeLocale, isLoading: _isLoading } = useLanguage();
@@ -25,10 +26,13 @@ const SettingsContainer: React.FC = () => {
         minimizeToTray: true,
         backgroundStart: false
     })
-    const [pollingInterval, setPollingInterval] = useState(() => window.api.getStoreSetting('pollingInterval') || 1000)
+    const [pollingInterval, setPollingInterval] = useState((): number => {
+        const setting = window.api.getStoreSetting('pollingInterval');
+        return typeof setting === 'number' ? setting : 1000;
+    })
     const [isUpdatesNotificationModalOpen, setIsUpdatesNotificationModalOpen] = useState(false)
     const [isVersionModalOpen, setIsVersionModalOpen] = useState(false)
-    const [updates, setUpdates] = useState([])
+    const [updates, setUpdates] = useState<Array<{ title: string; body: string; publishedAt: { _seconds: number } }>>([])
 
     // Available languages
     const availableLanguages = {
@@ -38,17 +42,17 @@ const SettingsContainer: React.FC = () => {
 
     // Filter connected devices only
     const allDevices = state.devices || [];
-    const connectedDevices = allDevices.filter(d => d.connected);
+    const connectedDevices = allDevices.filter((d): boolean => d.connected ?? false);
     
     // Load tray settings on component mount
-    useEffect(() => {
-        const loadTraySettings = async () => {
+    useEffect((): void => {
+        const loadTraySettings = async (): Promise<void> => {
             try {
                 const settings = await window.api.loadTraySettings();
                 if (settings && settings.success) {
                     setTraySettings({
-                        minimizeToTray: settings.minimizeToTray,
-                        backgroundStart: settings.backgroundStart
+                        minimizeToTray: settings.minimizeToTray ?? true,
+                        backgroundStart: settings.backgroundStart ?? false
                     });
                 }
             } catch (error) {
@@ -60,26 +64,26 @@ const SettingsContainer: React.FC = () => {
     }, []);
     
     // Set active tab on initial display or when connected devices change
-    useEffect(() => {
-        const checkDevices = () => {
+    useEffect((): void => {
+        const checkDevices = (): void => {
             if (connectedDevices.length > 0) {
                 // Check if current activeDeviceId belongs to a connected device when device list changes
-                const currentDeviceIsConnected = connectedDevices.some(d => d.id === activeDeviceId);
+                const currentDeviceIsConnected = connectedDevices.some((d): boolean => d.id === activeDeviceId);
                 // If currently selected device is not connected or no device is selected, select the first device
                 if (!currentDeviceIsConnected) {
                     setActiveDeviceId(connectedDevices[0]?.id || null);
                     setUserSelectedTab(false); // Reset flag when switching devices
-                    const supportedTabs = getSupportedSettingTabs(connectedDevices[0] || null, t, DeviceType || null);
+                    const supportedTabs = getSupportedSettingTabs(connectedDevices[0] || null, t, DeviceType);
                     // For TP devices, prioritize mouse tab if available, otherwise use first tab
-                    const preferredTab = supportedTabs.find(tab => tab.id === "mouse") || supportedTabs[0];
+                    const preferredTab = supportedTabs.find((tab): boolean => tab.id === "mouse") || supportedTabs[0];
                     setActiveSettingTab(preferredTab?.id || "layer");
                 }
                 
                 // Check if active device's deviceType has been updated and current tab is not appropriate
-                const activeDevice = connectedDevices.find(d => d.id === activeDeviceId);
+                const activeDevice = connectedDevices.find((d): boolean => d.id === activeDeviceId);
                 if (activeDevice && activeDevice.deviceType) {
-                    const supportedTabs = getSupportedSettingTabs(activeDevice, t, DeviceType || null);
-                    const currentTabSupported = supportedTabs.some(tab => tab.id === activeSettingTab);
+                    const supportedTabs = getSupportedSettingTabs(activeDevice, t, DeviceType);
+                    const currentTabSupported = supportedTabs.some((tab): boolean => tab.id === activeSettingTab);
                     
                     // For TP devices, always prefer mouse tab even if current tab is supported
                     const isTPDevice = activeDevice.deviceType === 'macropad_tp' || 
@@ -90,13 +94,13 @@ const SettingsContainer: React.FC = () => {
                     const shouldSwitchTab = !currentTabSupported || 
                                           (isTPDevice && 
                                            activeSettingTab === "layer" && 
-                                           supportedTabs.find(tab => tab.id === "mouse") && 
+                                           supportedTabs.find((tab): boolean => tab.id === "mouse") && 
                                            !userSelectedTab &&
                                            (activeDevice.config?.trackpad?.default_speed || 0) > 0);
                     
                     if (shouldSwitchTab) {
                         // Current tab is not supported by this device type, or switch from layer to mouse for TP devices (only if not manually selected)
-                        const preferredTab = supportedTabs.find(tab => tab.id === "mouse") || supportedTabs[0];
+                        const preferredTab = supportedTabs.find((tab): boolean => tab.id === "mouse") || supportedTabs[0];
                         setActiveSettingTab(preferredTab?.id || "layer");
                         if (preferredTab) {
                             window.api.setActiveTab(activeDevice, preferredTab.id);
@@ -113,18 +117,18 @@ const SettingsContainer: React.FC = () => {
     }, [connectedDevices, activeDeviceId, activeSettingTab, userSelectedTab, t, DeviceType]);
 
     // Monitor trackpad config changes to update tab visibility with enhanced debouncing
-    useEffect(() => {
-        const activeDevice = connectedDevices.find(d => d.id === activeDeviceId);
+    useEffect((): (() => void) | void => {
+        const activeDevice = connectedDevices.find((d): boolean => d.id === activeDeviceId);
         if (!activeDevice || !activeDevice.deviceType) return;
 
         // Enhanced debounce with longer delay to handle unstable device communication
-        const timeoutId = setTimeout(() => {
-            const supportedTabs = getSupportedSettingTabs(activeDevice, t, DeviceType || null);
-            const currentTabSupported = supportedTabs.some(tab => tab.id === activeSettingTab);
+        const timeoutId = setTimeout((): void => {
+            const supportedTabs = getSupportedSettingTabs(activeDevice, t, DeviceType);
+            const currentTabSupported = supportedTabs.some((tab): boolean => tab.id === activeSettingTab);
             
             if (!currentTabSupported) {
                 // Current tab is no longer supported due to trackpad config changes
-                const preferredTab = supportedTabs.find(tab => tab.id === "mouse") || supportedTabs[0];
+                const preferredTab = supportedTabs.find((tab): boolean => tab.id === "mouse") || supportedTabs[0];
                 setActiveSettingTab(preferredTab?.id || "layer");
                 if (preferredTab) {
                     window.api.setActiveTab(activeDevice, preferredTab.id);
@@ -132,12 +136,14 @@ const SettingsContainer: React.FC = () => {
             }
         }, 5000); // Increased to 5000ms debounce delay to handle unstable device communication
 
-        return () => clearTimeout(timeoutId);
+        return (): void => {
+            clearTimeout(timeoutId);
+        };
     }, [
-        connectedDevices.find(d => d.id === activeDeviceId)?.config?.trackpad?.default_speed, 
-        connectedDevices.find(d => d.id === activeDeviceId)?.connected,
-        connectedDevices.find(d => d.id === activeDeviceId)?.initializing,
-        connectedDevices.find(d => d.id === activeDeviceId)?.deviceType, // Add deviceType to dependencies
+        connectedDevices.find((d): boolean => d.id === activeDeviceId)?.config?.trackpad?.default_speed, 
+        connectedDevices.find((d): boolean => d.id === activeDeviceId)?.connected,
+        connectedDevices.find((d): boolean => d.id === activeDeviceId)?.initializing,
+        connectedDevices.find((d): boolean => d.id === activeDeviceId)?.deviceType, // Add deviceType to dependencies
         activeDeviceId, 
         activeSettingTab, 
         t, 
@@ -145,15 +151,17 @@ const SettingsContainer: React.FC = () => {
     ]);
 
     // Setup API event listeners
-    useEffect(() => {
-        window.api.on("configUpdated", ({ deviceId, config }: { deviceId: string; config: Record<string, unknown> }) => {
+    useEffect((): (() => void) => {
+        window.api.on("configUpdated", (...args: unknown[]): void => {
+            const data = args[0] as { deviceId: string; config: Record<string, unknown> };
             dispatch({
                 type: "UPDATE_DEVICE_CONFIG",
-                payload: { deviceId, config }
+                payload: { deviceId: data.deviceId, config: data.config }
             });
         });
         
-        window.api.on("changeConnectDevice", (devices: Device[]) => {
+        window.api.on("changeConnectDevice", (...args: unknown[]): void => {
+            const devices = args[0] as Device[];
             dispatch({
                 type: "SET_DEVICES",
                 payload: devices
@@ -161,45 +169,45 @@ const SettingsContainer: React.FC = () => {
         });
         
         // Listen for showUpdatesNotificationModal event
-        const handleUpdatesNotificationModalEvent = (event: CustomEvent<{ notifications: unknown[] }>) => {
+        const handleUpdatesNotificationModalEvent = (event: CustomEvent<{ notifications: Array<{ title: string; body: string; publishedAt: { _seconds: number } }> }>): void => {
             setUpdates(event.detail.notifications);
             setIsUpdatesNotificationModalOpen(true);
         };
 
         window.addEventListener('showUpdatesNotificationModal', handleUpdatesNotificationModalEvent);
         
-        return () => {
+        return (): void => {
             window.removeEventListener('showUpdatesNotificationModal', handleUpdatesNotificationModalEvent);
         };
     }, [dispatch]);
 
     // Toggle menu open/close
-    const toggleMenu = () => {
+    const toggleMenu = (): void => {
         setMenuOpen(!menuOpen)
     }
 
     // Close menu
-    const closeMenu = () => {
+    const closeMenu = (): void => {
         setMenuOpen(false)
     }
 
     // Import function
-    const handleImport = async () => {
+    const handleImport = async (): Promise<void> => {
         await window.api.importFile()
         closeMenu()
     }
 
     // Export function
-    const handleExport = async () => {
+    const handleExport = async (): Promise<void> => {
         await window.api.exportFile()
         closeMenu()
     }
 
     // Tray setting change handler
-    const handleTraySettingChange = async (key: string, value: boolean) => {
+    const handleTraySettingChange = async (key: string, value: boolean): Promise<void> => {
         try {
             // Update local state
-            setTraySettings(prev => ({ ...prev, [key]: value }));
+            setTraySettings((prev): typeof prev => ({ ...prev, [key]: value }));
             
             // Call API to persist setting
             await window.api.saveTraySettings({ [key]: value });
@@ -211,32 +219,32 @@ const SettingsContainer: React.FC = () => {
     }
 
     // Handle language change
-    const handleLanguageChange = (languageCode: string) => {
+    const handleLanguageChange = (languageCode: string): void => {
         changeLocale(languageCode);
         setLanguageMenuOpen(false);
         setMenuOpen(false);
     };
 
     // Toggle language submenu
-    const toggleLanguageMenu = (e: React.MouseEvent) => {
+    const toggleLanguageMenu = (e: React.MouseEvent): void => {
         e.stopPropagation();
         setLanguageMenuOpen(!languageMenuOpen);
     };
 
     // Get current active device
-    const getActiveDevice = () => {
-        return connectedDevices.find(d => d.id === activeDeviceId) || null;
+    const getActiveDevice = (): Device | null => {
+        return connectedDevices.find((d): boolean => d.id === activeDeviceId) || null;
     }
 
     // Get setting tabs for current device
-    const getSettingTabs = () => {
+    const getSettingTabs = (): Array<{ id: string; label: string }> => {
         const device = getActiveDevice();
         return getSupportedSettingTabs(device, t, DeviceType);
     }
 
     // Handler to close menu when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
+    useEffect((): (() => void) => {
+        const handleClickOutside = (event: MouseEvent): void => {
             const target = event.target as Element;
             if (menuOpen && target && !target.closest('.menu-container')) {
                 setMenuOpen(false);
@@ -245,13 +253,13 @@ const SettingsContainer: React.FC = () => {
         }
         
         document.addEventListener('mousedown', handleClickOutside)
-        return () => {
+        return (): void => {
             document.removeEventListener('mousedown', handleClickOutside)
         }
     }, [menuOpen]);
 
     // Show updates notifications modal
-    const handleShowUpdatesNotifications = async () => {
+    const handleShowUpdatesNotifications = async (): Promise<void> => {
         try {
             const result = await window.api.getCachedNotifications();
             if (result && result.length > 0) {
@@ -269,13 +277,13 @@ const SettingsContainer: React.FC = () => {
     };
 
     // Show version modal
-    const handleShowVersion = () => {
+    const handleShowVersion = (): void => {
         setIsVersionModalOpen(true);
         setMenuOpen(false);
     };
 
     // Set active setting tab and notify API
-    const handleSettingTabChange = (tabId: string) => {
+    const handleSettingTabChange = (tabId: string): void => {
         setActiveSettingTab(tabId);
         setUserSelectedTab(true); // Mark that user has manually selected a tab
         const device = getActiveDevice();
@@ -292,7 +300,7 @@ const SettingsContainer: React.FC = () => {
             {/* Tab Header - Device selection tabs at the top */}
             <div className="flex border-b border-gray-200 dark:border-gray-700 relative">
                 <div className="flex-grow flex justify-start">
-                    {connectedDevices.map((device, index) => (
+                    {connectedDevices.map((device, index): JSX.Element => (
                         <button
                             key={`${device.id}-tab-${index}`}
                             className={`py-3 px-6 text-sm font-medium ${
@@ -312,8 +320,8 @@ const SettingsContainer: React.FC = () => {
                                                      device.deviceType === 'keyboard_tp';
                                     const hasTrackpadConfig = (device.config?.trackpad?.default_speed || 0) > 0;
                                     
-                                    const preferredTab = (isTPDevice && hasTrackpadConfig && supportedTabs.find(tab => tab.id === "mouse")) 
-                                                       ? supportedTabs.find(tab => tab.id === "mouse")
+                                    const preferredTab = (isTPDevice && hasTrackpadConfig && supportedTabs.find((tab): boolean => tab.id === "mouse")) 
+                                                       ? supportedTabs.find((tab): boolean => tab.id === "mouse")
                                                        : supportedTabs[0];
                                     if (preferredTab) {
                                         setActiveSettingTab(preferredTab.id);
@@ -342,7 +350,7 @@ const SettingsContainer: React.FC = () => {
                         <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 border border-gray-200 dark:border-gray-700 overflow-hidden">
                             {/* Language Settings */}
                             <div className="relative">
-                                <MenuItem onClick={() => toggleLanguageMenu({} as React.MouseEvent)}>
+                                <MenuItem onClick={(): void => toggleLanguageMenu({} as React.MouseEvent)}>
                                     <div className="flex justify-between items-center w-full">
                                         <span className="mr-2">{t('settings.language')}</span>
                                         <span className="text-sm text-gray-900 dark:text-gray-100 ml-auto font-medium">{availableLanguages[locale as keyof typeof availableLanguages]}</span>
@@ -352,10 +360,10 @@ const SettingsContainer: React.FC = () => {
                                 {/* Language Submenu */}
                                 {languageMenuOpen && (
                                     <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-20 border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                        {Object.entries(availableLanguages).map(([code, name]) => (
+                                        {Object.entries(availableLanguages).map(([code, name]): JSX.Element => (
                                             <MenuItem 
                                                 key={code}
-                                                onClick={() => handleLanguageChange(code)}
+                                                onClick={(): void => handleLanguageChange(code)}
                                             >
                                                 <div className="flex items-center">
                                                     <span className={locale === code ? "font-semibold" : ""}>{name}</span>
@@ -394,7 +402,7 @@ const SettingsContainer: React.FC = () => {
                                         min={200}
                                         step={100}
                                         max={2000}
-                                        onChange={(e) => {
+                                        onChange={(e): void => {
                                             const value = parseInt(e.target.value, 10);
                                             // Immediately update local state
                                             setPollingInterval(value);
@@ -403,7 +411,7 @@ const SettingsContainer: React.FC = () => {
                                             window.api.saveStoreSetting('pollingInterval', value);
                                             
                                             // Update slider UI
-                                            window.requestAnimationFrame(() => {
+                                            window.requestAnimationFrame((): void => {
                                                 const element = document.getElementById('settings-polling-interval');
                                                 if (element) {
                                                     element.dispatchEvent(new Event('update'));
@@ -418,14 +426,14 @@ const SettingsContainer: React.FC = () => {
                             <MenuItem 
                                 isToggle={true} 
                                 isChecked={traySettings.minimizeToTray}
-                                onClick={() => handleTraySettingChange('minimizeToTray', !traySettings.minimizeToTray)}
+                                onClick={(): Promise<void> => handleTraySettingChange('minimizeToTray', !traySettings.minimizeToTray)}
                             >
                                 {t('settings.minimizeToTray')}
                             </MenuItem>
                             <MenuItem 
                                 isToggle={true} 
                                 isChecked={traySettings.backgroundStart}
-                                onClick={() => handleTraySettingChange('backgroundStart', !traySettings.backgroundStart)}
+                                onClick={(): Promise<void> => handleTraySettingChange('backgroundStart', !traySettings.backgroundStart)}
                             >
                                 {t('settings.startInTray')}
                             </MenuItem>
@@ -442,11 +450,11 @@ const SettingsContainer: React.FC = () => {
             <div className="w-64 p-4 border-r border-gray-200 dark:border-gray-700">
                 <div className="space-y-1">
                     {connectedDevices.length > 0 ? (
-                        getSettingTabs().map((tab) => (
+                        getSettingTabs().map((tab): JSX.Element => (
                             <LeftMenuItem 
                                 key={tab.id}
                                 active={activeSettingTab === tab.id}
-                                onClick={() => handleSettingTabChange(tab.id)}
+                                onClick={(): void => handleSettingTabChange(tab.id)}
                             >
                                 {tab.label}
                             </LeftMenuItem>
@@ -490,7 +498,7 @@ const SettingsContainer: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        connectedDevices.map((device, index) => (
+                        connectedDevices.map((device, index): JSX.Element => (
                             <div 
                                 key={`${device.id}-content-${index}`} 
                                 className={activeDeviceId === device.id ? "block" : "hidden"}
@@ -509,14 +517,14 @@ const SettingsContainer: React.FC = () => {
             {/* Updates Notification Modal */}
             <UpdatesNotificationModal 
                 isOpen={isUpdatesNotificationModalOpen}
-                onClose={() => setIsUpdatesNotificationModalOpen(false)}
+                onClose={(): void => setIsUpdatesNotificationModalOpen(false)}
                 updates={updates}
             />
             
             {/* Version Modal */}
             <VersionModal
                 isOpen={isVersionModalOpen}
-                onClose={() => setIsVersionModalOpen(false)}
+                onClose={(): void => setIsVersionModalOpen(false)}
             />
         </div>
     )

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import type { JSX } from 'react';
 
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -37,7 +38,7 @@ const LanguageSettings: React.FC = (): React.ReactElement => {
           value={selectedLocale}
           onChange={handleChange}
         >
-          {Object.keys(availableLanguages).map((code: string) => (
+          {Object.keys(availableLanguages).map((code: string): JSX.Element => (
             <option key={code} value={code}>
               {availableLanguages[code]}
             </option>

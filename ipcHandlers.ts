@@ -1,13 +1,12 @@
 import { BrowserWindow } from "electron";
 import Store from 'electron-store';
-import type { StoreSchema } from './src/types/store';
 
-// Import all handler modules
-import { setupDeviceHandlers, setupDeviceEvents, setMainWindow as setDeviceMainWindow } from './ipcHandlers/deviceHandlers';
 import { setupConfigHandlers, setMainWindow as setConfigMainWindow, setStore as setConfigStore } from './ipcHandlers/configHandlers';
+import { setupDeviceHandlers, setupDeviceEvents, setMainWindow as setDeviceMainWindow } from './ipcHandlers/deviceHandlers';
 import { setupFileHandlers } from './ipcHandlers/fileHandlers';
-import { setupStoreHandlers, setStore as setStoreInStoreHandlers, setMainWindow as setStoreMainWindow } from './ipcHandlers/storeHandlers';
 import { setupNotificationHandlers, setupNotificationEvents, setStore as setNotificationStore, setMainWindow as setNotificationMainWindow } from './ipcHandlers/notificationHandlers';
+import { setupStoreHandlers, setStore as setStoreInStoreHandlers, setMainWindow as setStoreMainWindow } from './ipcHandlers/storeHandlers';
+import type { StoreSchema } from './src/types/store';
 
 // Module state - maintained for compatibility with existing code
 let _mainWindow: BrowserWindow | null = null;

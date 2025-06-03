@@ -17,8 +17,8 @@ export const setupEventListeners = (): void => {
         gpkRCVersion: string;
         deviceType: string;
         config: DeviceConfig;
-    }) => {
-        const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
+    }): void => {
+        const deviceIndex = cachedDeviceRegistry.findIndex((device): boolean => device.id === deviceId);
         if (deviceIndex === -1) {
             return;
         }
@@ -65,8 +65,8 @@ export const setupEventListeners = (): void => {
     ipcRenderer.on("oledSettingsChanged", (event: IpcRendererEvent, { deviceId, enabled }: {
         deviceId: string;
         enabled: boolean;
-    }) => {
-        const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
+    }): void => {
+        const deviceIndex = cachedDeviceRegistry.findIndex((device): boolean => device.id === deviceId);
         if (deviceIndex !== -1) {
             // Ensure config object exists with safe structure
             if (!cachedDeviceRegistry[deviceIndex]!.config) {
@@ -85,8 +85,8 @@ export const setupEventListeners = (): void => {
         deviceId: string;
         pomodoroConfig: PomodoroConfig;
         phaseChanged: boolean;
-    }) => {     
-        const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
+    }): void => {     
+        const deviceIndex = cachedDeviceRegistry.findIndex((device): boolean => device.id === deviceId);
         if (deviceIndex === -1) return;
         
         // Ensure config object exists with safe structure
@@ -120,7 +120,7 @@ export const setupEventListeners = (): void => {
         
         // Send desktop notification if phase changed and timer is active
         if (phaseChanged && pomodoroConfig.timer_active === 1) {
-            void (async () => {
+            void (async (): Promise<void> => {
                 try {
                     const result = await ipcRenderer.invoke('loadPomodoroDesktopNotificationSettings', deviceId);
                     const notificationsEnabled = result.success ? result.enabled : true;
@@ -166,8 +166,8 @@ export const setupEventListeners = (): void => {
         deviceId: string;
         success: boolean;
         timestamp: number;
-    }) => {
-        const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
+    }): void => {
+        const deviceIndex = cachedDeviceRegistry.findIndex((device): boolean => device.id === deviceId);
         if (deviceIndex !== -1) {
             command.changeConnectDevice(cachedDeviceRegistry);
             window.dispatchEvent(new CustomEvent('configSaveComplete', {
@@ -184,8 +184,8 @@ export const setupEventListeners = (): void => {
     ipcRenderer.on("configUpdated", (event: IpcRendererEvent, { deviceId, config }: {
         deviceId: string;
         config: DeviceConfig;
-    }) => {
-        const deviceIndex = cachedDeviceRegistry.findIndex(device => device.id === deviceId);
+    }): void => {
+        const deviceIndex = cachedDeviceRegistry.findIndex((device): boolean => device.id === deviceId);
         if (deviceIndex !== -1) {
             // Ensure safe config structure
             const safeConfig = config || {

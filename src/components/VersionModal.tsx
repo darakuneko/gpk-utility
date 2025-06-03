@@ -1,36 +1,37 @@
 import React, { useState, useEffect } from 'react';
+import type { JSX } from 'react';
 
 import { useLanguage } from '../i18n/LanguageContext';
-import type { VersionModalProps, AppInfo } from '../types/react';
+import type { VersionModalProps } from '../types/react';
+import type { AppInfo } from '../types/device';
 
 import { BaseModal } from './BaseModalComponents';
 
-const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose }) => {
+const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose }): JSX.Element | null => {
   const { t } = useLanguage();
   const [appInfo, setAppInfo] = useState<AppInfo>({
     name: '',
     version: '',
     description: '',
-    author: {},
-    homepage: ''
+    author: {}
   });
   const [storeFilePath, setStoreFilePath] = useState<string>('');
   
-  useEffect(() => {
+  useEffect((): void => {
     if (isOpen) {
       // Get app information when modal is opened
-      window.api.getAppInfo().then((info: AppInfo) => {
+      window.api.getAppInfo().then((info: AppInfo): void => {
         setAppInfo(info);
-      }).catch((err: unknown) => {
+      }).catch((err: unknown): void => {
         console.error('Failed to get app info:', err);
       });
       
       // Get store file path
-      window.api.getStoreFilePath().then((result: { success: boolean; path?: string }) => {
+      window.api.getStoreFilePath().then((result: { success: boolean; path?: string }): void => {
         if (result.success && result.path) {
           setStoreFilePath(result.path);
         }
-      }).catch((err: unknown) => {
+      }).catch((err: unknown): void => {
         console.error('Failed to get store file path:', err);
       });
     }
@@ -57,19 +58,25 @@ const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose }) => {
             {appInfo.author ? `${appInfo.author.name}` : ''}
           </div>
           
-          <div className="font-medium">{t('about.homepage')}:</div>
-          <div className="col-span-2">
-            <a 
-              href="#" 
-              onClick={(e) => {
-                e.preventDefault();
-                window.api.openExternalLink(appInfo.homepage);
-              }}
-              className="text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {appInfo.homepage}
-            </a>
-          </div>
+          {appInfo.author?.url && (
+            <>
+              <div className="font-medium">{t('about.homepage')}:</div>
+              <div className="col-span-2">
+                <a 
+                  href="#" 
+                  onClick={(e): void => {
+                    e.preventDefault();
+                    if (appInfo.author?.url) {
+                      window.api.openExternalLink(appInfo.author.url);
+                    }
+                  }}
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  {appInfo.author.url}
+                </a>
+              </div>
+            </>
+          )}
           
           <div className="font-medium">{t('about.configPath')}:</div>
           <div className="col-span-2">

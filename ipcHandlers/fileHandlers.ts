@@ -58,10 +58,10 @@ const importFile = async (): Promise<string | null> => {
 
 export const setupFileHandlers = (): void => {
     // File operations
-    ipcMain.handle('exportFile', async (_event, data: ExportData) => {
+    ipcMain.handle('exportFile', async (_event, data: ExportData): Promise<void> => {
         await exportFile(data);
     });
-    ipcMain.handle('importFile', async (_event, _fn?: string) => {
+    ipcMain.handle('importFile', async (_event, _fn?: string): Promise<string | null> => {
         return await importFile();
     });
 };

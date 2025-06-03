@@ -1,4 +1,5 @@
 import React from 'react';
+import type { JSX } from 'react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import type { BaseModalProps } from '../types/react';
@@ -13,7 +14,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   children, 
   showCloseIcon = false,
   okButtonText = null 
-}) => {
+}): JSX.Element | null => {
   const { t } = useLanguage();
   
   if (!isOpen) {

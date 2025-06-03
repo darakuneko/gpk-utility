@@ -139,12 +139,27 @@ export interface ActiveWindowResult {
     title: string;
     executableName: string;
     application: string;
+    name: string;
+    path?: string;
+    pid?: number;
 }
 
 export interface AutoLayerSettings {
     [deviceId: string]: {
         enabled: boolean;
         layerSettings: LayerSetting[];
+    };
+}
+
+export interface AppInfo {
+    name: string;
+    version: string;
+    description: string;
+    author: {
+        name?: string;
+        email?: string;
+        url?: string;
+        [key: string]: string | undefined;
     };
 }
 

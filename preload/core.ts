@@ -1,9 +1,9 @@
 import { ipcRenderer } from 'electron';
 
 import type { Device, StoreSettings, CommandResult } from './types';
+import type { GenericEventCallback } from './eventTypes';
 
 // Global state variables
-import type { GenericEventCallback } from './eventTypes';
 
 export const listeners = new Map<GenericEventCallback, (event: Electron.IpcRendererEvent, ...args: unknown[]) => void>();
 export let cachedDeviceRegistry: Device[] = [];
@@ -61,7 +61,7 @@ export const startKeyboardPolling = (keyboardSendLoop: () => Promise<void>): voi
     const interval = getPollingInterval();
     
     // Set up interval using the current polling interval setting
-    keyboardPollingInterval = setInterval(async () => {
+    keyboardPollingInterval = setInterval(async (): Promise<void> => {
         await keyboardSendLoop();
     }, interval);
 };
@@ -75,7 +75,7 @@ export const startWindowMonitoring = (startWindowMonitoringCommand: () => Promis
     const interval = getPollingInterval();
     
     // Set up interval for regular execution
-    windowMonitoringInterval = setInterval(async () => {
+    windowMonitoringInterval = setInterval(async (): Promise<void> => {
         await startWindowMonitoringCommand();
     }, interval);
 };
@@ -154,6 +154,6 @@ export const setSliderActive = (active: boolean): void => {
 };
 
 // Get slider state
-export const getSliderState = () => {
+export const getSliderState = (): { isSliderActive: boolean; activeSliderDeviceId: string | null } => {
     return { isSliderActive, activeSliderDeviceId };
 };

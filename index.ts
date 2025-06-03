@@ -1,21 +1,10 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
+
 import { app, BrowserWindow, Tray, Menu, nativeImage } from "electron";
 import Store from 'electron-store';
-import type { ActiveWindowResult } from './src/types/device';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-if(process.platform==='linux') {
-    app.commandLine.appendArgument("--no-sandbox");
-}
-
-// Import translation utilities
-
 import { ActiveWindow } from '@paymoapp/active-window';
 
-import enTranslations from './src/i18n/locales/en';
 import {
     close, 
     setMainWindow, 
@@ -24,11 +13,18 @@ import {
     deviceStatusMap,
     writeCommand,
 } from './gpkrc';
-import type { DeviceStatus } from './src/types/device';
 import { injectWindowMonitoringDependencies } from './gpkrc-modules/windowMonitoring';
 import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, setStore as setIpcStore } from './ipcHandlers';
-// Types
+import enTranslations from './src/i18n/locales/en';
+import type { ActiveWindowResult, DeviceStatus } from './src/types/device';
 import type { StoreSchema } from './src/types/store';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+if(process.platform==='linux') {
+    app.commandLine.appendArgument("--no-sandbox");
+}
 
 // ActiveWindow is already initialized as an instance, no need to call initialize()
 
@@ -310,9 +306,7 @@ app.on('ready', async (): Promise<void> => {
                     title: result.title,
                     application: result.application,
                     name: result.application,
-                    path: result.path,
-                    pid: result.pid,
-                    icon: result.icon
+                    executableName: result.application
                 };
             }
         });

@@ -1,4 +1,5 @@
 import React from 'react';
+import type { JSX } from 'react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import type { UpdatesNotificationModalProps } from '../types/react';
@@ -9,7 +10,7 @@ const UpdatesNotificationModal: React.FC<UpdatesNotificationModalProps> = ({
   isOpen, 
   onClose, 
   updates 
-}) => {
+}): JSX.Element | null => {
   const { t } = useLanguage();
   
   if (!isOpen || !updates || updates.length === 0) {
@@ -33,7 +34,7 @@ const UpdatesNotificationModal: React.FC<UpdatesNotificationModalProps> = ({
       title={t('updatesNotification.title')}
     >
       <div className="space-y-4">
-        {updates.map((update, index) => (
+        {updates.map((update, index): JSX.Element => (
           <div key={index} className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 last:border-0">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">

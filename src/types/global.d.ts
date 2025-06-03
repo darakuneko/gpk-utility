@@ -41,6 +41,40 @@ declare global {
       
       // External links
       openExternalLink: (url: string) => void;
+      
+      // Event listeners
+      on: <T extends string>(channel: T, func: (...args: unknown[]) => void) => void;
+      off: <T extends string>(channel: T, func: (...args: unknown[]) => void) => void;
+      onConfigSaveComplete: (callback: (data: unknown) => void) => void;
+      
+      // Device management
+      getDeviceType: (device: Device) => Promise<string>;
+      setActiveTab: (deviceId: string, tabId: string) => Promise<void>;
+      dispatchSaveDeviceConfig: (device: Device) => Promise<unknown>;
+      setSliderActive: (deviceId: string, active: boolean) => void;
+      
+      // Extended store operations
+      getStoreSetting: (key: string) => Promise<unknown>;
+      saveStoreSetting: (key: string, value: unknown) => Promise<void>;
+      getAllStoreSettings: () => Promise<unknown>;
+      
+      // Notification settings
+      getCachedNotifications: () => Promise<unknown[]>;
+      loadTraySettings: () => Promise<unknown>;
+      saveTraySettings: (settings: unknown) => Promise<void>;
+      
+      // Window monitoring
+      getActiveWindows: () => Promise<unknown[]>;
+      
+      // Pomodoro settings
+      loadPomodoroDesktopNotificationSettings: (deviceId: string) => Promise<boolean>;
+      savePomodoroDesktopNotificationSettings: (deviceId: string, enabled: boolean) => Promise<void>;
+      
+      // OLED settings
+      saveOledSettings: (device: Device, settings: unknown) => Promise<void>;
+      
+      // Trackpad settings
+      saveTrackpadConfig: (device: Device, config: unknown) => Promise<void>;
     };
   }
 }

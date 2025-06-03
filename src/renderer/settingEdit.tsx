@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import type { Device, DeviceConfig, CommandResult } from '../types/device';
+import type { JSX } from 'react';
 
+import type { Device, DeviceConfig } from '../types/device';
 import { useStateContext } from "../context.tsx";
 import { fullHapticOptions } from "../data/hapticOptions.js";
 
@@ -18,9 +19,11 @@ const { api } = window;
 
 interface SettingEditProps {
     device: Device;
+    activeTab?: string;
+    setActiveTab?: (tabId: string) => void;
 }
 
-const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
+const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.Element => {
     const { state, setState } = useStateContext();
     const device = props.device;
     const [isSliderActive, setIsSliderActive] = useState(false);
@@ -34,20 +37,20 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
             // Determine which configuration type to update based on the active tab
             // Update only pomodoro settings for "timer" tab, otherwise update only trackpad settings
             const configType = activeTab === "timer" ? 'pomodoro' : 'trackpad';
-            const updatedConfig = await api.dispatchSaveDeviceConfig(updatedDevice, configType);
+            const updatedConfig = await api.dispatchSaveDeviceConfig(updatedDevice, [configType]);
             
-            if (updatedConfig && updatedConfig.success) {
+            if (updatedConfig && typeof updatedConfig === 'object' && 'success' in updatedConfig && updatedConfig.success) {
+                const typedConfig = updatedConfig as { success: boolean; config?: Record<string, unknown> };
                 const newState = {
                     ...state,
-                    devices: state.devices.map(dev => {
+                    devices: state.devices.map((dev): Device => {
                         if (dev.id === updatedDevice.id) {
                             return {
                                 ...dev, 
                                 config: {
                                     ...dev.config, 
-                                    ...updatedConfig.config, 
-                                    changed: false
-                                }
+                                    ...typedConfig.config
+                                } as DeviceConfig & { changed?: boolean }
                             };
                         }
                         return dev;
@@ -55,23 +58,25 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
                 };
                 setState(newState);
                 
-                if (updatedConfig.config) {
-                    window.requestAnimationFrame(() => {
-                        const element = document.getElementById(`config-${Object.keys(updatedConfig.config)[0]}`);
+                if (typedConfig.config) {
+                    window.requestAnimationFrame((): void => {
+                        const element = document.getElementById(`config-${Object.keys(typedConfig.config!)[0]}`);
                         if (element) element.dispatchEvent(new Event('update'));
                     });
                 }
                 
-                return updatedConfig.config;
+                return typedConfig.config;
             }
         } catch (error) {
             // Ignore config processing errors - return original config
         }
+        return undefined;
     };
 
-    const handleChange = (pType: string, id: string) => async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    // Main handleChange for input elements
+    const handleChange = (pType: string, id: string): ((event: React.ChangeEvent<HTMLInputElement>) => Promise<void>) => async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
         // Create a new array to ensure immutability
-        const _updatedDevices = await Promise.all(state.devices.map(async (d) => {
+        const _updatedDevices = await Promise.all(state.devices.map(async (d): Promise<Device> => {
             if(d.id === id) {
                 // Create a new object to avoid modifying the original device
                 const updatedDevice = {...d};
@@ -134,19 +139,19 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
                     } else {
                         // Other settings (top-level properties like init)
                         if (updatedDevice.config) {
-                            (updatedDevice.config as Record<string, unknown>)[pType] = newValue;
+                            (updatedDevice.config as unknown as Record<string, unknown>)[pType] = newValue;
                         }
                     }
                     
                     // Set changed flag
                     if (updatedDevice.config) {
-                        (updatedDevice.config as Record<string, unknown>).changed = true;
+                        (updatedDevice.config as unknown as Record<string, unknown>).changed = true;
                     }
                     
                     // Update UI state first
                     const newState = {
                         ...state,
-                        devices: state.devices.map(dev => dev.id === id ? updatedDevice : dev)
+                        devices: state.devices.map((dev): Device => dev.id === id ? updatedDevice : dev)
                     };
                     setState(newState);
                     
@@ -187,10 +192,28 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
         setIsSliderActive(false);
         api.setSliderActive(false);
         
-        if (pendingChanges.device) {
-            void sendConfigToDevice(pendingChanges.device);
+        if (pendingChanges.device && typeof pendingChanges.device === 'object' && 'id' in pendingChanges.device) {
+            void sendConfigToDevice(pendingChanges.device as Device);
             setPendingChanges({});
         }
+    };
+
+    // Alternative handleChange for select/mixed elements (timer settings)
+    const handleChangeSelect = (pType: string, id: string): ((event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+        const inputEvent = event as React.ChangeEvent<HTMLInputElement>;
+        void handleChange(pType, id)(inputEvent);
+    };
+
+    // Alternative handleChange for value target elements (OLED, dragDrop, gesture, haptic settings)
+    const handleChangeValue = (pType: string, id: string): ((e: { target: { value: string | number } }) => Promise<void>) => async (e: { target: { value: string | number } }): Promise<void> => {
+        // Convert to standard ChangeEvent format
+        const syntheticEvent = {
+            target: {
+                value: String(e.target.value),
+                type: 'range'
+            }
+        } as React.ChangeEvent<HTMLInputElement>;
+        return handleChange(pType, id)(syntheticEvent);
     };
 
     const formatTime = (minutes: number, seconds: number): string => {
@@ -218,9 +241,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
                         {activeTab === "layer" && (
                             <LayerSettings
                                 device={device}
-                                handleChange={handleChange}
-                                handleSliderStart={handleSliderStart}
-                                handleSliderEnd={handleSliderEnd}
+                                handleChange={handleChangeSelect}
                             />
                         )}
 
@@ -238,7 +259,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
                         {activeTab === "dragdrop" && (
                             <DragDropSettings
                                 device={device}
-                                handleChange={handleChange}
+                                handleChange={handleChangeValue}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
                             />
@@ -248,10 +269,9 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
                         {activeTab === "timer" && (
                             <TimerSettings
                                 device={device}
-                                handleChange={handleChange}
+                                handleChange={handleChangeSelect}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
-                                fullHapticOptions={fullHapticOptions}
                                 formatTime={formatTime}
                             />
                         )}
@@ -260,7 +280,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
                         {activeTab === "oled" && (
                             <OLEDSettings
                                 device={device}
-                                handleChange={handleChange}
+                                handleChange={handleChangeValue}
                             />
                         )}
 
@@ -268,7 +288,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
                         {activeTab === "gesture" && (
                             <GestureSettings
                                 device={device}
-                                handleChange={handleChange}
+                                handleChange={handleChangeValue}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
                             />
@@ -278,7 +298,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
                         {activeTab === "haptic" && (
                             <HapticSettings
                                 device={device}
-                                handleChange={handleChange}
+                                handleChange={handleChangeValue}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
                             />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import type { JSX } from 'react';
 
 import { useStateContext, useDeviceType } from "../../context.tsx";
 import { 
@@ -16,7 +17,7 @@ interface LayerSettingsProps {
     handleChange: (field: string, deviceId: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
 }
 
-const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _handleChange }) => {
+const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _handleChange }): JSX.Element => {
     const { state, setState } = useStateContext();
     const DeviceType = useDeviceType();
     const { t } = useLanguage();
@@ -31,8 +32,8 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
     // Get trackpad configuration or empty object if not defined
     const trackpadConfig = device.config?.trackpad || {};
 
-    useEffect(() => {
-        const fetchActiveWindows = async () => {
+    useEffect((): void => {
+        const fetchActiveWindows = async (): Promise<void> => {
             if (!api || !api.getActiveWindows) return;
             
             try {
@@ -48,11 +49,11 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         void fetchActiveWindows();
         
         const intervalId = setInterval(fetchActiveWindows, 1000);
-        return () => clearInterval(intervalId);
+        return (): void => clearInterval(intervalId);
     }, []);
 
-    useEffect(() => {
-        const loadSettingsFromStore = async () => {
+    useEffect((): void => {
+        const loadSettingsFromStore = async (): Promise<void> => {
             try {
                 if (api && api.getStoreSetting && api.getAllStoreSettings && device && device.id) { 
                     const allSettings = await api.getAllStoreSettings(); 
@@ -75,7 +76,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
                             
                             const newState = {
                                 ...state,
-                                devices: state.devices.map(d => d.id === device.id ? {...device} : d)
+                                devices: state.devices.map((d): Device => d.id === device.id ? {...device} : d)
                             };
                             
                             await setState(newState);
@@ -89,8 +90,8 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         void loadSettingsFromStore();
     }, [device.id]);
 
-    useEffect(() => {
-        const init = async () => {
+    useEffect((): void => {
+        const init = async (): Promise<void> => {
             try {
                 setDeviceId(device.id);
                 
@@ -110,14 +111,14 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         void init();
     }, [device.id]);
     
-    useEffect(() => {
+    useEffect((): void => {
         if (trackpadConfig?.can_trackpad_layer !== undefined && !userChangedTrackpadLayer) {
             const newValue = trackpadConfig.can_trackpad_layer === 1;
             setTrackpadLayerEnabled(newValue);
         }
     }, [trackpadConfig?.can_trackpad_layer, userChangedTrackpadLayer]);
     
-    const handleToggleEnabled = async (e: React.ChangeEvent<HTMLInputElement> | { target: { checked: boolean } }) => {
+    const handleToggleEnabled = async (e: React.ChangeEvent<HTMLInputElement> | { target: { checked: boolean } }): Promise<void> => {
         const enabled = e.target.checked ? 1 : 0;
         setIsEnabled(enabled === 1);
         
@@ -128,14 +129,14 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
 
         const newState = {
             ...state,
-            devices: state.devices.map(d => d.id === device.id ? updatedDevice : d)
+            devices: state.devices.map((d): Device => d.id === device.id ? updatedDevice : d)
         };
         
         await setState(newState);
         await saveSettingsToStore(enabled === 1, layerSettings);
     };
     
-    const handleToggleTrackpadLayer = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleToggleTrackpadLayer = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
         const enabled = e.target.checked ? 1 : 0;
         setTrackpadLayerEnabled(enabled === 1);
         setUserChangedTrackpadLayer(true);
@@ -147,7 +148,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
 
         const newState = {
             ...state,
-            devices: state.devices.map(d => d.id === device.id ? updatedDevice : d)
+            devices: state.devices.map((d): Device => d.id === device.id ? updatedDevice : d)
         };
         
         await setState(newState);
@@ -160,34 +161,34 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         }
     };
     
-    const handleAddLayerSetting = async () => {
+    const handleAddLayerSetting = async (): Promise<void> => {
         const newSetting: LayerSetting = { appName: "", applicationName: "", layer: 0 };
         const updatedSettings = [...layerSettings, newSetting];
         
         await updateLayerSettings(updatedSettings);
     };
     
-    const handleDeleteLayerSetting = async (index: number) => {
-        const updatedSettings = layerSettings.filter((_, i) => i !== index);
+    const handleDeleteLayerSetting = async (index: number): Promise<void> => {
+        const updatedSettings = layerSettings.filter((_, i): boolean => i !== index);
         
         await updateLayerSettings(updatedSettings);
     };
     
-    const handleAppNameChange = async (index: number, appName: string) => {
+    const handleAppNameChange = async (index: number, appName: string): Promise<void> => {
         const updatedSettings = [...layerSettings];
         updatedSettings[index] = {...updatedSettings[index], appName, applicationName: appName, layer: updatedSettings[index]?.layer || 0};
         
         await updateLayerSettings(updatedSettings);
     };
     
-    const handleLayerChange = async (index: number, layer: string) => {
+    const handleLayerChange = async (index: number, layer: string): Promise<void> => {
         const updatedSettings = [...layerSettings];
         updatedSettings[index] = {...updatedSettings[index], layer: parseInt(layer, 10), applicationName: updatedSettings[index]?.applicationName || '', appName: updatedSettings[index]?.appName || ''};
         
         await updateLayerSettings(updatedSettings);
     };
     
-    const saveSettingsToStore = async (enabled: boolean, settings: LayerSetting[]) => {
+    const saveSettingsToStore = async (enabled: boolean, settings: LayerSetting[]): Promise<void> => {
         try {
             if (api && api.getStoreSetting && api.saveStoreSetting && deviceId) { // Changed
                 const allSettings = await api.getAllStoreSettings();
@@ -208,7 +209,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         }
     };
     
-    const updateLayerSettings = async (settings: LayerSetting[]) => {
+    const updateLayerSettings = async (settings: LayerSetting[]): Promise<void> => {
         setLayerSettings(settings);
         
         const updatedDevice = {...device};
@@ -219,7 +220,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
 
         const newState = {
             ...state,
-            devices: state.devices.map(d => d.id === device.id ? updatedDevice : d)
+            devices: state.devices.map((d): Device => d.id === device.id ? updatedDevice : d)
         };
         
         await setState(newState);
@@ -230,10 +231,10 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         await saveSettingsToStore(isEnabled, settings);
     };
 
-    const getAppOptions = (currentAppName: string, _index: number) => {
+    const getAppOptions = (currentAppName: string, _index: number): Array<{ value: string; label: string }> => {
         const windowsList = [
             ...new Set([
-                ...(localActiveWindows.map(w => w.application) || []),
+                ...(localActiveWindows.map((w): string => w.application) || []),
                 ...(state.activeWindow || [])
             ])
         ];
@@ -242,7 +243,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
             { value: "", label: "--- Select Application ---" }
         ];
         
-        const windowOptions = windowsList.map(window => ({
+        const windowOptions = windowsList.map((window): { value: string; label: string } => ({
             value: window,
             label: window
         }));
@@ -255,13 +256,13 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         }
         
         if (isEditing) {
-            layerSettings.forEach(setting => {
+            layerSettings.forEach((setting): void => {
                 if (setting.appName && 
                     !windowsList.includes(setting.appName) && 
                     setting.appName !== "os:win" && 
                     setting.appName !== "os:mac" && 
                     setting.appName !== "os:linux" &&
-                    !windowOptions.some(opt => opt.value === setting.appName)) {
+                    !windowOptions.some((opt): boolean => opt.value === setting.appName)) {
                     windowOptions.push({
                         value: setting.appName,
                         label: setting.appName
@@ -273,22 +274,22 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         return [...baseOptions, ...windowOptions];
     };
     
-    const _handleEditMode = () => {
+    const _handleEditMode = (): void => {
         setIsEditing(!isEditing);
     };
     
-    const layerOptions = Array.from({ length: 16 }, (_, i) => ({ value: i.toString(), label: `Layer ${i}` }));
+    const layerOptions = Array.from({ length: 16 }, (_, i): { value: string; label: string } => ({ value: i.toString(), label: `Layer ${i}` }));
     
-    useEffect(() => {
+    useEffect((): void => {
         const windowsList = [
             ...new Set([
-                ...(localActiveWindows.map(w => w.application) || []),
+                ...(localActiveWindows.map((w): string => w.application) || []),
                 ...(state.activeWindow || [])
             ])
         ];
         
         const missing: string[] = [];
-        layerSettings.forEach(setting => {
+        layerSettings.forEach((setting): void => {
             if (setting.appName && 
                 !windowsList.includes(setting.appName) && 
                 setting.appName !== "os:win" && 
@@ -349,7 +350,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                        {layerSettings.map((setting, index) => (
+                                        {layerSettings.map((setting, index): JSX.Element => (
                                             <tr key={index}>
                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
                                                     {setting.appName || t('layer.notSpecified')}
@@ -402,13 +403,13 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                        {layerSettings.map((setting, index) => (
+                                        {layerSettings.map((setting, index): JSX.Element => (
                                             <tr key={index}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <CustomSelect
                                                         id={`app-name-${index}`}
                                                         value={setting.appName}
-                                                        onChange={(e) => handleAppNameChange(index, e.target.value)}
+                                                        onChange={(e): Promise<void> => handleAppNameChange(index, e.target.value)}
                                                         options={getAppOptions(setting.appName, index)}
                                                     />
                                                 </td>
@@ -416,13 +417,13 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
                                                     <CustomSelect
                                                         id={`layer-${index}`}
                                                         value={setting.layer.toString()}
-                                                        onChange={(e) => handleLayerChange(index, e.target.value)}
+                                                        onChange={(e): Promise<void> => handleLayerChange(index, e.target.value)}
                                                         options={layerOptions}
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right">
                                                     <button
-                                                        onClick={() => handleDeleteLayerSetting(index)}
+                                                        onClick={(): Promise<void> => handleDeleteLayerSetting(index)}
                                                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                                     >
                                                         {t('common.delete')}

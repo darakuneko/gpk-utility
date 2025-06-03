@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
+import type { JSX } from 'react';
 
 import { CustomSwitch } from "../../components/CustomComponents.tsx";
 import { useLanguage } from "../../i18n/LanguageContext.tsx";
@@ -9,19 +10,19 @@ interface OLEDSettingsProps {
   handleChange: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
 }
 
-const OLEDSettings: React.FC<OLEDSettingsProps> = memo(({ device, handleChange }) => {
-  const [oledEnabled, setOledEnabled] = useState<boolean>(() => Boolean(device.config && device.config.oled_enabled === 1));
+const OLEDSettings: React.FC<OLEDSettingsProps> = memo(({ device, handleChange }): JSX.Element => {
+  const [oledEnabled, setOledEnabled] = useState<boolean>((): boolean => Boolean(device.config && device.config.oled_enabled === 1));
   const { t } = useLanguage();
 
   // Update state when device config changes
-  useEffect(() => {
+  useEffect((): void => {
     if (device?.config) {
       setOledEnabled(device.config?.oled_enabled === 1);
     }
   }, [device.config?.oled_enabled]);
 
   // Handle OLED toggle
-  const handleOledToggle = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOledToggle = useCallback(async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const enabled = e.target.checked;
     setOledEnabled(enabled);
     

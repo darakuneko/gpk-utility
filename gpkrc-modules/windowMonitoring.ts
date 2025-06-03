@@ -65,7 +65,8 @@ export const startWindowMonitoring = async (ActiveWindow: ActiveWindowModule): P
         const result: ActiveWindowResult = {
             title: rawResult.title || '',
             executableName: rawResult.application || rawResult.name || '',
-            application: rawResult.application || rawResult.name || ''
+            application: rawResult.application || rawResult.name || '',
+            name: rawResult.name || rawResult.application || ''
         };
         
         const appName = result.application;
