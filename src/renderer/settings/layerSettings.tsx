@@ -7,7 +7,7 @@ import {
   CustomSelect
 } from "../../components/CustomComponents.tsx";
 import { useLanguage } from "../../i18n/LanguageContext.tsx";
-import type { LayerSetting, ActiveWindowResult, Device } from "../../types/device";
+import type { LayerSetting, ActiveWindowResult, Device, DeviceConfig } from "../../types/device";
 import type { DeviceType as DeviceTypeEnum } from '../../../gpkrc-modules/deviceTypes';
 
 const { api } = window;
@@ -39,7 +39,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
             try {
                 const windows = await api.getActiveWindows();
                 if (Array.isArray(windows) && windows.length > 0) {
-                    setLocalActiveWindows(windows);
+                    setLocalActiveWindows(windows as ActiveWindowResult[]);
                 }
             } catch (error) {
                 console.error("Failed to fetch active windows:", error);
@@ -68,11 +68,16 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
                                 setIsEnabled(storedSettings.enabled);
                             }
                             
-                            if (!device.config) device.config = {};
+                            if (!device.config) {
+                                device.config = {
+                                    pomodoro: {},
+                                    trackpad: {}
+                                } as DeviceConfig;
+                            }
                             if (!device.config.trackpad) device.config.trackpad = {};
                             device.config.trackpad.auto_layer_enabled = storedSettings.enabled ? 1 : 0;
                             device.config.trackpad.auto_layer_settings = storedSettings.layerSettings || [];
-                            device.config.changed = true;
+                            (device.config as DeviceConfig & { changed?: boolean }).changed = true;
                             
                             const newState = {
                                 ...state,
@@ -123,7 +128,12 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         setIsEnabled(enabled === 1);
         
         const updatedDevice = {...device};
-        if (!updatedDevice.config) updatedDevice.config = {};
+        if (!updatedDevice.config) {
+            updatedDevice.config = {
+                pomodoro: {},
+                trackpad: {}
+            } as DeviceConfig;
+        }
         if (!updatedDevice.config.trackpad) updatedDevice.config.trackpad = {};
         updatedDevice.config.trackpad.auto_layer_enabled = enabled; 
 
@@ -142,7 +152,12 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         setUserChangedTrackpadLayer(true);
                 
         const updatedDevice = {...device};
-        if (!updatedDevice.config) updatedDevice.config = {};
+        if (!updatedDevice.config) {
+            updatedDevice.config = {
+                pomodoro: {},
+                trackpad: {}
+            } as DeviceConfig;
+        }
         if (!updatedDevice.config.trackpad) updatedDevice.config.trackpad = {};
         updatedDevice.config.trackpad.can_trackpad_layer = enabled;
 
@@ -154,7 +169,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         await setState(newState);
         if (updatedDevice.config.trackpad) {
             try {
-                await api.saveTrackpadConfig(updatedDevice);
+                await api.saveTrackpadConfig(updatedDevice, updatedDevice.config.trackpad);
             } catch (error) {
                 console.error("Error saving trackpad config:", error);
             }
@@ -213,7 +228,12 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         setLayerSettings(settings);
         
         const updatedDevice = {...device};
-        if (!updatedDevice.config) updatedDevice.config = {};
+        if (!updatedDevice.config) {
+            updatedDevice.config = {
+                pomodoro: {},
+                trackpad: {}
+            } as DeviceConfig;
+        }
         if (!updatedDevice.config.trackpad) updatedDevice.config.trackpad = {};
         updatedDevice.config.trackpad.auto_layer_settings = settings; // App-level setting
         // updatedDevice.config.changed = true;

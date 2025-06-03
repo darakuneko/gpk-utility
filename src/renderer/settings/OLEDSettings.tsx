@@ -35,7 +35,7 @@ const OLEDSettings: React.FC<OLEDSettingsProps> = memo(({ device, handleChange }
     
     // Save OLED settings
     try {
-      await window.api.saveOledSettings(device.id, enabled);
+      await window.api.saveOledSettings(device, { enabled });
     } catch (error) {
       console.error("Failed to save OLED settings:", error);
     }

@@ -159,7 +159,7 @@ export function DeviceTypeProvider({ children }: {children: React.ReactNode}): R
         const initDeviceType = async (): Promise<void> => {
             try {
                 if (window.api && window.api.getDeviceType) {
-                    const types = await window.api.getDeviceType();
+                    const types = await window.api.getDeviceType({} as Device);
                     setDeviceType(types);
                 }
             } catch (error) {

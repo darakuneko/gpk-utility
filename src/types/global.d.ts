@@ -1,5 +1,5 @@
 // Global type definitions for GPK Utility
-import { Device, DeviceConfig, AppInfo } from './common';
+import { Device, DeviceConfig, AppInfo } from './device';
 
 // Window API exposed by preload script
 declare global {
@@ -45,7 +45,7 @@ declare global {
       // Event listeners
       on: <T extends string>(channel: T, func: (...args: unknown[]) => void) => void;
       off: <T extends string>(channel: T, func: (...args: unknown[]) => void) => void;
-      onConfigSaveComplete: (callback: (data: unknown) => void) => void;
+      onConfigSaveComplete: (callback: (data: { success: boolean; timestamp: number }) => void) => void;
       
       // Device management
       getDeviceType: (device: Device) => Promise<string>;
@@ -53,22 +53,22 @@ declare global {
       dispatchSaveDeviceConfig: (device: Device) => Promise<unknown>;
       setSliderActive: (deviceId: string, active: boolean) => void;
       
-      // Extended store operations
+      // Extended store operations  
       getStoreSetting: (key: string) => Promise<unknown>;
-      saveStoreSetting: (key: string, value: unknown) => Promise<void>;
-      getAllStoreSettings: () => Promise<unknown>;
+      saveStoreSetting: (key: string, value: unknown) => Promise<{ success: boolean; error?: string }>;
+      getAllStoreSettings: () => Promise<Record<string, unknown>>;
       
       // Notification settings
-      getCachedNotifications: () => Promise<unknown[]>;
-      loadTraySettings: () => Promise<unknown>;
-      saveTraySettings: (settings: unknown) => Promise<void>;
+      getCachedNotifications: () => Promise<Array<{ title: string; body: string; publishedAt: { _seconds: number } }>>;
+      loadTraySettings: () => Promise<{ success: boolean; minimizeToTray?: boolean; backgroundStart?: boolean }>;
+      saveTraySettings: (settings: { minimizeToTray?: boolean; backgroundStart?: boolean }) => Promise<{ success: boolean; error?: string }>;
       
       // Window monitoring
       getActiveWindows: () => Promise<unknown[]>;
       
       // Pomodoro settings
-      loadPomodoroDesktopNotificationSettings: (deviceId: string) => Promise<boolean>;
-      savePomodoroDesktopNotificationSettings: (deviceId: string, enabled: boolean) => Promise<void>;
+      loadPomodoroDesktopNotificationSettings: (deviceId: string) => Promise<{ success: boolean; enabled: boolean }>;
+      savePomodoroDesktopNotificationSettings: (deviceId: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
       
       // OLED settings
       saveOledSettings: (device: Device, settings: unknown) => Promise<void>;

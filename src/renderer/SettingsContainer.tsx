@@ -103,7 +103,7 @@ const SettingsContainer: React.FC = (): JSX.Element => {
                         const preferredTab = supportedTabs.find((tab): boolean => tab.id === "mouse") || supportedTabs[0];
                         setActiveSettingTab(preferredTab?.id || "layer");
                         if (preferredTab) {
-                            window.api.setActiveTab(activeDevice, preferredTab.id);
+                            window.api.setActiveTab(activeDevice.id, preferredTab.id);
                         }
                     }
                 }
@@ -131,7 +131,7 @@ const SettingsContainer: React.FC = (): JSX.Element => {
                 const preferredTab = supportedTabs.find((tab): boolean => tab.id === "mouse") || supportedTabs[0];
                 setActiveSettingTab(preferredTab?.id || "layer");
                 if (preferredTab) {
-                    window.api.setActiveTab(activeDevice, preferredTab.id);
+                    window.api.setActiveTab(activeDevice.id, preferredTab.id);
                 }
             }
         }, 5000); // Increased to 5000ms debounce delay to handle unstable device communication
@@ -288,7 +288,7 @@ const SettingsContainer: React.FC = (): JSX.Element => {
         setUserSelectedTab(true); // Mark that user has manually selected a tab
         const device = getActiveDevice();
         if (device) {
-            window.api.setActiveTab(device, tabId);
+            window.api.setActiveTab(device.id, tabId);
         }
     }
 
@@ -325,7 +325,7 @@ const SettingsContainer: React.FC = (): JSX.Element => {
                                                        : supportedTabs[0];
                                     if (preferredTab) {
                                         setActiveSettingTab(preferredTab.id);
-                                        window.api.setActiveTab(device, preferredTab.id);
+                                        window.api.setActiveTab(device.id, preferredTab.id);
                                     }
                                 }
                             }}

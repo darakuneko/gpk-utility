@@ -37,7 +37,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
             // Determine which configuration type to update based on the active tab
             // Update only pomodoro settings for "timer" tab, otherwise update only trackpad settings
             const configType = activeTab === "timer" ? 'pomodoro' : 'trackpad';
-            const updatedConfig = await api.dispatchSaveDeviceConfig(updatedDevice, [configType]);
+            const updatedConfig = await api.dispatchSaveDeviceConfig(updatedDevice);
             
             if (updatedConfig && typeof updatedConfig === 'object' && 'success' in updatedConfig && updatedConfig.success) {
                 const typedConfig = updatedConfig as { success: boolean; config?: Record<string, unknown> };
@@ -185,12 +185,12 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
 
     const handleSliderStart = (): void => {
         setIsSliderActive(true);
-        api.setSliderActive(true);
+        api.setSliderActive(device.id, true);
     };
 
     const handleSliderEnd = (): void => {
         setIsSliderActive(false);
-        api.setSliderActive(false);
+        api.setSliderActive(device.id, false);
         
         if (pendingChanges.device && typeof pendingChanges.device === 'object' && 'id' in pendingChanges.device) {
             void sendConfigToDevice(pendingChanges.device as Device);

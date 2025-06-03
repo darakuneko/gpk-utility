@@ -22,7 +22,7 @@ interface PomodoroActiveDisplayProps {
   desktopNotificationsEnabled: boolean;
 }
 
-const PomodoroActiveDisplay: React.FC<PomodoroActiveDisplayProps> = ({ device, formatTime, desktopNotificationsEnabled }): JSX.Element => {
+const PomodoroActiveDisplay: React.FC<PomodoroActiveDisplayProps> = ({ device, formatTime, desktopNotificationsEnabled }) => {
   const { t } = useLanguage();
   
   // Object with default values for safely accessing pomodoro settings
@@ -41,8 +41,8 @@ const PomodoroActiveDisplay: React.FC<PomodoroActiveDisplayProps> = ({ device, f
             <span className="font-medium">{t('timer.workInterval')}:</span>
             <span className="font-bold">
               {pomodoroConfig.phase === 1 
-                ? pomodoroConfig.current_work_Interval + 1 
-                : pomodoroConfig.current_work_Interval
+                ? (pomodoroConfig.current_work_Interval || 0) + 1 
+                : (pomodoroConfig.current_work_Interval || 0)
               } / {pomodoroConfig.work_interval}
             </span>
           </div>  
@@ -64,14 +64,14 @@ const PomodoroActiveDisplay: React.FC<PomodoroActiveDisplayProps> = ({ device, f
               <span className={pomodoroConfig.phase === 1 ? "pomodoro-active-state" : "pomodoro-inactive-state"}>{t('timer.work')}</span>
               {" - "}
               <span className={pomodoroConfig.phase === 2 ? "pomodoro-active-state" : "pomodoro-inactive-state"}>
-                {pomodoroConfig.current_work_Interval + 1 === pomodoroConfig.work_interval && pomodoroConfig.phase === 1 ? t('timer.longBreak') : t('timer.break')}
+                {(pomodoroConfig.current_work_Interval || 0) + 1 === pomodoroConfig.work_interval && pomodoroConfig.phase === 1 ? t('timer.longBreak') : t('timer.break')}
               </span>
             </span>
           )}
         </div>
         <div className="flex justify-between items-center mt-1">
           <span className="font-medium">{t('timer.timeRemaining')}:</span>
-          <span className="font-bold">{formatTime(pomodoroConfig.minutes, pomodoroConfig.seconds)}</span>
+          <span className="font-bold">{formatTime(pomodoroConfig.minutes || 0, pomodoroConfig.seconds || 0)}</span>
         </div>
         
         <div className="flex justify-between items-center mt-1">
@@ -378,8 +378,9 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
       setDesktopNotificationsEnabled(isEnabled);
       
       // Update UI state only, do not send to device
-      const _oldValue = device.config.pomodoro_notifications_enabled;
-      device.config.pomodoro_notifications_enabled = isEnabled ? 1 : 0;
+      const deviceConfigExt = device.config as DeviceConfig & { pomodoro_notifications_enabled?: number };
+      const _oldValue = deviceConfigExt.pomodoro_notifications_enabled;
+      deviceConfigExt.pomodoro_notifications_enabled = isEnabled ? 1 : 0;
       
       // Dispatch update event to the switch element
       const switchElement = document.getElementById("config-pomodoro_notifications_enabled");
@@ -403,7 +404,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
     device.config.pomodoro.notify_haptic_enable = isEnabled ? 1 : 0;
     
     // Send the updated config to device - update only pomodoro settings
-    window.api.dispatchSaveDeviceConfig(device, 'pomodoro');
+    window.api.dispatchSaveDeviceConfig(device);
     
     // Dispatch update event to the switch element
     const switchElement = document.getElementById("config-pomodoro_notify_haptic_enable");
@@ -429,7 +430,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
     device.config.pomodoro.continuous_mode = isEnabled ? 1 : 0;
     
     // Send the updated config to device - update only pomodoro settings
-    window.api.dispatchSaveDeviceConfig(device, 'pomodoro');
+    window.api.dispatchSaveDeviceConfig(device);
     
     // Dispatch update event to the switch element
     const switchElement = document.getElementById("config-pomodoro_continuous_mode");
