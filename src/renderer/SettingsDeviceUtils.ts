@@ -3,24 +3,11 @@ interface Tab {
     label: string;
 }
 
-import type { Device as BaseDevice } from '../types/device';
-
-interface Device extends BaseDevice {
-    deviceType?: string;
-    connected?: boolean;
-    initialized?: boolean;
-}
-
-interface DeviceType {
-    MACROPAD_TP: string;
-    MACROPAD_TP_BTNS: string;
-    KEYBOARD_TP: string;
-    KEYBOARD_OLED: string;
-}
+import type { Device } from '../types/device';
 
 type TranslationFunction = (key: string) => string;
 
-export const getSupportedSettingTabs = (device: Device | null, t: TranslationFunction, DeviceType: DeviceType | null): Tab[] => {
+export const getSupportedSettingTabs = (device: Device | null, t: TranslationFunction, DeviceType: any): Tab[] => {
     if (!device || !DeviceType) return [];
 
     const tabs: Record<string, Tab> = {
@@ -47,7 +34,6 @@ export const getSupportedSettingTabs = (device: Device | null, t: TranslationFun
                              device.config?.trackpad?.default_speed !== undefined &&
                              device.config.trackpad.default_speed > 0 &&
                              device.connected === true &&
-                             device.initialized !== false && // Change back to !== false instead of === true
                              typeof device.config?.trackpad?.default_speed === 'number' &&
                              device.config.trackpad.default_speed >= 1;
 
@@ -65,5 +51,5 @@ export const getSupportedSettingTabs = (device: Device | null, t: TranslationFun
         [DeviceType.KEYBOARD_TP]: tpTabs,
         [DeviceType.KEYBOARD_OLED]: [tabs.layer, tabs.oled] as Tab[]
     };
-    return tabDefinitions[device.deviceType] || [];
+    return tabDefinitions[device.deviceType || ''] || [];
 };

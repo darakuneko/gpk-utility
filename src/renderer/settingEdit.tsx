@@ -19,7 +19,7 @@ const SettingEdit: React.FC<any> = ((props: any) => {
     const { state, setState } = useStateContext();
     const device = props.device;
     const [isSliderActive, setIsSliderActive] = useState(false);
-    const [pendingChanges, setPendingChanges] = useState({});
+    const [pendingChanges, setPendingChanges] = useState<any>({});
     
     // Get active tab from parent component
     const activeTab = props.activeTab || "mouse";
@@ -71,7 +71,7 @@ const SettingEdit: React.FC<any> = ((props: any) => {
                 // Create a new object to avoid modifying the original device
                 const updatedDevice = {...d};
                 // Initialize config if it doesn't exist
-                updatedDevice.config = updatedDevice.config || {};
+                updatedDevice.config = updatedDevice.config || { pomodoro: {}, trackpad: {} } as any;
                 
                 let newValue;
                 // Set strict values according to type
@@ -110,7 +110,9 @@ const SettingEdit: React.FC<any> = ((props: any) => {
                     if (pType.startsWith('pomodoro_')) {
                         // Pomodoro related settings - remove the pomodoro_ prefix to get the actual property name
                         const actualProp = pType.replace('pomodoro_', '');
-                        updatedDevice.config.pomodoro[actualProp] = newValue;
+                        if (updatedDevice.config) {
+                            (updatedDevice.config.pomodoro as any)[actualProp] = newValue;
+                        }
                     } else if (pType === "can_hf_for_layer" || pType === "can_drag" || 
                               pType === "can_trackpad_layer" || pType === "can_reverse_scrolling_direction" || 
                               pType === "can_short_scroll" || pType === "default_speed" || 
@@ -121,14 +123,20 @@ const SettingEdit: React.FC<any> = ((props: any) => {
                               pType === "short_scroll_term" || pType === "scroll_step" ||
                               pType === "hf_waveform_number") {
                         // Trackpad related settings
-                        updatedDevice.config.trackpad[pType] = newValue;
+                        if (updatedDevice.config) {
+                            (updatedDevice.config.trackpad as any)[pType] = newValue;
+                        }
                     } else {
                         // Other settings (top-level properties like init)
-                        updatedDevice.config[pType] = newValue;
+                        if (updatedDevice.config) {
+                            (updatedDevice.config as any)[pType] = newValue;
+                        }
                     }
                     
                     // Set changed flag
-                    updatedDevice.config.changed = true;
+                    if (updatedDevice.config) {
+                        (updatedDevice.config as any).changed = true;
+                    }
                     
                     // Update UI state first
                     const newState = {
@@ -248,8 +256,6 @@ const SettingEdit: React.FC<any> = ((props: any) => {
                             <OLEDSettings
                                 device={device}
                                 handleChange={handleChange}
-                                handleSliderStart={handleSliderStart}
-                                handleSliderEnd={handleSliderEnd}
                             />
                         )}
 
@@ -268,6 +274,8 @@ const SettingEdit: React.FC<any> = ((props: any) => {
                             <HapticSettings
                                 device={device}
                                 handleChange={handleChange}
+                                handleSliderStart={handleSliderStart}
+                                handleSliderEnd={handleSliderEnd}
                             />
                         )}
                     </div>

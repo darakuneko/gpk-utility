@@ -84,8 +84,8 @@ const SettingsContainer: React.FC = () => {
                     const isTPDevice = activeDevice.deviceType === 'macropad_tp' || 
                                      activeDevice.deviceType === 'macropad_tp_btns' || 
                                      activeDevice.deviceType === 'keyboard_tp';
-                    
-                    // Only auto-switch if current tab is not supported or if we should prioritize mouse tab for TP devices
+
+                                     // Only auto-switch if current tab is not supported or if we should prioritize mouse tab for TP devices
                     const shouldSwitchTab = !currentTabSupported || 
                                           (isTPDevice && 
                                            activeSettingTab === "layer" && 
@@ -236,7 +236,8 @@ const SettingsContainer: React.FC = () => {
     // Handler to close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (menuOpen && !event.target.closest('.menu-container')) {
+            const target = event.target as Element;
+            if (menuOpen && target && !target.closest('.menu-container')) {
                 setMenuOpen(false);
                 setLanguageMenuOpen(false);
             }
@@ -308,13 +309,15 @@ const SettingsContainer: React.FC = () => {
                                     const isTPDevice = device.deviceType === 'macropad_tp' || 
                                                      device.deviceType === 'macropad_tp_btns' || 
                                                      device.deviceType === 'keyboard_tp';
-                                    const hasTrackpadConfig = device.config?.trackpad?.default_speed > 0;
+                                    const hasTrackpadConfig = (device.config?.trackpad?.default_speed || 0) > 0;
                                     
                                     const preferredTab = (isTPDevice && hasTrackpadConfig && supportedTabs.find(tab => tab.id === "mouse")) 
                                                        ? supportedTabs.find(tab => tab.id === "mouse")
                                                        : supportedTabs[0];
-                                    setActiveSettingTab(preferredTab.id);
-                                    window.api.setActiveTab(device, preferredTab.id);
+                                    if (preferredTab) {
+                                        setActiveSettingTab(preferredTab.id);
+                                        window.api.setActiveTab(device, preferredTab.id);
+                                    }
                                 }
                             }}
                         >
@@ -338,10 +341,10 @@ const SettingsContainer: React.FC = () => {
                         <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 border border-gray-200 dark:border-gray-700 overflow-hidden">
                             {/* Language Settings */}
                             <div className="relative">
-                                <MenuItem onClick={toggleLanguageMenu}>
+                                <MenuItem onClick={() => toggleLanguageMenu({} as React.MouseEvent)}>
                                     <div className="flex justify-between items-center w-full">
                                         <span className="mr-2">{t('settings.language')}</span>
-                                        <span className="text-sm text-gray-900 dark:text-gray-100 ml-auto font-medium">{availableLanguages[locale]}</span>
+                                        <span className="text-sm text-gray-900 dark:text-gray-100 ml-auto font-medium">{availableLanguages[locale as keyof typeof availableLanguages]}</span>
                                     </div>
                                 </MenuItem>
                                 

@@ -20,7 +20,11 @@ const PomodoroActiveDisplay: React.FC<any> = ({ device, formatTime, desktopNotif
   const { t } = useLanguage();
   
   // Object with default values for safely accessing pomodoro settings
-  const pomodoroConfig = device.config?.pomodoro;
+  const pomodoroConfig = device.config?.pomodoro || {
+    phase: 0, current_work_Interval: 0, work_interval: 4, current_pomodoro_cycle: 0, 
+    pomodoro_cycle: 1, work_time: 25, break_time: 5, long_break_time: 15,
+    work_interval_before_long_break: 4, minutes: 0, seconds: 0
+  };
   return (
     <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 rounded-md">
       <p className="font-medium">{t('timer.activePhase')}</p>
@@ -102,7 +106,11 @@ const PomodoroActiveDisplay: React.FC<any> = ({ device, formatTime, desktopNotif
 const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, desktopNotificationsEnabled, hapticNotificationsEnabled, continuousModeEnabled }) => {
   const { t } = useLanguage();
   
-  const pomodoroConfig = device.config?.pomodoro;
+  const pomodoroConfig = device.config?.pomodoro || {
+    phase: 0, current_work_Interval: 0, work_interval: 4, current_pomodoro_cycle: 0, 
+    pomodoro_cycle: 1, work_time: 25, break_time: 5, long_break_time: 15,
+    work_interval_before_long_break: 4, minutes: 0, seconds: 0
+  };
   
   return (
     <div>
@@ -147,11 +155,11 @@ const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ dev
         <div className="pt-2 w-full mb-4">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
             <span>{t('timer.workTime')}</span>
-            <span className="text-sm font-bold ml-2 mr-2">{pomodoroConfig.work_time} min</span>
+            <span className="text-sm font-bold ml-2 mr-2">{pomodoroConfig?.work_time || 0} min</span>
           </label>
           <CustomSlider
             id="config-pomodoro_work_time"
-            value={pomodoroConfig.work_time}
+            value={pomodoroConfig?.work_time || 25}
             min={1}
             step={1}
             max={60}
@@ -167,11 +175,11 @@ const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ dev
         <div className="pt-2 w-full mb-4">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">
             <span>{t('timer.breakTime')}</span>
-            <span className="text-sm font-bold ml-2 mr-2">{pomodoroConfig.break_time} min</span>
+            <span className="text-sm font-bold ml-2 mr-2">{pomodoroConfig?.break_time || 0} min</span>
           </label>
           <CustomSlider
             id="config-pomodoro_break_time"
-            value={pomodoroConfig.break_time}
+            value={pomodoroConfig?.break_time || 5}
             min={1}
             step={1}
             max={30}
@@ -191,7 +199,7 @@ const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ dev
           </label>
           <CustomSlider
             id="config-pomodoro_long_break_time"
-            value={pomodoroConfig.long_break_time}
+            value={pomodoroConfig.long_break_time || 15}
             min={1}
             step={1}
             max={60}
@@ -211,7 +219,7 @@ const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ dev
           </label>
           <CustomSlider
             id="config-pomodoro_work_interval"
-            value={pomodoroConfig.work_interval}
+            value={pomodoroConfig.work_interval || 4}
             min={1}
             step={1}
             max={10}
@@ -259,7 +267,7 @@ const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ dev
             </label>
             <CustomSelect
               id="config-pomodoro_work_hf_pattern"
-              value={pomodoroConfig.work_hf_pattern}
+              value={String(pomodoroConfig.work_hf_pattern || 0)}
               onChange={handleChange("pomodoro_work_hf_pattern", device.id)}
               options={fullHapticOptions}
             />
@@ -270,7 +278,7 @@ const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ dev
             </label>
             <CustomSelect
               id="config-pomodoro_break_hf_pattern"
-              value={pomodoroConfig.break_hf_pattern}
+              value={String(pomodoroConfig.break_hf_pattern || 0)}
               onChange={handleChange("pomodoro_break_hf_pattern", device.id)}
               options={fullHapticOptions}
             />
@@ -329,7 +337,7 @@ const TimerSettings: React.FC<any> = ({ device, handleChange, handleSliderStart,
   useEffect(() => {
     const handleSwitchUpdate = (event: CustomEvent<{ id: string; value: boolean | number }>) => {
       if (event.detail && event.detail.id === "config-pomodoro_notify_notifications_enable") {
-        setDesktopNotificationsEnabled(event.detail.value);
+        setDesktopNotificationsEnabled(Boolean(event.detail.value));
       }
       
       if (event.detail && event.detail.id === "config-pomodoro_notify_haptic_enable") {
@@ -341,14 +349,14 @@ const TimerSettings: React.FC<any> = ({ device, handleChange, handleSliderStart,
       }
     };
     
-    document.addEventListener('switch-updated', handleSwitchUpdate);
+    document.addEventListener('switch-updated', handleSwitchUpdate as any);
     return () => {
-      document.removeEventListener('switch-updated', handleSwitchUpdate);
+      document.removeEventListener('switch-updated', handleSwitchUpdate as any);
     };
   }, []);
 
   // Custom change handler for notification toggle
-  const handleNotificationToggle = async (isEnabled) => {
+  const handleNotificationToggle = async (isEnabled: any) => {
     try {
       // Save to local storage only
       await window.api.savePomodoroDesktopNotificationSettings(device.id, isEnabled);
@@ -427,27 +435,27 @@ const TimerSettings: React.FC<any> = ({ device, handleChange, handleSliderStart,
     return (value: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | boolean) => {
       if (pType === "pomodoro_notify_notifications_enable") {
         if (value && typeof value === 'object' && value.target) {
-          void handleNotificationToggle(value.target.checked);
+          void handleNotificationToggle((value.target as any).checked);
         } else {
-          void handleNotificationToggle(value === 1);
+          void handleNotificationToggle(Boolean(value));
         }
         return;
       }
       
       if (pType === "pomodoro_notify_haptic_enable") {
         if (value && typeof value === 'object' && value.target) {
-          handleHapticNotificationToggle(value.target.checked);
+          handleHapticNotificationToggle((value.target as any).checked);
         } else {
-          handleHapticNotificationToggle(value === 1);
+          handleHapticNotificationToggle(Boolean(value));
         }
         return;
       }
       
       if (pType === "pomodoro_continuous_mode") {
         if (value && typeof value === 'object' && value.target) {
-          handleContinuousModeToggle(value.target.checked);
+          handleContinuousModeToggle((value.target as any).checked);
         } else {
-          handleContinuousModeToggle(value === 1);
+          handleContinuousModeToggle(Boolean(value));
         }
         return;
       }

@@ -169,14 +169,14 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
     
     const handleAppNameChange = async (index: number, appName: string) => {
         const updatedSettings = [...layerSettings];
-        updatedSettings[index] = {...updatedSettings[index], appName, applicationName: appName};
+        updatedSettings[index] = {...updatedSettings[index], appName, applicationName: appName, layer: updatedSettings[index]?.layer || 0};
         
         await updateLayerSettings(updatedSettings);
     };
     
     const handleLayerChange = async (index: number, layer: string) => {
         const updatedSettings = [...layerSettings];
-        updatedSettings[index] = {...updatedSettings[index], layer: parseInt(layer, 10)};
+        updatedSettings[index] = {...updatedSettings[index], layer: parseInt(layer, 10), applicationName: updatedSettings[index]?.applicationName || '', appName: updatedSettings[index]?.appName || ''};
         
         await updateLayerSettings(updatedSettings);
     };
@@ -297,7 +297,7 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
     
     return (
         <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-            {DeviceType && device.deviceType === DeviceType.KEYBOARD_TP && (
+            {DeviceType && device.deviceType === (DeviceType as any)?.KEYBOARD_TP && (
                 <div className="flex items-center mb-4">
                     <div className="flex-1">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.trackpadLayer')}</h3>
@@ -312,7 +312,7 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
                 </div>
             )}
             
-            <div className={`${DeviceType && device.deviceType === DeviceType.KEYBOARD_TP ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
+            <div className={`${DeviceType && device.deviceType === (DeviceType as any)?.KEYBOARD_TP ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
                 <div className="flex items-center mb-4">
                     <div className="flex-1">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.autoSwitching')}</h3>
