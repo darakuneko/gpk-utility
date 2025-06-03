@@ -8,10 +8,6 @@ export interface DeviceCommand {
     data?: number[];
 }
 
-export interface CommandPayload {
-    deviceId: string;
-    commands: DeviceCommand[];
-}
 
 // Translation system types
 export interface TranslationParams {
@@ -27,16 +23,6 @@ export interface GenericEventCallback {
     (...args: unknown[]): void; // Use unknown for type safety
 }
 
-export interface SwitchUpdateEvent {
-    id: string;
-    value: boolean | number;
-}
-
-export interface ConfigSaveEvent {
-    success: boolean;
-    timestamp: number;
-    deviceId?: string;
-}
 
 // Store operation types
 export interface StoreKeyValue {

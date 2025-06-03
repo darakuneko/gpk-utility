@@ -7,9 +7,6 @@ export interface ConfigUpdatedEventData {
     config: DeviceConfig;
 }
 
-export interface ChangeConnectDeviceEventData {
-    devices: Device[];
-}
 
 export interface ActiveWindowEventData {
     windowInfo: {
