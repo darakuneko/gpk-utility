@@ -1,7 +1,7 @@
 import React from 'react'
 import {createContext, useContext, useEffect, useReducer, useRef, useState} from 'react'
 
-import type { Device } from './types/device';
+import type { Device, DeviceConfig } from './types/device';
 
 interface AppState {
     init: boolean;
@@ -55,7 +55,7 @@ const reducer = (state: AppState, action: AppAction): AppState => {
                     device.id === deviceId 
                         ? { 
                             ...device, 
-                            config: device.config ? { ...device.config, ...config } : config as any,
+                            config: device.config ? { ...device.config, ...config } : config as unknown as DeviceConfig,
                         } 
                         : device
                 )

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { Device } from '../types/device';
+import type { Device, DeviceConfig, CommandResult } from '../types/device';
 
 import { useStateContext } from "../context.tsx";
 import { fullHapticOptions } from "../data/hapticOptions.js";
@@ -29,7 +29,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
     // Get active tab from parent component
     const activeTab = props.activeTab || "mouse";
 
-    const sendConfigToDevice = async (updatedDevice: any): Promise<any> => {
+    const sendConfigToDevice = async (updatedDevice: Device): Promise<Record<string, unknown> | undefined> => {
         try {
             // Determine which configuration type to update based on the active tab
             // Update only pomodoro settings for "timer" tab, otherwise update only trackpad settings
@@ -69,14 +69,14 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
         }
     };
 
-    const handleChange = (pType: string, id: string) => async (event: any): Promise<void> => {
+    const handleChange = (pType: string, id: string) => async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
         // Create a new array to ensure immutability
         const _updatedDevices = await Promise.all(state.devices.map(async (d) => {
             if(d.id === id) {
                 // Create a new object to avoid modifying the original device
                 const updatedDevice = {...d};
                 // Initialize config if it doesn't exist
-                updatedDevice.config = updatedDevice.config || { pomodoro: {}, trackpad: {} } as any;
+                updatedDevice.config = updatedDevice.config || { pomodoro: {}, trackpad: {} } as DeviceConfig;
                 
                 let newValue;
                 // Set strict values according to type
@@ -116,7 +116,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
                         // Pomodoro related settings - remove the pomodoro_ prefix to get the actual property name
                         const actualProp = pType.replace('pomodoro_', '');
                         if (updatedDevice.config) {
-                            (updatedDevice.config.pomodoro as any)[actualProp] = newValue;
+                            (updatedDevice.config.pomodoro as Record<string, unknown>)[actualProp] = newValue;
                         }
                     } else if (pType === "can_hf_for_layer" || pType === "can_drag" || 
                               pType === "can_trackpad_layer" || pType === "can_reverse_scrolling_direction" || 
@@ -129,18 +129,18 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps) => {
                               pType === "hf_waveform_number") {
                         // Trackpad related settings
                         if (updatedDevice.config) {
-                            (updatedDevice.config.trackpad as any)[pType] = newValue;
+                            (updatedDevice.config.trackpad as Record<string, unknown>)[pType] = newValue;
                         }
                     } else {
                         // Other settings (top-level properties like init)
                         if (updatedDevice.config) {
-                            (updatedDevice.config as any)[pType] = newValue;
+                            (updatedDevice.config as Record<string, unknown>)[pType] = newValue;
                         }
                     }
                     
                     // Set changed flag
                     if (updatedDevice.config) {
-                        (updatedDevice.config as any).changed = true;
+                        (updatedDevice.config as Record<string, unknown>).changed = true;
                     }
                     
                     // Update UI state first

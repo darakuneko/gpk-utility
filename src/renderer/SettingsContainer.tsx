@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 
 import { useStateContext, useDeviceType } from "../context.tsx"
+import type { Device } from "../types/device"
 import { useLanguage } from "../i18n/LanguageContext.tsx"
 import { CustomSlider } from "../components/CustomComponents.tsx"
 import UpdatesNotificationModal from "../components/UpdatesNotificationModal.tsx"
@@ -152,7 +153,7 @@ const SettingsContainer: React.FC = () => {
             });
         });
         
-        window.api.on("changeConnectDevice", (devices: any) => {
+        window.api.on("changeConnectDevice", (devices: Device[]) => {
             dispatch({
                 type: "SET_DEVICES",
                 payload: devices
@@ -160,7 +161,7 @@ const SettingsContainer: React.FC = () => {
         });
         
         // Listen for showUpdatesNotificationModal event
-        const handleUpdatesNotificationModalEvent = (event: any) => {
+        const handleUpdatesNotificationModalEvent = (event: CustomEvent<{ notifications: unknown[] }>) => {
             setUpdates(event.detail.notifications);
             setIsUpdatesNotificationModalOpen(true);
         };

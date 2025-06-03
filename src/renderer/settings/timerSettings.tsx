@@ -467,7 +467,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
       
       if (pType === "pomodoro_continuous_mode") {
         if (value && typeof value === 'object' && value.target) {
-          handleContinuousModeToggle((value.target as any).checked);
+          handleContinuousModeToggle((value.target as HTMLInputElement).checked);
         } else {
           handleContinuousModeToggle(Boolean(value));
         }
