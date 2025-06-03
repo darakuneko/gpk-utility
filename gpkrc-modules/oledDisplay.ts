@@ -1,6 +1,8 @@
 import dayjs from 'dayjs';
-import { commandId, actionId, dataToBytes, encodeDeviceId } from './communication';
+
 import type { Device, CommandResult, WriteCommandFunction } from '../src/types/device';
+
+import { commandId, actionId, dataToBytes, encodeDeviceId } from './communication';
 
 // Store last formatted date for each device
 export const lastFormattedDateMap = new Map<string, string>();

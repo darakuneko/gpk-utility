@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react"
-import SettingEdit from "./settingEdit.jsx"
+
 import { useStateContext, useDeviceType } from "../context.jsx"
 import { useLanguage } from "../i18n/LanguageContext.jsx"
 import { CustomSlider } from "../components/CustomComponents.tsx"
 import UpdatesNotificationModal from "../components/UpdatesNotificationModal.tsx"
 import VersionModal from "../components/VersionModal.tsx"
+
+import SettingEdit from "./settingEdit.jsx"
 import { HamburgerIcon, MenuItem, LeftMenuItem } from "./SettingsUIComponents.jsx"
 import { getSupportedSettingTabs } from "./SettingsDeviceUtils.ts"
 
@@ -53,7 +55,7 @@ const SettingsContainer = () => {
             }
         };
         
-        loadTraySettings();
+        void loadTraySettings();
     }, []);
     
     // Set active tab on initial display or when connected devices change

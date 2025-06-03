@@ -140,7 +140,7 @@ export function DeviceTypeProvider({ children }) {
             }
         };
         
-        initDeviceType();
+        void initDeviceType();
     }, []);
     
     return (

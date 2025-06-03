@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+
 import { useLanguage } from '../i18n/LanguageContext';
-import { BaseModal } from './BaseModalComponents';
 import type { VersionModalProps, AppInfo } from '../types/react';
+
+import { BaseModal } from './BaseModalComponents';
 
 const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose }) => {
   const { t } = useLanguage();

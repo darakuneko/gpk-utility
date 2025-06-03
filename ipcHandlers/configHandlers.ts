@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow } from "electron";
 import Store from 'electron-store';
+
 import {
     saveTrackpadConfig,
     savePomodoroConfigData,
@@ -83,7 +84,7 @@ const buildPomodoroConfigByteArray = (pomodoroConfig: PomodoroConfig): number[] 
 };
 
 export const setupConfigHandlers = (): void => {
-    ipcMain.handle('saveTrackpadConfig', async (event, device: Device) => {
+    ipcMain.handle('saveTrackpadConfig', async (event, device: Device): Promise<{ success: boolean; error?: string }> => {
         try {
             // Get trackpad settings from device object
             if (!device || !device.config || !device.config.trackpad) {
@@ -102,7 +103,7 @@ export const setupConfigHandlers = (): void => {
         }
     });
     
-    ipcMain.handle('savePomodoroConfigData', async (event, device: Device, pomodoroDataBytes: number[]) => {
+    ipcMain.handle('savePomodoroConfigData', async (event, device: Device, pomodoroDataBytes: number[]): Promise<{ success: boolean; error?: string }> => {
         try {
             await savePomodoroConfigData(device, pomodoroDataBytes);
             return { success: true };
@@ -113,7 +114,7 @@ export const setupConfigHandlers = (): void => {
     });
 
     // Replace the old sendDeviceConfig handler with dispatchSaveDeviceConfig
-    ipcMain.handle('dispatchSaveDeviceConfig', async (event, deviceWithConfig: Device, configTypes: string | string[]) => {
+    ipcMain.handle('dispatchSaveDeviceConfig', async (event, deviceWithConfig: Device, configTypes: string | string[]): Promise<{ success: boolean; error?: string; message?: string; updates?: { trackpad: boolean; pomodoro: boolean } }> => {
         try {
             if (!deviceWithConfig || !deviceWithConfig.config) {
                 throw new Error("Invalid device format: missing config");
@@ -129,14 +130,14 @@ export const setupConfigHandlers = (): void => {
             if ((updateAll || typesToUpdate.includes('trackpad')) && deviceWithConfig.config.trackpad) {
                 // Use the existing local function
                 const trackpadBytes = buildTrackpadConfigByteArray(deviceWithConfig.config.trackpad);
-                saveTrackpadConfig(deviceWithConfig, trackpadBytes); // Deliberately not awaiting to prevent UI sluggishness
+                void saveTrackpadConfig(deviceWithConfig, trackpadBytes); // Deliberately not awaiting to prevent UI sluggishness
                 trackpadSaved = true;
             }
 
             // Handle pomodoro config
             if ((updateAll || typesToUpdate.includes('pomodoro')) && deviceWithConfig.config.pomodoro) {
                 const pomodoroBytes = buildPomodoroConfigByteArray(deviceWithConfig.config.pomodoro);
-                savePomodoroConfigData(deviceWithConfig, pomodoroBytes); // Deliberately not awaiting to prevent UI sluggishness
+                void savePomodoroConfigData(deviceWithConfig, pomodoroBytes); // Deliberately not awaiting to prevent UI sluggishness
                 pomodoroSaved = true;
             }
 
@@ -167,7 +168,7 @@ export const setupConfigHandlers = (): void => {
     });
 
     // Save auto layer settings
-    ipcMain.handle('saveAutoLayerSettings', async (event, settings: Record<string, unknown>) => {
+    ipcMain.handle('saveAutoLayerSettings', async (event, settings: Record<string, unknown>): Promise<{ success: boolean; error?: string }> => {
         try {
             // Save settings to electron-store
             store.set('autoLayerSettings', settings);
@@ -194,7 +195,7 @@ export const setupConfigHandlers = (): void => {
     });
 
     // Load auto layer settings
-    ipcMain.handle('loadAutoLayerSettings', async (_event) => {
+    ipcMain.handle('loadAutoLayerSettings', async (_event): Promise<{ success: boolean; error?: string; settings?: unknown }> => {
         try {
             // Load settings from electron-store
             const settings = store.get('autoLayerSettings');

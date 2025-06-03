@@ -1,5 +1,17 @@
 import HID from 'node-hid'
 import Store from 'electron-store';
+
+import type { 
+    HIDDevice, 
+    DeviceWithId, 
+    Device as GPKDevice,
+    DeviceConfig, 
+    DeviceStatus,
+    CommandResult,
+    PomodoroConfig
+} from '../src/types/device';
+import type { StoreSchema } from '../src/types/store';
+
 import { DeviceType, stringToDeviceType } from './deviceTypes';
 import { commandId, actionId, encodeDeviceId, DEFAULT_USAGE, PACKET_PADDING } from './communication';
 import { 
@@ -12,16 +24,6 @@ import { injectPomodoroDependencies, receivePomodoroConfig, receivePomodoroActiv
 import { injectTrackpadDependencies, receiveTrackpadSpecificConfig } from './trackpadConfig';
 import { injectWindowMonitoringDependencies, cleanupDeviceLayerTracking } from './windowMonitoring';
 import { stopDeviceHealthMonitoring } from './deviceHealth';
-import type { 
-    HIDDevice, 
-    DeviceWithId, 
-    Device as GPKDevice,
-    DeviceConfig, 
-    DeviceStatus,
-    CommandResult,
-    PomodoroConfig
-} from '../src/types/device';
-import type { StoreSchema } from '../src/types/store';
 
 interface Command {
     id: number;
@@ -61,7 +63,7 @@ let mainWindow: ElectronWindow | null = null
 const getKBD = async (device: HIDDevice, retryCount: number = 0): Promise<HIDDevice | undefined> => {
     const maxRetries = 3;
     
-    const searchDevice = (): HIDDevice | undefined => HID.devices().find(d =>
+    const searchDevice = (): HIDDevice | undefined => HID.devices().find((d): boolean =>
         (device ?
             (d.manufacturer === device.manufacturer &&
                 d.product === device.product &&
@@ -75,7 +77,7 @@ const getKBD = async (device: HIDDevice, retryCount: number = 0): Promise<HIDDev
     
     if (!foundDevice && retryCount < maxRetries) {        
         // Wait before retry with progressive delay
-        await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
+        await new Promise<void>((resolve): void => setTimeout(resolve, 200 * (retryCount + 1)));
         
         // Force HID device refresh
         try {
@@ -90,12 +92,12 @@ const getKBD = async (device: HIDDevice, retryCount: number = 0): Promise<HIDDev
     return foundDevice;
 }
 
-const getKBDList = (): DeviceWithId[] => HID.devices().filter(d =>
+const getKBDList = (): DeviceWithId[] => HID.devices().filter((d): boolean =>
         d.serialNumber?.match(/^vial:/i) &&
         d.usage === DEFAULT_USAGE.usage &&
         d.usagePage === DEFAULT_USAGE.usagePage
-    ).sort((a, b) => `${a.manufacturer}${a.product}` > `${b.manufacturer}${b.product}` ? 1 : -1)
-    .map(device => {
+    ).sort((a, b): number => `${a.manufacturer}${a.product}` > `${b.manufacturer}${b.product}` ? 1 : -1)
+    .map((device): DeviceWithId => {
         const id = encodeDeviceId(device)
         if (deviceStatusMap[id]) {
             return {...device, id: id, deviceType: deviceStatusMap[id]!.deviceType, gpkRCVersion: deviceStatusMap[id]!.gpkRCVersion}
@@ -151,7 +153,7 @@ const addKbd = async (device: HIDDevice): Promise<string> => {
                 
         // Fetch device info using customGetValue and deviceGetValue action
         // Add a small delay before sending the first command
-        setTimeout(() => {
+        setTimeout((): void => {
             try {
                 if (hidDeviceInstances[id]) {
                     const bytes = [0, commandId.gpkRCPrefix, commandId.customGetValue, actionId.deviceGetValue];
@@ -220,7 +222,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                 }
                 
                 // Wait before retry
-                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                await new Promise<void>((resolve): void => setTimeout(resolve, 1000 * retryCount));
             }
         }
         
@@ -243,7 +245,7 @@ const start = async (device: HIDDevice): Promise<string> => {
         if (hidDeviceInstances[newId!]) {
             let initializationComplete = false;
             
-            hidDeviceInstances[newId!]!.on('error', (err: Error) => {
+            hidDeviceInstances[newId!]!.on('error', (err: Error): void => {
                 console.error(`Device error: ${newId}`, err);
                 
                 // Mark device as disconnected and clean up HID instance
@@ -274,7 +276,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                 }
             });
             
-            hidDeviceInstances[newId!]!.on('data', async (buffer: Buffer) => {
+            hidDeviceInstances[newId!]!.on('data', async (buffer: Buffer): Promise<void> => {
                 try {
                     if (buffer[0] === commandId.gpkRCPrefix) {
                         const receivedCmdId = buffer[1];
@@ -322,7 +324,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                                                 product: device.product || '',
                                                 connected: true
                                             };
-                                            writeTimeToOled(gpkDevice); 
+                                            void writeTimeToOled(gpkDevice); 
                                         }
                                         deviceStatusMap[id]!.config.oled_enabled = oledSettings[id].enabled ? 1 : 0;
                                     }
@@ -429,7 +431,7 @@ const start = async (device: HIDDevice): Promise<string> => {
             const startTime = Date.now();
                         
             while (!initializationComplete && (Date.now() - startTime) < timeout) {
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Increased check interval
+                await new Promise<void>((resolve): void => setTimeout(resolve, 1000)); // Increased check interval
             }
             
             // Additional validation: ensure HID instance is still valid after timeout
@@ -520,7 +522,7 @@ const close = async (): Promise<void> => {
         return;
     }
     
-    Object.keys(hidDeviceInstances).forEach(id => {
+    Object.keys(hidDeviceInstances).forEach((id): void => {
         _close(id);
     });
 }
@@ -555,7 +557,7 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
         }
         
         // Ensure all array elements are integers
-        const validatedCommand = command.map(val => Math.floor(Number(val)) || 0);
+        const validatedCommand = command.map((val): number => Math.floor(Number(val)) || 0);
         
         // Add padding if needed
         const unpadded = [0, commandId.gpkRCPrefix, ...validatedCommand];
@@ -593,7 +595,7 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
             }
             
             // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 500 * (retryCount + 1)));
+            await new Promise<void>((resolve): void => setTimeout(resolve, 500 * (retryCount + 1)));
             
             // Try to recreate HID instance
             try {
@@ -606,7 +608,7 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
                     }
                     
                     // Wait a bit for device to stabilize
-                    await new Promise(resolve => setTimeout(resolve, 200));
+                    await new Promise<void>((resolve): void => setTimeout(resolve, 200));
                     
                     // Retry the command
                     return writeCommand(device, command, retryCount + 1);

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+
 import type { CustomSliderProps, CustomSwitchProps, CustomSelectProps } from '../types/react';
 
 // Custom slider component

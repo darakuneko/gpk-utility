@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+
 import { useStateContext } from "../context.jsx";
 import { fullHapticOptions } from "../data/hapticOptions.js";
+
 // Import setting components for each tab
 import MouseSettings from "./settings/mouseSettings.jsx";
 import ScrollSettings from "./settings/scrollSettings.jsx";
@@ -173,7 +175,7 @@ const SettingEdit = ((props) => {
         api.setSliderActive(false);
         
         if (pendingChanges.device) {
-            sendConfigToDevice(pendingChanges.device);
+            void sendConfigToDevice(pendingChanges.device);
             setPendingChanges({});
         }
     };

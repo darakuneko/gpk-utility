@@ -1,6 +1,7 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage } from "electron";
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+import { app, BrowserWindow, Tray, Menu, nativeImage } from "electron";
 import Store from 'electron-store';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -11,6 +12,8 @@ if(process.platform==='linux') {
 }
 
 // Import translation utilities
+import { ActiveWindow } from '@paymoapp/active-window';
+
 import enTranslations from './src/i18n/locales/en';
 import {
     close, 
@@ -25,7 +28,6 @@ import { injectWindowMonitoringDependencies } from './gpkrc-modules/windowMonito
 import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, setStore as setIpcStore } from './ipcHandlers';
 
 // ActiveWindow is already initialized as an instance, no need to call initialize()
-import { ActiveWindow } from '@paymoapp/active-window';
 
 // Types
 import type { StoreSchema } from './src/types/store';
@@ -149,7 +151,7 @@ const createTrayMenuTemplate = (): Electron.MenuItemConstructorOptions[] => {
         label: 'Quit', 
         click: () => {
             try {
-                close();
+                void close();
             } catch (e) {
                 // Ignored
             }
@@ -207,7 +209,7 @@ const createWindow = async (): Promise<void> => {
         show: !store.get('backgroundStart'),
     });
 
-    mainWindow.loadURL(`file://${__dirname}/../dist/public/index.html`);
+    void mainWindow.loadURL(`file://${__dirname}/../dist/public/index.html`);
     mainWindow.setMenu(null);
 
     // Pass the main window reference to modules
@@ -249,7 +251,7 @@ const createWindow = async (): Promise<void> => {
         }
         
         try {
-            close();
+            void close();
         } catch (e) {
             // Ignored
         }
@@ -274,7 +276,7 @@ app.on('window-all-closed', () => {
         }
         
         try{
-            close();
+            void close();
         } catch (e) {
             // Ignored
         }
@@ -294,7 +296,7 @@ app.on('ready', async () => {
     
     // Start window monitoring for automatic layer switching
     try {
-        startWindowMonitoring({
+        void startWindowMonitoring({
             getActiveWindow: async () => {
                 const result = await ActiveWindow.getActiveWindow();
                 return {

@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow } from "electron";
 import { ActiveWindow } from '@paymoapp/active-window';
+
 import {
     start, 
     stop, 

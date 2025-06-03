@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+
 import { useStateContext, useDeviceType } from "../../context.jsx";
 import { 
   CustomSwitch,
@@ -37,7 +38,7 @@ const LayerSettings = ({ device, handleChange: _handleChange }) => {
             }
         };
         
-        fetchActiveWindows();
+        void fetchActiveWindows();
         
         const intervalId = setInterval(fetchActiveWindows, 1000);
         return () => clearInterval(intervalId);
@@ -78,7 +79,7 @@ const LayerSettings = ({ device, handleChange: _handleChange }) => {
             }
         };
         
-        loadSettingsFromStore();
+        void loadSettingsFromStore();
     }, [device.id]);
 
     useEffect(() => {
@@ -99,7 +100,7 @@ const LayerSettings = ({ device, handleChange: _handleChange }) => {
             }
         };
         
-        init();
+        void init();
     }, [device.id]);
     
     useEffect(() => {

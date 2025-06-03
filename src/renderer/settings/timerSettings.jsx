@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+
 import { CustomSlider, CustomSelect, CustomSwitch } from "../../components/CustomComponents.tsx";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
@@ -311,7 +312,7 @@ const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEn
       }
     }
     
-    loadNotificationSettings();
+    void loadNotificationSettings();
   }, [device]);
 
   useEffect(() => {
@@ -415,9 +416,9 @@ const TimerSettings = ({ device, handleChange, handleSliderStart, handleSliderEn
     return (value) => {
       if (pType === "pomodoro_notify_notifications_enable") {
         if (value && typeof value === 'object' && value.target) {
-          handleNotificationToggle(value.target.checked);
+          void handleNotificationToggle(value.target.checked);
         } else {
-          handleNotificationToggle(value === 1);
+          void handleNotificationToggle(value === 1);
         }
         return;
       }

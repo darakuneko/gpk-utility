@@ -1,4 +1,5 @@
 import { ipcRenderer, IpcRendererEvent } from 'electron';
+
 import type { DeviceConfig, PomodoroConfig } from './types';
 import { cachedDeviceRegistry, setEventListenersRegistered, eventListenersRegistered } from './core';
 import { command } from './device';
@@ -119,7 +120,7 @@ export const setupEventListeners = (): void => {
         
         // Send desktop notification if phase changed and timer is active
         if (phaseChanged && pomodoroConfig.timer_active === 1) {
-            (async () => {
+            void (async () => {
                 try {
                     const result = await ipcRenderer.invoke('loadPomodoroDesktopNotificationSettings', deviceId);
                     const notificationsEnabled = result.success ? result.enabled : true;

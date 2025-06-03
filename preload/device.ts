@@ -1,4 +1,5 @@
 import { ipcRenderer } from 'electron';
+
 import type { Device, CommandResult, SliderState, ExportData, Notification } from './types';
 import { 
     cachedDeviceRegistry, 

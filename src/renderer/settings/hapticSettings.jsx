@@ -1,4 +1,5 @@
 import React from "react";
+
 import { CustomSwitch, CustomSelect } from "../../components/CustomComponents.tsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { fullHapticOptions } from "../../data/hapticOptions.js";

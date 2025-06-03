@@ -1,5 +1,5 @@
 import Store from 'electron-store';
-import { commandId, actionId, parseDeviceId } from './communication';
+
 import type { 
     DeviceStatus, 
     AutoLayerSettings, 
@@ -8,6 +8,8 @@ import type {
     WriteCommandFunction 
 } from '../src/types/device';
 import type { StoreSchema } from '../src/types/store';
+
+import { commandId, actionId, parseDeviceId } from './communication';
 
 // Dependency injection
 interface WindowMonitoringDependencies {
@@ -81,7 +83,7 @@ export const startWindowMonitoring = async (ActiveWindow: ActiveWindowModule): P
         }
         
         // Always switch layers based on active application
-        checkAndSwitchLayer(appName);
+        void checkAndSwitchLayer(appName);
     } catch (error) {
         // NOTE: This error can occur when accessing applications that reside in the system tray
         // or when the active window API cannot access certain system-level applications.
@@ -98,7 +100,7 @@ export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
     
     if (!settingsStore) return;
     
-    Object.keys(deviceStatusMap).forEach(id => {
+    Object.keys(deviceStatusMap).forEach((id): void => {
         const device = deviceStatusMap[id] as DeviceStatus;
         if (!device || !device.connected) {
             return;
@@ -112,7 +114,7 @@ export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
         }
         
         // Find matching setting for the current application
-        const matchingSetting = settings.layerSettings.find((s: LayerSetting) => 
+        const matchingSetting = settings.layerSettings.find((s: LayerSetting): boolean => 
             s.applicationName === appName || s.appName === appName
         );
         const deviceInfo = parseDeviceId(id);
@@ -134,13 +136,13 @@ export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
         if (currentLayer !== targetLayer) {
             try {
                 writeCommand(deviceInfo, [commandId.gpkRCOperation, actionId.layerMove, targetLayer])
-                    .then((result) => {
+                    .then((result): void => {
                         if (result.success) {
                             currentLayers[id] = targetLayer;
                         } else {
                             console.error(`Error switching layer for device ${id}:`, result.error);
                         }
-                    }).catch((err: Error) => {
+                    }).catch((err: Error): void => {
                         console.error(`Error switching layer for device ${id}:`, err);
                     });
             } catch (err) {
@@ -168,7 +170,7 @@ export const getSelectedAppSettings = async (deviceId: string, appName: string):
         return null;
     }
     
-    return settings.layerSettings.find(setting => setting.applicationName === appName) || null;
+    return settings.layerSettings.find((setting): boolean => setting.applicationName === appName) || null;
 };
 
 // Function to add new application to settings that isn't in the list
@@ -192,7 +194,7 @@ export const addNewAppToAutoLayerSettings = async (deviceId: string, appName: st
     
     // Overwrite existing settings if they exist, otherwise add new
     const existingIndex = autoLayerSettings[deviceId].layerSettings.findIndex(
-        setting => setting.applicationName === appName
+        (setting): boolean => setting.applicationName === appName
     );
     
     if (existingIndex >= 0) {

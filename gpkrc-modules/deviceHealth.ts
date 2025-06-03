@@ -1,6 +1,7 @@
+import type { DeviceStatus } from '../src/types/device';
+
 import { DeviceType } from './deviceTypes';
 import { parseDeviceId } from './communication';
-import type { DeviceStatus } from '../src/types/device';
 
 // Device health monitoring variables
 let deviceHealthMonitor: NodeJS.Timeout | null = null;
@@ -32,7 +33,7 @@ export const startDeviceHealthMonitoring = (): void => {
         clearInterval(deviceHealthMonitor);
     }
     
-    deviceHealthMonitor = setInterval(async () => {
+    deviceHealthMonitor = setInterval(async (): Promise<void> => {
         await checkDeviceHealth();
     }, deviceHealthCheckInterval);
 };

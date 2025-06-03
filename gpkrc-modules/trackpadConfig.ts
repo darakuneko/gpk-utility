@@ -1,5 +1,6 @@
-import { commandId, actionId } from './communication';
 import type { Device, CommandResult, WriteCommandFunction, TrackpadConfig } from '../src/types/device';
+
+import { commandId, actionId } from './communication';
 
 // Dependency injection
 let writeCommandFunction: WriteCommandFunction | null = null;
@@ -59,7 +60,7 @@ export const saveTrackpadConfig = async (device: Device, trackpadDataBytes: numb
         if (!result.success) {
             throw new Error(result.error || "Failed to save trackpad config");
         }
-        await new Promise(resolve => setTimeout(resolve, 500)); // Add 500ms delay
+        await new Promise<void>(resolve => setTimeout(resolve, 500)); // Add 500ms delay
         return result;
     } catch (error) {
         console.error("Error saving trackpad config:", error);

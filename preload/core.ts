@@ -1,4 +1,5 @@
 import { ipcRenderer } from 'electron';
+
 import type { Device, StoreSettings, CommandResult } from './types';
 
 // Global state variables

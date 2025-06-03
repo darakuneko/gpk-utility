@@ -1,6 +1,7 @@
+import { resolve } from 'path';
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
 import electron from 'vite-plugin-electron';
 import type { UserConfig } from 'vite';
 // import renderer from 'vite-plugin-electron-renderer'
@@ -43,7 +44,7 @@ const config: UserConfig = defineConfig({
             lib: {
               entry: 'notarize.ts',
               formats: ['cjs'],
-              fileName: () => 'notarize.cjs'
+              fileName: (): string => 'notarize.cjs'
             },
             rollupOptions: {
               external: [
@@ -71,7 +72,7 @@ const config: UserConfig = defineConfig({
             lib: {
               entry: 'preload.ts',
               formats: ['cjs'],
-              fileName: () => 'preload.js'
+              fileName: (): string => 'preload.js'
             },
             rollupOptions: {
               external: [

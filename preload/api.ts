@@ -1,4 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
+
+import type { NotificationData } from '../src/types/notification';
+
 import type { 
     Device, 
     CommandResult, 
@@ -10,7 +13,6 @@ import type {
     StoreSettings,
     AutoLayerSetting
 } from './types';
-import type { NotificationData } from '../src/types/notification';
 import { command } from './device';
 import { cachedDeviceRegistry, cachedStoreSettings, listeners } from './core';
 import { saveStoreSetting } from './core';

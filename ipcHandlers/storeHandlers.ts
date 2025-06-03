@@ -1,9 +1,11 @@
-import { ipcMain, BrowserWindow } from "electron";
 import path from 'path';
 import { promises as fs } from 'fs';
 import { fileURLToPath } from 'url';
-import { updateAutoLayerSettings } from '../gpkrc';
+
+import { ipcMain, BrowserWindow } from "electron";
 import type Store from 'electron-store';
+
+import { updateAutoLayerSettings } from '../gpkrc';
 import type { StoreSchema } from '../src/types/store';
 import type { StoreSettings, AutoLayerSetting } from '../preload/types';
 

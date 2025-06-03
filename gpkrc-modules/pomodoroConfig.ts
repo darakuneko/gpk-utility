@@ -1,5 +1,6 @@
-import { commandId, actionId } from './communication';
 import type { Device, CommandResult, WriteCommandFunction, PomodoroConfig, PomodoroActiveStatus } from '../src/types/device';
+
+import { commandId, actionId } from './communication';
 
 // Dependency injection
 let writeCommandFunction: WriteCommandFunction | null = null;
@@ -47,7 +48,7 @@ export const savePomodoroConfigData = async (device: Device, pomodoroDataBytes: 
         if (!result.success) {
             throw new Error(result.error || "Failed to save pomodoro config");
         }
-        await new Promise(resolve => setTimeout(resolve, 500)); // Add 500ms delay
+        await new Promise<void>(resolve => setTimeout(resolve, 500)); // Add 500ms delay
         return result;
     } catch (error) {
         console.error("Error saving pomodoro config data:", error);

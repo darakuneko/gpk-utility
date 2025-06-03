@@ -1,8 +1,10 @@
-import { ipcMain, Notification, Menu, IpcMainEvent, BrowserWindow, Tray } from "electron";
-import Store from 'electron-store';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+import { ipcMain, Notification, Menu, IpcMainEvent, BrowserWindow, Tray } from "electron";
+import Store from 'electron-store';
 import fetch from 'node-fetch';
+
 import { encodeDeviceId, getKBDList } from '../gpkrc';
 import enTranslations from '../src/i18n/locales/en';
 import type { 

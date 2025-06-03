@@ -67,10 +67,10 @@ export const hasRequiredDeviceProperties = (device: unknown): device is HIDDevic
 
 export const dataToBytes = (data: string | number[] | undefined): number[] => {
     if (typeof data === 'string') {
-        return [...data].map(c => c.charCodeAt(0)).concat(0);
+        return [...data].map((c): number => c.charCodeAt(0)).concat(0);
     } else if (Array.isArray(data)) {
         // Convert undefined values to 0
-        return data.map(item => item === undefined ? 0 : item);
+        return data.map((item): number => item === undefined ? 0 : item);
     }
     return [];
 };

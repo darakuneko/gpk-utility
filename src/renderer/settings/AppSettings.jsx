@@ -1,7 +1,9 @@
 import React from 'react';
-import LanguageSettings from './languageSettings.jsx';
+
 import SettingFiles from '../settingFiles.jsx';
 import { useLanguage } from '../../i18n/LanguageContext.jsx';
+
+import LanguageSettings from './languageSettings.jsx';
 
 export default function AppSettings() {
   const { t } = useLanguage();
