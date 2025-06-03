@@ -68,7 +68,7 @@ const Content: React.FC = (): JSX.Element => {
                 handleActiveWindow(windowInfo);
             });
         };
-    }, [handleActiveWindow]);
+    }, []);
 
     // Monitor config save completion event
     const [saveStatus, setSaveStatus] = useState<SaveStatus>({
