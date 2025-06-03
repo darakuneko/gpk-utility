@@ -23,7 +23,8 @@ import {
 let mainWindow: BrowserWindow | null;
 
 // Use proper Device type from types/device.ts
-import type { Device } from '../src/types/device';
+import type { Device, DeviceWithId, DeviceStatus, CommandResult } from '../src/types/device';
+import { DeviceType } from '../gpkrc-modules/deviceTypes';
 
 export const setMainWindow = (window: BrowserWindow | null): void => {
     mainWindow = window;
@@ -44,9 +45,9 @@ export const setupDeviceHandlers = (): void => {
     });
     
     ipcMain.handle('encodeDeviceId', async (_event, device: Device): Promise<string> => await encodeDeviceId(device));
-    ipcMain.handle('getKBDList', async (_event): Promise<Device[]> => await getKBDList());
-    ipcMain.handle('getDeviceType', (_event): DeviceType => getDeviceType());
-    ipcMain.handle('getConnectKbd', async (_event, id: string): Promise<Device | undefined> => await getConnectKbd(id));
+    ipcMain.handle('getKBDList', async (_event): Promise<DeviceWithId[]> => await getKBDList());
+    ipcMain.handle('getDeviceType', (_event): typeof DeviceType => getDeviceType());
+    ipcMain.handle('getConnectKbd', async (_event, id: string): Promise<DeviceStatus | undefined> => await getConnectKbd(id));
     
     ipcMain.on("changeConnectDevice", (e, data: Device): void => {
         if (mainWindow) {
@@ -67,10 +68,8 @@ export const setupDeviceHandlers = (): void => {
                 errorMessage.includes("Device may need to be reconnected")) {
                 return { 
                     success: false, 
-                    error: errorMessage,
-                    requiresReconnection: true,
-                    suggestion: "Please disconnect and reconnect the device to re-establish communication."
-                };
+                    error: `${errorMessage}. Please disconnect and reconnect the device to re-establish communication.`
+                } as CommandResult;
             }
             
             return { success: false, error: errorMessage };

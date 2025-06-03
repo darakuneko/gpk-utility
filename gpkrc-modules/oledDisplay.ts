@@ -33,7 +33,7 @@ export const writeTimeToOled = async (device: Device, forceWrite: boolean = fals
             
             if (!result.success) {
                 console.error("Failed to write time to OLED:", result.error);
-                return { success: false, error: result.error };
+                return { success: false, error: result.error || 'Unknown error' };
             }
             
             return result;

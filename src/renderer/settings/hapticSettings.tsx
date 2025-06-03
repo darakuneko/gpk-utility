@@ -27,7 +27,7 @@ const HapticSettings: React.FC<HapticSettingsProps> = ({ device, handleChange, h
           </label>
           <CustomSelect
             id="config-hf_waveform_number"
-            value={trackpadConfig.hf_waveform_number && trackpadConfig.hf_waveform_number !== 0 ? trackpadConfig.hf_waveform_number : ''}
+            value={trackpadConfig.hf_waveform_number && trackpadConfig.hf_waveform_number !== 0 ? String(trackpadConfig.hf_waveform_number) : ''}
             onChange={handleChange("hf_waveform_number", device.id)}
             options={fullHapticOptions}
           />

@@ -74,7 +74,7 @@ export const exposeAPI = (): void => {
                     const pomodoroNotifSettings = cachedStoreSettings.pomodoroDesktopNotificationsSettings || {};
                     if (pomodoroNotifSettings[device.id] !== undefined) {
                         if (!device.config.pomodoro) device.config.pomodoro = {};
-                        device.config.pomodoro.notifications_enabled = pomodoroNotifSettings[device.id];
+                        device.config.pomodoro.notifications_enabled = pomodoroNotifSettings[device.id] ?? false;
                     }
                 }));
                 
@@ -259,7 +259,8 @@ export const exposeAPI = (): void => {
         },
         loadOledSettings: async (deviceId: string): Promise<{ success: boolean; enabled?: boolean }> => {
             const settings = cachedStoreSettings.oledSettings || {};
-            return { success: true, enabled: settings[deviceId]?.enabled };
+            const enabled = settings[deviceId]?.enabled;
+            return enabled !== undefined ? { success: true, enabled } : { success: true };
         },
         saveTraySettings: async (settings: TraySettings): Promise<CommandResult> => {
             return await saveStoreSetting('traySettings', { ...cachedStoreSettings.traySettings, ...settings });

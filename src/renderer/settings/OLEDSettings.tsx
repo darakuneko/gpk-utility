@@ -10,7 +10,7 @@ interface OLEDSettingsProps {
 }
 
 const OLEDSettings: React.FC<OLEDSettingsProps> = memo(({ device, handleChange }) => {
-  const [oledEnabled, setOledEnabled] = useState<boolean>(device.config && device.config.oled_enabled === 1);
+  const [oledEnabled, setOledEnabled] = useState<boolean>(() => device.config && device.config.oled_enabled === 1);
   const { t } = useLanguage();
 
   // Update state when device config changes

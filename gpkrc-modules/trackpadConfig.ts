@@ -60,7 +60,7 @@ export const saveTrackpadConfig = async (device: Device, trackpadDataBytes: numb
         if (!result.success) {
             throw new Error(result.error || "Failed to save trackpad config");
         }
-        await new Promise<void>((resolve): void => setTimeout(resolve, 500)); // Add 500ms delay
+        await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 500)); // Add 500ms delay
         return result;
     } catch (error) {
         console.error("Error saving trackpad config:", error);

@@ -3,6 +3,17 @@ import React, { useEffect, useState } from "react";
 import { CustomSlider, CustomSelect, CustomSwitch } from "../../components/CustomComponents.tsx";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
 import { useLanguage } from "../../i18n/LanguageContext.tsx";
+import type { Device } from "../../types/device";
+
+interface PomodoroInactiveSettingsProps {
+  device: Device;
+  handleChange: (field: string, deviceId: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  handleSliderStart: () => void;
+  handleSliderEnd: () => void;
+  desktopNotificationsEnabled: boolean;
+  hapticNotificationsEnabled: boolean;
+  continuousModeEnabled: boolean;
+}
 
 // Pomodoro active state display component
 const PomodoroActiveDisplay: React.FC<any> = ({ device, formatTime, desktopNotificationsEnabled }) => {
@@ -88,7 +99,7 @@ const PomodoroActiveDisplay: React.FC<any> = ({ device, formatTime, desktopNotif
 };
 
 // Pomodoro inactive state settings component
-const PomodoroInactiveSettings = ({ device, handleChange, handleSliderStart, handleSliderEnd, desktopNotificationsEnabled, hapticNotificationsEnabled, continuousModeEnabled }) => {
+const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, desktopNotificationsEnabled, hapticNotificationsEnabled, continuousModeEnabled }) => {
   const { t } = useLanguage();
   
   const pomodoroConfig = device.config?.pomodoro;
@@ -316,7 +327,7 @@ const TimerSettings: React.FC<any> = ({ device, handleChange, handleSliderStart,
   }, [device]);
 
   useEffect(() => {
-    const handleSwitchUpdate = (event) => {
+    const handleSwitchUpdate = (event: CustomEvent<{ id: string; value: boolean | number }>) => {
       if (event.detail && event.detail.id === "config-pomodoro_notify_notifications_enable") {
         setDesktopNotificationsEnabled(event.detail.value);
       }
@@ -360,7 +371,7 @@ const TimerSettings: React.FC<any> = ({ device, handleChange, handleSliderStart,
   };
 
   // Custom change handler for haptic notification toggle
-  const handleHapticNotificationToggle = (isEnabled) => {
+  const handleHapticNotificationToggle = (isEnabled: boolean) => {
     setHapticNotificationsEnabled(isEnabled);
     
     // Update device config - ensure pomodoro object exists
@@ -386,7 +397,7 @@ const TimerSettings: React.FC<any> = ({ device, handleChange, handleSliderStart,
     }
   };
 
-  const handleContinuousModeToggle = (isEnabled) => {
+  const handleContinuousModeToggle = (isEnabled: boolean) => {
     setContinuousModeEnabled(isEnabled);
     
     // Update device config - ensure pomodoro object exists
@@ -412,8 +423,8 @@ const TimerSettings: React.FC<any> = ({ device, handleChange, handleSliderStart,
     }
   };
 
-  const enhancedHandleChange = (pType, deviceId) => {
-    return (value) => {
+  const enhancedHandleChange = (pType: string, deviceId: string) => {
+    return (value: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | boolean) => {
       if (pType === "pomodoro_notify_notifications_enable") {
         if (value && typeof value === 'object' && value.target) {
           void handleNotificationToggle(value.target.checked);

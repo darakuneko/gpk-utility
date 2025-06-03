@@ -34,7 +34,7 @@ const DragDropSettings: React.FC<DragDropSettingsProps> = ({ device, handleChang
           </label>
           <CustomSelect
             id="config-drag_strength_mode"
-            value={trackpadConfig.drag_strength_mode !== undefined ? trackpadConfig.drag_strength_mode : ''}
+            value={trackpadConfig.drag_strength_mode !== undefined ? String(trackpadConfig.drag_strength_mode) : ''}
             onChange={handleChange("drag_strength_mode", device.id)}
             options={[
               { value: "0", label: t('dragDrop.term') },

@@ -60,10 +60,10 @@ const isEditingPomodoroPerDevice: Record<string, boolean> = {}
 let settingsStore: Store<StoreSchema> | null = null
 let mainWindow: ElectronWindow | null = null
 
-const getKBD = async (device: HIDDevice, retryCount: number = 0): Promise<HIDDevice | undefined> => {
+const getKBD = async (device: GPKDevice, retryCount: number = 0): Promise<HID.Device | undefined> => {
     const maxRetries = 3;
     
-    const searchDevice = (): HIDDevice | undefined => HID.devices().find((d): boolean =>
+    const searchDevice = (): HID.Device | undefined => HID.devices().find((d): boolean =>
         (device ?
             (d.manufacturer === device.manufacturer &&
                 d.product === device.product &&
@@ -77,7 +77,7 @@ const getKBD = async (device: HIDDevice, retryCount: number = 0): Promise<HIDDev
     
     if (!foundDevice && retryCount < maxRetries) {        
         // Wait before retry with progressive delay
-        await new Promise<void>((resolve): void => setTimeout(resolve, 200 * (retryCount + 1)));
+        await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 200 * (retryCount + 1)));
         
         // Force HID device refresh
         try {
@@ -93,16 +93,26 @@ const getKBD = async (device: HIDDevice, retryCount: number = 0): Promise<HIDDev
 }
 
 const getKBDList = (): DeviceWithId[] => HID.devices().filter((d): boolean =>
-        d.serialNumber?.match(/^vial:/i) &&
+        (d.serialNumber?.match(/^vial:/i) ? true : false) &&
         d.usage === DEFAULT_USAGE.usage &&
         d.usagePage === DEFAULT_USAGE.usagePage
     ).sort((a, b): number => `${a.manufacturer}${a.product}` > `${b.manufacturer}${b.product}` ? 1 : -1)
     .map((device): DeviceWithId => {
-        const id = encodeDeviceId(device)
+        const id = encodeDeviceId(device as HIDDevice)
         if (deviceStatusMap[id]) {
-            return {...device, id: id, deviceType: deviceStatusMap[id]!.deviceType, gpkRCVersion: deviceStatusMap[id]!.gpkRCVersion}
+            return {
+                ...device,
+                id: id,
+                deviceType: deviceStatusMap[id]!.deviceType,
+                gpkRCVersion: deviceStatusMap[id]!.gpkRCVersion,
+                path: device.path || ''
+            } as DeviceWithId
         } else {
-            return {...device, id: id}
+            return {
+                ...device,
+                id: id,
+                path: device.path || ''
+            } as DeviceWithId
         }
     })
 
@@ -123,7 +133,7 @@ const setMainWindow = (window: ElectronWindow): void => {
     ;(global as { mainWindow?: ElectronWindow }).mainWindow = window
 }
 
-const addKbd = async (device: HIDDevice): Promise<string> => { 
+const addKbd = async (device: GPKDevice): Promise<string> => { 
     const d = await getKBD(device);
     const id = encodeDeviceId(device);
     
@@ -201,7 +211,14 @@ const start = async (device: HIDDevice): Promise<string> => {
         
         while (retryCount < maxRetries) {
             try {
-                newId = await addKbd(device);
+                // Convert HIDDevice to GPKDevice for addKbd
+                const gpkDevice: GPKDevice = {
+                    ...device,
+                    id,
+                    manufacturer: device.manufacturer || '',
+                    product: device.product || ''
+                };
+                newId = await addKbd(gpkDevice);
                 // If addKbd succeeds and HID instance exists, break the retry loop
                 if (hidDeviceInstances[newId]) {
                     break;
@@ -222,7 +239,7 @@ const start = async (device: HIDDevice): Promise<string> => {
                 }
                 
                 // Wait before retry
-                await new Promise<void>((resolve): void => setTimeout(resolve, 1000 * retryCount));
+                await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 1000 * retryCount));
             }
         }
         
@@ -297,16 +314,12 @@ const start = async (device: HIDDevice): Promise<string> => {
                         if (receivedCmdId === commandId.customGetValue) {
                             if (receivedActionId === actionId.deviceGetValue) {
                                 deviceStatusMap[id]!.config = { 
-                                    init: undefined,
-                                    pomodoro: {
-                                        phase: undefined
-                                    }, 
-                                    trackpad: {}, 
-                                    oled_enabled: undefined 
+                                    pomodoro: {},
+                                    trackpad: {}
                                 };
                                 
                                 deviceStatusMap[id]!.gpkRCVersion = actualData[0] || 0;
-                                deviceStatusMap[id]!.init = actualData[1];
+                                deviceStatusMap[id]!.init = actualData[1] || 0;
                                 const deviceTypeStr = actualData.toString('utf8', 2).split('\0')[0] || '';
                                 deviceStatusMap[id]!.deviceType = stringToDeviceType(deviceTypeStr);
 
@@ -431,7 +444,7 @@ const start = async (device: HIDDevice): Promise<string> => {
             const startTime = Date.now();
                         
             while (!initializationComplete && (Date.now() - startTime) < timeout) {
-                await new Promise<void>((resolve): void => setTimeout(resolve, 1000)); // Increased check interval
+                await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 1000)); // Increased check interval
             }
             
             // Additional validation: ensure HID instance is still valid after timeout
@@ -595,11 +608,18 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
             }
             
             // Wait before retry
-            await new Promise<void>((resolve): void => setTimeout(resolve, 500 * (retryCount + 1)));
+            await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 500 * (retryCount + 1)));
             
             // Try to recreate HID instance
             try {
-                const newDeviceId = await addKbd(device);
+                // Convert HIDDevice to GPKDevice for addKbd
+                const gpkDevice: GPKDevice = {
+                    ...device,
+                    id,
+                    manufacturer: device.manufacturer || '',
+                    product: device.product || ''
+                };
+                const newDeviceId = await addKbd(gpkDevice);
                 
                 if (hidDeviceInstances[newDeviceId]) {
                     // Restore connection status
@@ -608,7 +628,7 @@ const writeCommand = async (device: HIDDevice, command: number[], retryCount: nu
                     }
                     
                     // Wait a bit for device to stabilize
-                    await new Promise<void>((resolve): void => setTimeout(resolve, 200));
+                    await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 200));
                     
                     // Retry the command
                     return writeCommand(device, command, retryCount + 1);
@@ -653,7 +673,7 @@ export const initializeDependencies = (): void => {
         hidDeviceInstances,
         getKBD: getKBD as (device: unknown, retryCount?: number) => Promise<unknown>,
         addKbd: addKbd as (device: unknown) => Promise<string>,
-        mainWindow: mainWindow || undefined
+        mainWindow: mainWindow
     });
 
     // Inject dependencies for OLED display
@@ -670,7 +690,7 @@ export const initializeDependencies = (): void => {
         deviceStatusMap: deviceStatusMap as Record<string, DeviceStatus>,
         settingsStore: settingsStore!,
         writeCommand,
-        mainWindow: mainWindow || undefined
+        mainWindow: mainWindow
     });
 };
 

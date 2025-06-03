@@ -6,6 +6,7 @@ import {
   CustomSelect
 } from "../../components/CustomComponents.tsx";
 import { useLanguage } from "../../i18n/LanguageContext.tsx";
+import type { Device, LayerSetting, ActiveWindowResult } from "../../types/device";
 
 const { api } = window;
 
@@ -13,10 +14,10 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
     const { state, setState } = useStateContext();
     const DeviceType = useDeviceType();
     const { t } = useLanguage();
-    const [layerSettings, setLayerSettings] = useState([]);
+    const [layerSettings, setLayerSettings] = useState<LayerSetting[]>([]);
     const [isEnabled, setIsEnabled] = useState(false);
-    const [localActiveWindows, setLocalActiveWindows] = useState([]);
-    const [deviceId, setDeviceId] = useState(null);
+    const [localActiveWindows, setLocalActiveWindows] = useState<ActiveWindowResult[]>([]);
+    const [deviceId, setDeviceId] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [trackpadLayerEnabled, setTrackpadLayerEnabled] = useState(false);
     const [userChangedTrackpadLayer, setUserChangedTrackpadLayer] = useState(false);
@@ -110,7 +111,7 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
         }
     }, [trackpadConfig?.can_trackpad_layer, userChangedTrackpadLayer]);
     
-    const handleToggleEnabled = async (e) => {
+    const handleToggleEnabled = async (e: React.ChangeEvent<HTMLInputElement> | { target: { checked: boolean } }) => {
         const enabled = e.target.checked ? 1 : 0;
         setIsEnabled(enabled === 1);
         
@@ -128,7 +129,7 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
         await saveSettingsToStore(enabled === 1, layerSettings);
     };
     
-    const handleToggleTrackpadLayer = async (e) => {
+    const handleToggleTrackpadLayer = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const enabled = e.target.checked ? 1 : 0;
         setTrackpadLayerEnabled(enabled === 1);
         setUserChangedTrackpadLayer(true);
@@ -154,33 +155,33 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
     };
     
     const handleAddLayerSetting = async () => {
-        const newSetting = { appName: "", layer: 0 };
+        const newSetting: LayerSetting = { appName: "", applicationName: "", layer: 0 };
         const updatedSettings = [...layerSettings, newSetting];
         
         await updateLayerSettings(updatedSettings);
     };
     
-    const handleDeleteLayerSetting = async (index) => {
+    const handleDeleteLayerSetting = async (index: number) => {
         const updatedSettings = layerSettings.filter((_, i) => i !== index);
         
         await updateLayerSettings(updatedSettings);
     };
     
-    const handleAppNameChange = async (index, appName) => {
+    const handleAppNameChange = async (index: number, appName: string) => {
         const updatedSettings = [...layerSettings];
-        updatedSettings[index] = {...updatedSettings[index], appName};
+        updatedSettings[index] = {...updatedSettings[index], appName, applicationName: appName};
         
         await updateLayerSettings(updatedSettings);
     };
     
-    const handleLayerChange = async (index, layer) => {
+    const handleLayerChange = async (index: number, layer: string) => {
         const updatedSettings = [...layerSettings];
         updatedSettings[index] = {...updatedSettings[index], layer: parseInt(layer, 10)};
         
         await updateLayerSettings(updatedSettings);
     };
     
-    const saveSettingsToStore = async (enabled, settings) => {
+    const saveSettingsToStore = async (enabled: boolean, settings: LayerSetting[]) => {
         try {
             if (api && api.getStoreSetting && api.saveStoreSetting && deviceId) { // Changed
                 const allSettings = await api.getAllStoreSettings();
@@ -201,7 +202,7 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
         }
     };
     
-    const updateLayerSettings = async (settings) => {
+    const updateLayerSettings = async (settings: LayerSetting[]) => {
         setLayerSettings(settings);
         
         const updatedDevice = {...device};
@@ -223,10 +224,10 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
         await saveSettingsToStore(isEnabled, settings);
     };
 
-    const getAppOptions = (currentAppName, _index) => {
+    const getAppOptions = (currentAppName: string, _index: number) => {
         const windowsList = [
             ...new Set([
-                ...(localActiveWindows || []),
+                ...(localActiveWindows.map(w => w.application) || []),
                 ...(state.activeWindow || [])
             ])
         ];
@@ -275,12 +276,12 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
     useEffect(() => {
         const windowsList = [
             ...new Set([
-                ...(localActiveWindows || []),
+                ...(localActiveWindows.map(w => w.application) || []),
                 ...(state.activeWindow || [])
             ])
         ];
         
-        const missing = [];
+        const missing: string[] = [];
         layerSettings.forEach(setting => {
             if (setting.appName && 
                 !windowsList.includes(setting.appName) && 
@@ -296,7 +297,7 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
     
     return (
         <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-            {device.deviceType === DeviceType.KEYBOARD_TP && (
+            {DeviceType && device.deviceType === DeviceType.KEYBOARD_TP && (
                 <div className="flex items-center mb-4">
                     <div className="flex-1">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.trackpadLayer')}</h3>
@@ -311,7 +312,7 @@ const LayerSettings: React.FC<any> = ({ device, handleChange: _handleChange }) =
                 </div>
             )}
             
-            <div className={`${device.deviceType === DeviceType.KEYBOARD_TP ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
+            <div className={`${DeviceType && device.deviceType === DeviceType.KEYBOARD_TP ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
                 <div className="flex items-center mb-4">
                     <div className="flex-1">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.autoSwitching')}</h3>

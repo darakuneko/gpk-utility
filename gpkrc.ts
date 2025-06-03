@@ -121,7 +121,7 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
         }
         
         // Wait a bit before attempting communication to ensure device is ready
-        await new Promise<void>((resolve): void => setTimeout(resolve, 300)); // Increased initial delay
+        await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 300)); // Increased initial delay
         
         const trackpadResult = await writeCommand(device, [commandId.customGetValue, actionId.trackpadGetValue]);
 
@@ -131,7 +131,7 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
         }
         
         // Add delay between commands
-        await new Promise<void>((resolve): void => setTimeout(resolve, 300)); // Increased delay between commands
+        await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 300)); // Increased delay between commands
         
         const pomodoroResult = await writeCommand(device, [commandId.customGetValue, actionId.pomodoroGetValue]);
 
@@ -159,7 +159,7 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
              (err as Error).message.includes("is closed") ||
              (err as Error).message.includes("Write error after recovery attempt"))) {
 
-            await new Promise<void>((resolve): void => setTimeout(resolve, 1500 * (retryCount + 1))); // Progressive retry delay
+            await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 1500 * (retryCount + 1))); // Progressive retry delay
             return getDeviceConfig(device, retryCount + 1);
         }
         

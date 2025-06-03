@@ -53,7 +53,7 @@ const store = new Store<StoreSchema>({
             minimizeToTray: true,
             backgroundStart: false
         },
-        windowBounds: { width: 1280, height: 800, x: undefined, y: undefined },
+        windowBounds: { width: 1280, height: 800 },
         locale: 'en',
         notificationApiEndpoint: 'https://getnotifications-svtx62766a-uc.a.run.app'
     }
@@ -192,11 +192,9 @@ const createWindow = async (): Promise<void> => {
     const windowBounds = store.get('windowBounds');
     const minWidth = 800;
     const minHeight = 600;  
-    mainWindow = new BrowserWindow({
+    const windowOptions: Electron.BrowserWindowConstructorOptions = {
         width: windowBounds.width || minWidth,
         height: windowBounds.height || minHeight,
-        x: windowBounds.x,
-        y: windowBounds.y,
         minWidth: minWidth,
         minHeight: minHeight,
         icon: `${__dirname}/../icons/256x256.png`,
@@ -207,7 +205,16 @@ const createWindow = async (): Promise<void> => {
             contextIsolation: true,
         },
         show: !store.get('backgroundStart'),
-    });
+    };
+    
+    if (windowBounds.x !== undefined) {
+        windowOptions.x = windowBounds.x;
+    }
+    if (windowBounds.y !== undefined) {
+        windowOptions.y = windowBounds.y;
+    }
+    
+    mainWindow = new BrowserWindow(windowOptions);
 
     void mainWindow.loadURL(`file://${__dirname}/../dist/public/index.html`);
     mainWindow.setMenu(null);
