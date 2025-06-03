@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { CustomSlider, CustomSelect, CustomSwitch } from "../../components/CustomComponents.tsx";
 import { fullHapticOptions } from "../../data/hapticOptions.js";
 import { useLanguage } from "../../i18n/LanguageContext.tsx";
-import type { Device } from "../../types/device";
+import type { Device, DeviceConfig } from "../../types/device";
 
 interface PomodoroInactiveSettingsProps {
   device: Device;
@@ -109,7 +109,7 @@ const PomodoroActiveDisplay: React.FC<PomodoroActiveDisplayProps> = ({ device, f
 };
 
 // Pomodoro inactive state settings component
-const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, desktopNotificationsEnabled, hapticNotificationsEnabled, continuousModeEnabled }): JSX.Element => {
+const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, desktopNotificationsEnabled, hapticNotificationsEnabled, continuousModeEnabled }) => {
   const { t } = useLanguage();
   
   const pomodoroConfig = device.config?.pomodoro || {
@@ -303,7 +303,7 @@ interface TimerSettingsProps {
   formatTime: (minutes: number, seconds: number) => string;
 }
 
-const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, formatTime }): JSX.Element => {
+const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, formatTime }) => {
   const [desktopNotificationsEnabled, setDesktopNotificationsEnabled] = useState(true);
   const [hapticNotificationsEnabled, setHapticNotificationsEnabled] = useState(false);
   const [continuousModeEnabled, setContinuousModeEnabled] = useState(false);
@@ -334,10 +334,12 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
           if (result.success) {
             setDesktopNotificationsEnabled(result.enabled);
             
-            if (!device.config.pomodoro) {
-              device.config.pomodoro = {};
+            if (device.config) {
+              if (!device.config.pomodoro) {
+                device.config.pomodoro = {};
+              }
+              device.config.pomodoro.notifications_enabled = result.enabled;
             }
-            device.config.pomodoro.notifications_enabled = result.enabled;
           }
         } catch (error) {
           console.error("Failed to load pomodoro notification settings:", error);
@@ -348,7 +350,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
     void loadNotificationSettings();
   }, [device]);
 
-  useEffect((): void => {
+  useEffect(() => {
     const handleSwitchUpdate = (event: CustomEvent<{ id: string; value: boolean | number }>): void => {
       if (event.detail && event.detail.id === "config-pomodoro_notify_notifications_enable") {
         setDesktopNotificationsEnabled(Boolean(event.detail.value));
@@ -398,10 +400,12 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
     setHapticNotificationsEnabled(isEnabled);
     
     // Update device config - ensure pomodoro object exists
-    if (!device.config.pomodoro) {
-      device.config.pomodoro = {};
+    if (device.config) {
+      if (!device.config.pomodoro) {
+        device.config.pomodoro = {};
+      }
+      device.config.pomodoro.notify_haptic_enable = isEnabled ? 1 : 0;
     }
-    device.config.pomodoro.notify_haptic_enable = isEnabled ? 1 : 0;
     
     // Send the updated config to device - update only pomodoro settings
     window.api.dispatchSaveDeviceConfig(device);
@@ -424,10 +428,12 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
     setContinuousModeEnabled(isEnabled);
     
     // Update device config - ensure pomodoro object exists
-    if (!device.config.pomodoro) {
-      device.config.pomodoro = {};
+    if (device.config) {
+      if (!device.config.pomodoro) {
+        device.config.pomodoro = {};
+      }
+      device.config.pomodoro.continuous_mode = isEnabled ? 1 : 0;
     }
-    device.config.pomodoro.continuous_mode = isEnabled ? 1 : 0;
     
     // Send the updated config to device - update only pomodoro settings
     window.api.dispatchSaveDeviceConfig(device);
@@ -481,19 +487,25 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
         const internalProp = pType.replace('pomodoro_', '');
         
         // Ensure pomodoro object exists
-        if (!device.config.pomodoro) {
-          device.config.pomodoro = {};
+        if (device.config) {
+          if (!device.config.pomodoro) {
+            device.config.pomodoro = {};
+          }
+          
+          // Set value in the nested structure
+          (device.config.pomodoro as Record<string, unknown>)[internalProp] = value;
         }
         
-        // Set value in the nested structure
-        device.config.pomodoro[internalProp] = value;
-        
         // Call the parent handler with the original property name
-        handleChange(pType, deviceId)(value);
+        if (typeof value === 'object' && value !== null && 'target' in value) {
+          handleChange(pType, deviceId)(value as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>);
+        }
         return;
       }
       
-      handleChange(pType, deviceId)(value);
+      if (typeof value === 'object' && value !== null && 'target' in value) {
+        handleChange(pType, deviceId)(value as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>);
+      }
     };
   };
   

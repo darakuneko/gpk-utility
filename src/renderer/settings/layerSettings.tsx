@@ -32,7 +32,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
     // Get trackpad configuration or empty object if not defined
     const trackpadConfig = device.config?.trackpad || {};
 
-    useEffect((): void => {
+    useEffect(() => {
         const fetchActiveWindows = async (): Promise<void> => {
             if (!api || !api.getActiveWindows) return;
             
@@ -49,23 +49,25 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
         void fetchActiveWindows();
         
         const intervalId = setInterval(fetchActiveWindows, 1000);
-        return (): void => clearInterval(intervalId);
+        return () => clearInterval(intervalId);
     }, []);
 
-    useEffect((): void => {
+    useEffect(() => {
         const loadSettingsFromStore = async (): Promise<void> => {
             try {
-                if (api && api.getStoreSetting && api.getAllStoreSettings && device && device.id) { 
+                if (api && device && device.id) { 
                     const allSettings = await api.getAllStoreSettings(); 
-                    const storedSettings = allSettings && allSettings.autoLayerSettings ? allSettings.autoLayerSettings[device.id] : undefined;
+                    const allSettingsRecord = allSettings as Record<string, unknown>;
+                    const autoLayerSettings = allSettingsRecord.autoLayerSettings as Record<string, unknown>;
+                    const storedSettings = allSettings && autoLayerSettings ? autoLayerSettings[device.id] as Record<string, unknown> : undefined;
                         
                     if (storedSettings) {
                             if (storedSettings.layerSettings) {
-                                setLayerSettings(storedSettings.layerSettings);
+                                setLayerSettings(storedSettings.layerSettings as LayerSetting[]);
                             }
                             
                             if (storedSettings.enabled !== undefined) {
-                                setIsEnabled(storedSettings.enabled);
+                                setIsEnabled(storedSettings.enabled as boolean);
                             }
                             
                             if (!device.config) {
@@ -75,8 +77,8 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
                                 } as DeviceConfig;
                             }
                             if (!device.config.trackpad) device.config.trackpad = {};
-                            device.config.trackpad.auto_layer_enabled = storedSettings.enabled ? 1 : 0;
-                            device.config.trackpad.auto_layer_settings = storedSettings.layerSettings || [];
+                            device.config.trackpad.auto_layer_enabled = (storedSettings.enabled as boolean) ? 1 : 0;
+                            device.config.trackpad.auto_layer_settings = (storedSettings.layerSettings as LayerSetting[]) || [];
                             (device.config as DeviceConfig & { changed?: boolean }).changed = true;
                             
                             const newState = {
@@ -205,9 +207,9 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
     
     const saveSettingsToStore = async (enabled: boolean, settings: LayerSetting[]): Promise<void> => {
         try {
-            if (api && api.getStoreSetting && api.saveStoreSetting && deviceId) { // Changed
+            if (api && deviceId) {
                 const allSettings = await api.getAllStoreSettings();
-                const currentSettings = allSettings.autoLayerSettings || {};
+                const currentSettings = (allSettings as Record<string, unknown>).autoLayerSettings || {};
                 
                 const updatedSettings = {
                     ...currentSettings,
@@ -324,7 +326,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
     
     return (
         <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-            {DeviceType && device.deviceType === (DeviceType as typeof DeviceTypeEnum)?.KEYBOARD_TP && (
+            {DeviceType && device.deviceType === (DeviceType as unknown as typeof DeviceTypeEnum)?.KEYBOARD_TP && (
                 <div className="flex items-center mb-4">
                     <div className="flex-1">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.trackpadLayer')}</h3>
@@ -339,7 +341,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _ha
                 </div>
             )}
             
-            <div className={`${DeviceType && device.deviceType === (DeviceType as typeof DeviceTypeEnum)?.KEYBOARD_TP ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
+            <div className={`${DeviceType && device.deviceType === (DeviceType as unknown as typeof DeviceTypeEnum)?.KEYBOARD_TP ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
                 <div className="flex items-center mb-4">
                     <div className="flex-1">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.autoSwitching')}</h3>

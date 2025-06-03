@@ -30,16 +30,19 @@ interface UpdatesNotificationEvent extends CustomEvent {
 
 // Types are defined in src/types/global.d.ts
 
-interface UpdatesNotificationEvent extends CustomEvent {
+interface AppUpdatesNotificationEvent extends CustomEvent {
   detail: {
-    version: string;
-    releaseNotes: string;
+    notifications: Array<{
+      title: string;
+      body: string;
+      publishedAt: { _seconds: number };
+    }>;
   };
 }
 
 declare global {
   interface WindowEventMap {
-    'showUpdatesNotificationModal': UpdatesNotificationEvent;
+    'showUpdatesNotificationModal': AppUpdatesNotificationEvent;
   }
 }
 
@@ -68,7 +71,7 @@ const App: React.FC = () => {
 
     // Listen for showUpdatesNotificationModal event
     useEffect((): (() => void) => {
-        const handleUpdatesNotificationModalEvent = (event: UpdatesNotificationEvent): void => {
+        const handleUpdatesNotificationModalEvent = (event: AppUpdatesNotificationEvent): void => {
             setUpdates(event.detail.notifications)
             setIsUpdatesNotificationModalOpen(true)
         }
