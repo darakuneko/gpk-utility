@@ -26,19 +26,18 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
     const { state, setState } = useStateContext();
     const device = props.device;
     const [isSliderActive, setIsSliderActive] = useState(false);
-    const [pendingChanges, setPendingChanges] = useState<Record<string, unknown>>({});
+    const [pendingChanges, setPendingChanges] = useState<{ device?: Device; pType?: string }>({});
     
     // Get active tab from parent component
     const activeTab = props.activeTab || "mouse";
 
-    const sendConfigToDevice = async (updatedDevice: Device): Promise<Record<string, unknown> | undefined> => {
+    const sendConfigToDevice = async (updatedDevice: Device): Promise<DeviceConfig | undefined> => {
         try {
             // Determine which configuration type to update based on the active tab
             // Update only pomodoro settings for "timer" tab, otherwise update only trackpad settings
             const updatedConfig = await api.dispatchSaveDeviceConfig(updatedDevice);
             
-            if (updatedConfig && typeof updatedConfig === 'object' && 'success' in updatedConfig && updatedConfig.success) {
-                const typedConfig = updatedConfig as { success: boolean; config?: Record<string, unknown> };
+            if (updatedConfig && updatedConfig.success && updatedConfig.config) {
                 const newState = {
                     ...state,
                     devices: state.devices.map((dev): Device => {
@@ -47,8 +46,8 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                                 ...dev, 
                                 config: {
                                     ...dev.config, 
-                                    ...typedConfig.config
-                                } as DeviceConfig & { changed?: boolean }
+                                    ...updatedConfig.config
+                                } as DeviceConfig
                             };
                         }
                         return dev;
@@ -56,14 +55,14 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                 };
                 setState(newState);
                 
-                if (typedConfig.config) {
+                if (updatedConfig.config) {
                     window.requestAnimationFrame((): void => {
-                        const element = document.getElementById(`config-${Object.keys(typedConfig.config!)[0]}`);
+                        const element = document.getElementById(`config-${Object.keys(updatedConfig.config!)[0]}`);
                         if (element) element.dispatchEvent(new Event('update'));
                     });
                 }
                 
-                return typedConfig.config;
+                return updatedConfig.config;
             }
         } catch (error) {
             // Ignore config processing errors - return original config
@@ -118,8 +117,8 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                     if (pType.startsWith('pomodoro_')) {
                         // Pomodoro related settings - remove the pomodoro_ prefix to get the actual property name
                         const actualProp = pType.replace('pomodoro_', '');
-                        if (updatedDevice.config) {
-                            (updatedDevice.config.pomodoro as Record<string, unknown>)[actualProp] = newValue;
+                        if (updatedDevice.config && updatedDevice.config.pomodoro) {
+                            (updatedDevice.config.pomodoro as Record<string, number | boolean>)[actualProp] = newValue;
                         }
                     } else if (pType === "can_hf_for_layer" || pType === "can_drag" || 
                               pType === "can_trackpad_layer" || pType === "can_reverse_scrolling_direction" || 
@@ -131,19 +130,20 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                               pType === "short_scroll_term" || pType === "scroll_step" ||
                               pType === "hf_waveform_number") {
                         // Trackpad related settings
-                        if (updatedDevice.config) {
-                            (updatedDevice.config.trackpad as Record<string, unknown>)[pType] = newValue;
+                        if (updatedDevice.config && updatedDevice.config.trackpad) {
+                            (updatedDevice.config.trackpad as Record<string, number>)[pType] = newValue;
                         }
                     } else {
                         // Other settings (top-level properties like init)
                         if (updatedDevice.config) {
-                            (updatedDevice.config as unknown as Record<string, unknown>)[pType] = newValue;
+                            const configWithIndex = updatedDevice.config as DeviceConfig & { [key: string]: number };
+                            configWithIndex[pType] = newValue;
                         }
                     }
                     
                     // Set changed flag
                     if (updatedDevice.config) {
-                        (updatedDevice.config as unknown as Record<string, unknown>).changed = true;
+                        (updatedDevice.config as DeviceConfig & { changed?: boolean }).changed = true;
                     }
                     
                     // Update UI state first

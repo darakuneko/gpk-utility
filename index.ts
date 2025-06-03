@@ -18,6 +18,8 @@ import { setupIpcHandlers, setupIpcEvents, setMainWindow as setIpcMainWindow, se
 import enTranslations from './src/i18n/locales/en';
 import type { ActiveWindowResult, DeviceStatus } from './src/types/device';
 import type { StoreSchema } from './src/types/store';
+import type { TranslationParams } from './src/types/api-types';
+import type { TranslationObject } from './src/types/translation';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,25 +58,28 @@ const store = new Store<StoreSchema>({
 });
 
 // Translation utility function
-const translate = (key: string, params: Record<string, string | number> = {}): string => {
+const translate = (key: string, params: TranslationParams = {}): string => {
     const locale = store.get('locale') || 'en';
-    const translations = enTranslations as unknown as Record<string, unknown>;
+    const translations = enTranslations as TranslationObject;
     
     // Get nested value from translations using key path
-    const getValue = (obj: Record<string, unknown>, path: string): string | undefined => {
-        return path.split('.').reduce((o: unknown, i: string): unknown => {
+    const getValue = (obj: TranslationObject, path: string): string | undefined => {
+        // Type for navigation through translation objects
+        type TranslationValue = string | { [key: string]: TranslationValue };
+        const result = path.split('.').reduce((o: TranslationValue | undefined, i: string): TranslationValue | undefined => {
             if (o && typeof o === 'object' && i in o) {
-                return (o as Record<string, unknown>)[i];
+                return (o as { [key: string]: TranslationValue })[i];
             }
             return undefined;
-        }, obj) as string | undefined;
+        }, obj as TranslationValue);
+        return typeof result === 'string' ? result : undefined;
     };
     
     let text = getValue(translations, key);
     
     // Fall back to English if translation not found
     if (text === undefined && locale !== 'en') {
-        text = getValue(enTranslations as unknown as Record<string, unknown>, key);
+        text = getValue(enTranslations as TranslationObject, key);
     }
     
     // If still undefined, return key

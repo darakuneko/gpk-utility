@@ -14,6 +14,8 @@ import type {
 } from '../src/types/ipc';
 import type { StoreSchema } from '../src/types/store';
 import type { Device } from '../src/types/device';
+import type { TranslationParams, NotificationPayload } from '../src/types/api-types';
+import type { TranslationObject } from '../src/types/translation';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,18 +32,19 @@ export const setMainWindow = (window: BrowserWindow | null): void => {
 };
 
 // Translation utility function
-const translate = (key: string, params: Record<string, unknown> = {}): string => {
+const translate = (key: string, params: TranslationParams = {}): string => {
     const _locale = store.get('locale') || 'en';
-    const translations = enTranslations as unknown as Record<string, unknown>;
+    const translations = enTranslations as unknown as TranslationObject;
     
     // Get nested value from translations using key path
-    const getValue = (obj: Record<string, unknown>, path: string): string | undefined => {
-        return path.split('.').reduce((o: unknown, i: string): unknown => {
-            if (o && typeof o === 'object' && i in o) {
+    const getValue = (obj: TranslationObject, path: string): string | undefined => {
+        const result = path.split('.').reduce((o: unknown, i: string): unknown => {
+            if (o && typeof o === 'object' && i in (o as Record<string, unknown>)) {
                 return (o as Record<string, unknown>)[i];
             }
             return undefined;
-        }, obj) as string | undefined;
+        }, obj);
+        return typeof result === 'string' ? result : undefined;
     };
     
     const text = getValue(translations, key);
@@ -56,7 +59,7 @@ const translate = (key: string, params: Record<string, unknown> = {}): string =>
 };
 
 export const setupNotificationHandlers = (): void => {
-    ipcMain.handle('getNotifications', async (): Promise<unknown> => {
+    ipcMain.handle('getNotifications', async (): Promise<NotificationPayload[]> => {
         try {
             const now = Date.now();
             const queryPayload: NotificationQueryPayload = {
@@ -76,7 +79,7 @@ export const setupNotificationHandlers = (): void => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(queryPayload)
             });
-            return await response.json();
+            return await response.json() as NotificationPayload[];
         } catch (error) {
             console.error(error);
             return [];

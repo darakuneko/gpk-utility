@@ -5,20 +5,24 @@ export interface BaseResponse {
   error?: string;
 }
 
+export interface SaveResult extends BaseResponse {
+  timestamp?: number;
+}
+
+export interface NotificationResult extends BaseResponse {
+  enabled?: boolean;
+}
+
 export interface DataResponse<T> extends BaseResponse {
   data?: T;
 }
 
 export interface SettingsResponse extends BaseResponse {
-  settings?: Record<string, string | number | boolean | Record<string, unknown>>;
+  settings?: Record<string, unknown>; // Settings can contain various types including arrays
 }
 
 export interface DeviceConfigResponse extends BaseResponse {
   config?: import('./device').DeviceConfig;
-}
-
-export interface SaveResult extends BaseResponse {
-  timestamp?: number;
 }
 
 export interface LoadResult<T> extends BaseResponse {

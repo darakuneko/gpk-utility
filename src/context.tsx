@@ -11,14 +11,14 @@ interface AppState {
 
 type AppAction = 
     | { type: 'SET_DEVICES'; payload: Device[] }
-    | { type: 'UPDATE_DEVICE_CONFIG'; payload: { deviceId: string; config: Record<string, unknown> } }
+    | { type: 'UPDATE_DEVICE_CONFIG'; payload: { deviceId: string; config: Partial<DeviceConfig> } }
     | { type: 'SET_ACTIVE_WINDOW'; payload: string[] }
     | { type: 'SET_INIT'; payload: boolean };
 
 interface StateContextValue {
     state: AppState;
     setState: (obj: Partial<AppState>) => void;
-    updateDeviceConfig: (deviceId: string, configUpdates: Record<string, unknown>) => void;
+    updateDeviceConfig: (deviceId: string, configUpdates: Partial<DeviceConfig>) => void;
     dispatch: React.Dispatch<AppAction>;
 }
 
@@ -55,7 +55,7 @@ const reducer = (state: AppState, action: AppAction): AppState => {
                     device.id === deviceId 
                         ? { 
                             ...device, 
-                            config: device.config ? { ...device.config, ...config } : config as unknown as DeviceConfig,
+                            config: device.config ? { ...device.config, ...config } : config as DeviceConfig,
                         } 
                         : device
                 )
@@ -124,7 +124,7 @@ export function StateProvider({children}: {children: React.ReactNode}): React.Re
     };
 
     // Helper function for device config updates (for slider and other settings)
-    const updateDeviceConfig = (deviceId: string, configUpdates: Record<string, unknown>): void => {
+    const updateDeviceConfig = (deviceId: string, configUpdates: Partial<DeviceConfig>): void => {
         const deviceIndex = state.devices.findIndex((d): boolean => d.id === deviceId);
         if (deviceIndex === -1) return;
         

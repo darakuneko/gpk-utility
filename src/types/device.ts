@@ -165,6 +165,7 @@ export interface DeviceConfig {
     pomodoro: PomodoroConfig;
     trackpad: TrackpadConfig;
     oled_enabled?: number;
+    [key: string]: unknown; // Allow any additional properties
 }
 
 export interface DeviceStatus {

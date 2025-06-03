@@ -8,6 +8,13 @@ import type Store from 'electron-store';
 import { updateAutoLayerSettings } from '../gpkrc';
 import type { StoreSchema } from '../src/types/store';
 import type { StoreSettings, AutoLayerSetting } from '../preload/types';
+import type { 
+    SaveResult, 
+    NotificationResult,
+    TranslationParams,
+    AppVersionInfo
+} from '../src/types/api-types';
+import type { SettingsResponse } from '../src/types/ipc-responses';
 import enTranslations from '../src/i18n/locales/en.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,7 +32,7 @@ export const setMainWindow = (window: BrowserWindow | null): void => {
 };
 
 // Translation utility function
-const translate = (key: string, params: Record<string, unknown> = {}): string => {
+const translate = (key: string, params: TranslationParams = {}): string => {
     const locale = store.get('locale') || 'en';
     const translations = enTranslations;
     
@@ -57,7 +64,7 @@ const translate = (key: string, params: Record<string, unknown> = {}): string =>
 
 export const setupStoreHandlers = (): void => {
     // OLED settings saving
-    ipcMain.handle('saveOledSettings', async (event, deviceId: string, enabled: boolean): Promise<unknown> => {
+    ipcMain.handle('saveOledSettings', async (event, deviceId: string, enabled: boolean): Promise<SaveResult> => {
         try {
             // Get current settings
             const currentSettings = store.get('oledSettings') || {};
@@ -80,15 +87,16 @@ export const setupStoreHandlers = (): void => {
     });
 
     // OLED settings loading
-    ipcMain.handle('loadOledSettings', async (event, deviceId: string): Promise<unknown> => {
+    ipcMain.handle('loadOledSettings', async (event, deviceId: string): Promise<NotificationResult> => {
         try {
             // Load settings from electron-store
             const settings = store.get('oledSettings') || {};
 
             // Return settings for this device
+            const enabled = settings[deviceId]?.enabled;
             return { 
                 success: true, 
-                enabled: settings[deviceId]?.enabled
+                ...(enabled !== undefined && { enabled })
             };
         } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
@@ -96,7 +104,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Tray settings saving
-    ipcMain.handle('saveTraySettings', async (event, settings: { minimizeToTray?: boolean; backgroundStart?: boolean }): Promise<unknown> => {
+    ipcMain.handle('saveTraySettings', async (event, settings: { minimizeToTray?: boolean; backgroundStart?: boolean }): Promise<SaveResult> => {
         try {
             // Save settings to electron-store
             if (settings.minimizeToTray !== undefined) {
@@ -114,13 +122,15 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Tray settings loading
-    ipcMain.handle('loadTraySettings', async (_event): Promise<unknown> => {
+    ipcMain.handle('loadTraySettings', async (_event): Promise<SaveResult & { minimizeToTray?: boolean; backgroundStart?: boolean }> => {
         try {
             // Load settings from electron-store
+            const minimizeToTray = store.get('minimizeToTray');
+            const backgroundStart = store.get('backgroundStart');
             return { 
                 success: true, 
-                minimizeToTray: store.get('minimizeToTray'),
-                backgroundStart: store.get('backgroundStart')
+                ...(minimizeToTray !== undefined && { minimizeToTray }),
+                ...(backgroundStart !== undefined && { backgroundStart })
             };
         } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
@@ -128,7 +138,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Window position and size saving
-    ipcMain.handle('saveWindowBounds', async (event, bounds: { width: number; height: number; x?: number; y?: number }): Promise<unknown> => {
+    ipcMain.handle('saveWindowBounds', async (event, bounds: { width: number; height: number; x?: number; y?: number }): Promise<SaveResult> => {
         try {
             // Save window position and size to electron-store
             store.set('windowBounds', bounds);
@@ -140,7 +150,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Window position and size loading
-    ipcMain.handle('loadWindowBounds', async (_event): Promise<unknown> => {
+    ipcMain.handle('loadWindowBounds', async (_event): Promise<SaveResult & { bounds?: { width: number; height: number; x?: number; y?: number } }> => {
         try {
             // Load window position and size from electron-store
             const bounds = store.get('windowBounds');
@@ -155,7 +165,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Set application locale
-    ipcMain.handle('setAppLocale', async (event, locale: string): Promise<unknown> => {
+    ipcMain.handle('setAppLocale', async (event, locale: string): Promise<SaveResult> => {
         try {
             // Save locale to electron-store
             store.set('locale', locale);
@@ -186,7 +196,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Save pomodoro notification settings
-    ipcMain.handle('savePomodoroDesktopNotificationSettings', async (event, deviceId: string, enabled: boolean): Promise<unknown> => {
+    ipcMain.handle('savePomodoroDesktopNotificationSettings', async (event, deviceId: string, enabled: boolean): Promise<SaveResult> => {
         try {
             // Get current settings
             const currentSettings = store.get('pomodoroDesktopNotificationsSettings') || {};
@@ -205,7 +215,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Load pomodoro notification settings
-    ipcMain.handle('loadPomodoroDesktopNotificationSettings', async (event, deviceId: string): Promise<unknown> => {
+    ipcMain.handle('loadPomodoroDesktopNotificationSettings', async (event, deviceId: string): Promise<NotificationResult> => {
         try {
             // Load settings from electron-store
             const settings = store.get('pomodoroDesktopNotificationsSettings') || {};
@@ -228,7 +238,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Get all store settings at once
-    ipcMain.handle('getAllStoreSettings', async (_event): Promise<unknown> => {
+    ipcMain.handle('getAllStoreSettings', async (_event): Promise<SettingsResponse> => {
         try {
             // Get all relevant settings from store
             const settings = {
@@ -251,7 +261,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Save a specific setting by key
-    ipcMain.handle('saveStoreSetting', async (event, { key, value }: { key: keyof StoreSettings; value: StoreSettings[keyof StoreSettings] }): Promise<unknown> => {
+    ipcMain.handle('saveStoreSetting', async (event, { key, value }: { key: keyof StoreSettings; value: StoreSettings[keyof StoreSettings] }): Promise<SaveResult> => {
         try {
             if (!key) {
                 throw new Error("Setting key is required");
@@ -318,7 +328,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Get application info from package.json
-    ipcMain.handle('getAppInfo', async (): Promise<unknown> => {
+    ipcMain.handle('getAppInfo', async (): Promise<AppVersionInfo> => {
         try {
             // Import package.json using dynamic import
             const packageJsonPath = path.join(__dirname, '../package.json');
@@ -342,7 +352,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Open external links
-    ipcMain.handle('openExternalLink', async (event, url: string): Promise<unknown> => {
+    ipcMain.handle('openExternalLink', async (event, url: string): Promise<SaveResult> => {
         const { shell } = await import('electron');
         try {
             await shell.openExternal(url);
@@ -354,7 +364,7 @@ export const setupStoreHandlers = (): void => {
     });
 
     // Get store file path
-    ipcMain.handle('getStoreFilePath', async (): Promise<unknown> => {
+    ipcMain.handle('getStoreFilePath', async (): Promise<SaveResult & { path?: string | null }> => {
         try {
             const storePath = store ? store.path : null;
             return { success: true, path: storePath };

@@ -70,11 +70,19 @@ export function LanguageProvider({ children }: LanguageProviderProps): React.Rea
     
     // Use dot notation to access nested keys
     const keys = key.split('.');
-    let value: unknown = translations;
+    // Type for navigation through translation objects
+    type TranslationValue = string | { [key: string]: TranslationValue };
+    let value: TranslationValue = translations as TranslationValue;
     
     for (const k of keys) {
       if (value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, k)) {
-        value = (value as Record<string, unknown>)[k];
+        const nextValue = (value as { [key: string]: TranslationValue })[k];
+        if (nextValue !== undefined) {
+          value = nextValue;
+        } else {
+          console.warn(`Translation key not found: ${key}`);
+          return key;
+        }
       } else {
         // Only log warning if we actually have translations loaded
         // This prevents warning spam during initial load

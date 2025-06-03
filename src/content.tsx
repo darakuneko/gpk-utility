@@ -4,6 +4,7 @@ import type { JSX } from 'react';
 import SettingsContainer from "./renderer/SettingsContainer.tsx"
 import {useStateContext} from "./context.tsx"
 import { useLanguage } from "./i18n/LanguageContext.tsx"
+import type { Device } from "./types/device"
 
 interface SaveStatus {
     visible: boolean;
@@ -26,12 +27,12 @@ const Content: React.FC = (): JSX.Element => {
     useEffect((): (() => void) | void => {
         if (!hasApi) return;
         
-        const handleDeviceChange = (dat: unknown): void => {
-            if (!dat || !Array.isArray(dat)) return;
+        const handleDeviceChange = (devices: Device[]): void => {
+            if (!devices || !Array.isArray(devices)) return;
 
             setState({
                 init: false,
-                devices: dat
+                devices: devices
             });
         };
 
@@ -59,14 +60,12 @@ const Content: React.FC = (): JSX.Element => {
     useEffect((): (() => void) | void => {
             if (!hasApi) return;
 
-        api.on("activeWindow", (...args: unknown[]): void => {
-            const data = args[0] as string;
-            handleActiveWindow(data);
+        api.on("activeWindow", (windowInfo: string): void => {
+            handleActiveWindow(windowInfo);
         });
         return (): void => {
-            api.off("activeWindow", (...args: unknown[]): void => {
-                const data = args[0] as string;
-                handleActiveWindow(data);
+            api.off("activeWindow", (windowInfo: string): void => {
+                handleActiveWindow(windowInfo);
             });
         };
     }, [handleActiveWindow]);

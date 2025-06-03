@@ -1,5 +1,8 @@
 // API Command and Response Types for GPK Utility
 
+// Re-export commonly used types from ipc-responses
+export type { SaveResult, NotificationResult } from './ipc-responses';
+
 export interface DeviceCommand {
     id: number;
     data?: number[];
@@ -80,6 +83,9 @@ export interface HIDDeviceInstance {
     release?: number;
     usagePage?: number;
     usage?: number;
+    closed?: boolean;
+    removeAllListeners?: () => void;
+    close?: () => void;
 }
 
 export interface HIDWriteResult {
@@ -167,12 +173,13 @@ export interface UpdateCheckResult {
 export interface AppVersionInfo {
     name: string;
     version: string;
-    description: string;
+    description?: string;
     author: {
         name?: string;
         email?: string;
         url?: string;
     };
+    homepage?: string;
 }
 
 // Error types for API operations

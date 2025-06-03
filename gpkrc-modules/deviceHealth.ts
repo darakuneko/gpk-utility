@@ -1,4 +1,5 @@
 import type { DeviceStatus } from '../src/types/device';
+import type { HIDDeviceInstance } from '../src/types/api-types';
 
 import { DeviceType } from './deviceTypes';
 import { parseDeviceId } from './communication';
@@ -10,12 +11,18 @@ const deviceHealthCheckInterval = 10000; // Check every 10 seconds
 // Dependency injection interfaces  
 interface DeviceHealthDependencies {
     deviceStatusMap: Record<string, DeviceStatus>;
-    hidDeviceInstances: Record<string, unknown>;
-    getKBD: (device: unknown, retryCount?: number) => Promise<unknown>;
-    addKbd: (device: unknown) => Promise<string>;
+    hidDeviceInstances: Record<string, HIDDeviceInstance | null>;
+    getKBD: (device: { vendorId: number; productId: number } | { id: string }, retryCount?: number) => Promise<HIDDeviceInstance | null>;
+    addKbd: (device: { vendorId: number; productId: number } | { id: string }) => Promise<string>;
     mainWindow?: {
         webContents: {
-            send: (channel: string, data: unknown) => void;
+            send: (channel: string, data: {
+                deviceId: string;
+                connected: boolean;
+                gpkRCVersion: number;
+                deviceType: string;
+                config: Record<string, unknown>;
+            }) => void;
         };
     } | null;
 }
@@ -68,7 +75,7 @@ export const checkDeviceHealth = async (): Promise<void> => {
             }
             
             // Check if HID instance exists but is marked as closed
-            if (hidInstance && (hidInstance as unknown as { closed?: boolean }).closed) {
+            if (hidInstance && hidInstance.closed) {
                 console.warn(`Device ${deviceId} HID instance is closed, attempting recovery...`);
                 
                 // Mark device as disconnected
@@ -76,8 +83,8 @@ export const checkDeviceHealth = async (): Promise<void> => {
                 
                 // Clean up closed instance
                 try {
-                    (hidInstance as unknown as { removeAllListeners: () => void; close: () => void }).removeAllListeners();
-                    (hidInstance as unknown as { removeAllListeners: () => void; close: () => void }).close();
+                    hidInstance.removeAllListeners?.();
+                    hidInstance.close?.();
                 } catch (e) {
                     // Ignore cleanup errors - device is being disconnected
                 }

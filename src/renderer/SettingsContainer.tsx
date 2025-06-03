@@ -152,16 +152,14 @@ const SettingsContainer: React.FC = (): JSX.Element => {
 
     // Setup API event listeners
     useEffect((): (() => void) => {
-        window.api.on("configUpdated", (...args: unknown[]): void => {
-            const data = args[0] as { deviceId: string; config: Record<string, unknown> };
+        window.api.on("configUpdated", (data: { deviceId: string; config: Record<string, unknown> }): void => {
             dispatch({
                 type: "UPDATE_DEVICE_CONFIG",
                 payload: { deviceId: data.deviceId, config: data.config }
             });
         });
         
-        window.api.on("changeConnectDevice", (...args: unknown[]): void => {
-            const devices = args[0] as Device[];
+        window.api.on("changeConnectDevice", (devices: Device[]): void => {
             dispatch({
                 type: "SET_DEVICES",
                 payload: devices

@@ -36,7 +36,7 @@ export interface IpcHandlers {
 // Command types
 export interface Command {
   id: number;
-  params?: unknown[];
+  params?: number[];
 }
 
 // Response types
@@ -54,7 +54,7 @@ export interface NotificationQueryPayload {
   filters: Array<{
     field: string;
     op: string;
-    value: unknown;
+    value: string | number;
   }>;
   orderBy: {
     field: string;

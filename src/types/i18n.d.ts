@@ -1,6 +1,7 @@
 // Type definitions for i18n locales
 
 export interface LocaleMessages {
+  [key: string]: string | Record<string, string>;
   common: {
     import: string;
     export: string;

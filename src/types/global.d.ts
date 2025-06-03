@@ -1,5 +1,12 @@
 // Global type definitions for GPK Utility
-import { Device, DeviceConfig, AppInfo } from './device';
+import { Device, DeviceConfig, AppInfo, ActiveWindowResult, CommandResult } from './device';
+import { 
+  ImportResult, 
+  ExportResponse, 
+  SaveResult,
+  GenericEventCallback 
+} from './api-types';
+import { DeviceConfigResponse } from './ipc-responses';
 
 // Window API exposed by preload script
 declare global {
@@ -9,20 +16,20 @@ declare global {
       getConnectedDevices: () => Promise<Device[]>;
       connectDevice: (device: Device) => Promise<void>;
       disconnectDevice: (device: Device) => Promise<void>;
-      sendCommand: (command: unknown[]) => Promise<unknown>;
+      sendCommand: (command: number[]) => Promise<CommandResult>;
       
       // Config operations
       getDeviceSettings: (device: Device) => Promise<DeviceConfig>;
       saveDeviceSettings: (device: Device, settings: DeviceConfig) => Promise<void>;
       
       // File operations
-      importFile: () => Promise<unknown>;
-      exportFile: () => Promise<unknown>;
+      importFile: () => Promise<ImportResult>;
+      exportFile: () => Promise<ExportResponse>;
       exportDeviceJson: (device: Device, settings: DeviceConfig) => Promise<void>;
       
       // Store operations
-      storeGet: (key: string) => Promise<unknown>;
-      storeSet: (key: string, value: unknown) => Promise<void>;
+      storeGet: <T = unknown>(key: string) => Promise<T>;
+      storeSet: <T = unknown>(key: string, value: T) => Promise<void>;
       storeDelete: (key: string) => Promise<void>;
       storeClear: () => Promise<void>;
       
@@ -42,20 +49,26 @@ declare global {
       // External links
       openExternalLink: (url: string) => void;
       
-      // Event listeners
-      on: <T extends string>(channel: T, func: (...args: unknown[]) => void) => void;
-      off: <T extends string>(channel: T, func: (...args: unknown[]) => void) => void;
+      // Event listeners with overloads for specific events
+      on(channel: 'configUpdated', func: (data: { deviceId: string; config: Record<string, unknown> }) => void): void;
+      on(channel: 'changeConnectDevice', func: (devices: Device[]) => void): void;
+      on(channel: 'activeWindow', func: (windowInfo: string) => void): void;
+      on<T extends string>(channel: T, func: GenericEventCallback): void;
+      off(channel: 'configUpdated', func: (data: { deviceId: string; config: Record<string, unknown> }) => void): void;
+      off(channel: 'changeConnectDevice', func: (devices: Device[]) => void): void;
+      off(channel: 'activeWindow', func: (windowInfo: string) => void): void;
+      off<T extends string>(channel: T, func: GenericEventCallback): void;
       onConfigSaveComplete: (callback: (data: { success: boolean; timestamp: number }) => void) => void;
       
       // Device management
       getDeviceType: (device: Device) => Promise<string>;
       setActiveTab: (deviceId: string, tabId: string) => Promise<void>;
-      dispatchSaveDeviceConfig: (device: Device) => Promise<unknown>;
+      dispatchSaveDeviceConfig: (device: Device) => Promise<DeviceConfigResponse>;
       setSliderActive: (deviceId: string, active: boolean) => void;
       
       // Extended store operations  
-      getStoreSetting: (key: string) => Promise<unknown>;
-      saveStoreSetting: (key: string, value: unknown) => Promise<{ success: boolean; error?: string }>;
+      getStoreSetting: <T = unknown>(key: string) => Promise<T>;
+      saveStoreSetting: <T = unknown>(key: string, value: T) => Promise<SaveResult>;
       getAllStoreSettings: () => Promise<Record<string, unknown>>;
       
       // Notification settings
@@ -64,17 +77,17 @@ declare global {
       saveTraySettings: (settings: { minimizeToTray?: boolean; backgroundStart?: boolean }) => Promise<{ success: boolean; error?: string }>;
       
       // Window monitoring
-      getActiveWindows: () => Promise<unknown[]>;
+      getActiveWindows: () => Promise<ActiveWindowResult[]>;
       
       // Pomodoro settings
       loadPomodoroDesktopNotificationSettings: (deviceId: string) => Promise<{ success: boolean; enabled: boolean }>;
       savePomodoroDesktopNotificationSettings: (deviceId: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
       
       // OLED settings
-      saveOledSettings: (device: Device, settings: unknown) => Promise<void>;
+      saveOledSettings: (device: Device, settings: { enabled: boolean }) => Promise<void>;
       
       // Trackpad settings
-      saveTrackpadConfig: (device: Device, config: unknown) => Promise<void>;
+      saveTrackpadConfig: (device: Device, config: import('./device').TrackpadConfig) => Promise<void>;
     };
   }
 }

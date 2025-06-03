@@ -10,6 +10,7 @@ import type {
     CommandResult,
     PomodoroConfig
 } from '../src/types/device';
+import type { HIDDeviceInstance } from '../src/types/api-types';
 import type { StoreSchema } from '../src/types/store';
 
 import { DeviceType, stringToDeviceType } from './deviceTypes';
@@ -670,9 +671,9 @@ export const initializeDependencies = (): void => {
     // Inject dependencies for device health monitoring
     injectDeviceHealthDependencies({
         deviceStatusMap: deviceStatusMap as Record<string, DeviceStatus>,
-        hidDeviceInstances,
-        getKBD: getKBD as (device: unknown, retryCount?: number) => Promise<unknown>,
-        addKbd: addKbd as (device: unknown) => Promise<string>,
+        hidDeviceInstances: hidDeviceInstances as Record<string, HIDDeviceInstance | null>,
+        getKBD: getKBD as (device: { vendorId: number; productId: number } | { id: string }, retryCount?: number) => Promise<HIDDeviceInstance | null>,
+        addKbd: addKbd as (device: { vendorId: number; productId: number } | { id: string }) => Promise<string>,
         mainWindow: mainWindow
     });
 
