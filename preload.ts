@@ -2,6 +2,7 @@ import { loadStoreSettings, saveStoreSetting, startKeyboardPolling, startWindowM
 import { keyboardSendLoop, command } from './preload/device';
 import { setupEventListeners } from './preload/events';
 import { exposeAPI } from './preload/api';
+import type { NotificationData } from './src/types/notification';
 
 // Initialize polling and settings when the window is loaded
 document.addEventListener('DOMContentLoaded', async () => {
@@ -12,7 +13,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         startKeyboardPolling(keyboardSendLoop);
         
         // Start window monitoring with the command from device module
-        startWindowMonitoring(command.startWindowMonitoring);
+        startWindowMonitoring(async () => {
+            await command.startWindowMonitoring();
+        });
         
         const result = await command.getNotifications();
         const latestNotification = result?.notifications[0] || {} as Record<string, unknown>;
@@ -37,7 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Listen for polling interval changes
 window.addEventListener('restartPollingIntervals', () => {
     startKeyboardPolling(keyboardSendLoop);
-    startWindowMonitoring(command.startWindowMonitoring);
+    startWindowMonitoring(async () => {
+        await command.startWindowMonitoring();
+    });
 });
 
 // Setup event listeners once when the script loads

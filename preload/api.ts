@@ -287,12 +287,12 @@ export const exposeAPI = (): void => {
         
         // Event listeners with proper typing
         on: <T extends keyof EventCallbackMap>(channel: T, func: EventCallbackMap[T]): void => {
-            const listener = (event: Electron.IpcRendererEvent, ...args: unknown[]) => {
+            const ipcListener = (event: Electron.IpcRendererEvent, ...args: unknown[]) => {
                 // Type-safe callback invocation based on channel
                 (func as GenericEventCallback)(...args);
             };
-            listeners.set(func as GenericEventCallback, listener as EventCallback<unknown[]>);
-            ipcRenderer.on(channel, listener);
+            listeners.set(func as GenericEventCallback, ipcListener);
+            ipcRenderer.on(channel, ipcListener);
         },
         off: <T extends keyof EventCallbackMap>(channel: T, func: EventCallbackMap[T]): void => {
             const listener = listeners.get(func as GenericEventCallback);

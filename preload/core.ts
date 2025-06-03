@@ -4,7 +4,7 @@ import type { Device, StoreSettings, CommandResult } from './types';
 // Global state variables
 import type { GenericEventCallback } from './eventTypes';
 
-export const listeners = new Map<GenericEventCallback, GenericEventCallback>();
+export const listeners = new Map<GenericEventCallback, (event: Electron.IpcRendererEvent, ...args: unknown[]) => void>();
 export let cachedDeviceRegistry: Device[] = [];
 export let keyboardPollingInterval: NodeJS.Timeout | null = null;
 export let windowMonitoringInterval: NodeJS.Timeout | null = null;

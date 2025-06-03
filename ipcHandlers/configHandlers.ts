@@ -6,7 +6,7 @@ import {
     updateAutoLayerSettings
 } from '../gpkrc';
 import type { StoreSchema } from '../src/types/store';
-import type { Device } from '../src/types/device';
+import type { Device, TrackpadConfig, PomodoroConfig } from '../src/types/device';
 
 let mainWindow: BrowserWindow | null;
 let store: Store<StoreSchema>;
@@ -19,70 +19,27 @@ export const setStore = (storeInstance: Store<StoreSchema>): void => {
     store = storeInstance;
 };
 
-interface TrackpadConfig {
-    hf_waveform_number: number;
-    can_hf_for_layer: number;
-    can_drag: number;
-    scroll_term: number;
-    drag_term: number;
-    can_trackpad_layer: number;
-    can_reverse_scrolling_direction: number;
-    drag_strength_mode: number;
-    drag_strength: number;
-    default_speed: number;
-    scroll_step: number;
-    can_short_scroll: number;
-    tap_term?: number;
-    swipe_term?: number;
-    pinch_term?: number;
-    gesture_term?: number;
-    short_scroll_term?: number;
-    pinch_distance?: number;
-}
-
-interface PomodoroConfig {
-    work_time: number;
-    break_time: number;
-    long_break_time: number;
-    work_interval: number;
-    work_hf_pattern: number;
-    break_hf_pattern: number;
-    timer_active?: number;
-    notify_haptic_enable?: number;
-    continuous_mode?: number;
-    phase?: number;
-    pomodoro_cycle?: number;
-}
-
-interface Device {
-    id: string;
-    config?: {
-        trackpad?: TrackpadConfig;
-        pomodoro?: PomodoroConfig;
-        init?: number;
-    };
-}
 
 // Convert trackpad config object to byte array for device communication
 const buildTrackpadConfigByteArray = (trackpadConfig: TrackpadConfig): number[] => {
     const byteArray = new Array(19); // 19 bytes for updated trackpad config
-    const upper_scroll_term = (trackpadConfig.scroll_term & 0b1111110000) >> 4;
-    const lower_drag_term = (trackpadConfig.drag_term & 0b1111000000) >> 6;
-    const lower_default_speed = (trackpadConfig.default_speed & 0b110000) >> 4;
-    byteArray[0] = trackpadConfig.hf_waveform_number;
-    byteArray[1] = trackpadConfig.can_hf_for_layer << 7 |
-        trackpadConfig.can_drag << 6 |
+    const upper_scroll_term = (trackpadConfig.scroll_term! & 0b1111110000) >> 4;
+    const lower_drag_term = (trackpadConfig.drag_term! & 0b1111000000) >> 6;
+    const lower_default_speed = (trackpadConfig.default_speed! & 0b110000) >> 4;
+    byteArray[0] = trackpadConfig.hf_waveform_number!;
+    byteArray[1] = trackpadConfig.can_hf_for_layer! << 7 |
+        trackpadConfig.can_drag! << 6 |
         upper_scroll_term;
-    byteArray[2] = (trackpadConfig.scroll_term & 0b0000001111) << 4 | lower_drag_term;
-    byteArray[3] = (trackpadConfig.drag_term & 0b0000111111) << 2 |
-        trackpadConfig.can_trackpad_layer << 1 |
-        trackpadConfig.can_reverse_scrolling_direction;
-    byteArray[4] = trackpadConfig.drag_strength_mode << 7 |
-        trackpadConfig.drag_strength << 2 |
+    byteArray[2] = (trackpadConfig.scroll_term! & 0b0000001111) << 4 | lower_drag_term;
+    byteArray[3] = (trackpadConfig.drag_term! & 0b0000111111) << 2 |
+        trackpadConfig.can_trackpad_layer! << 1 |
+        trackpadConfig.can_reverse_scrolling_direction!;
+    byteArray[4] = trackpadConfig.drag_strength_mode! << 7 |
+        trackpadConfig.drag_strength! << 2 |
         lower_default_speed;
-    byteArray[5] = (trackpadConfig.default_speed & 0b001111) << 4 |
-        trackpadConfig.scroll_step;
-    byteArray[6] = trackpadConfig.can_short_scroll << 7;
+    byteArray[5] = (trackpadConfig.default_speed! & 0b001111) << 4 |
+        trackpadConfig.scroll_step!;
+    byteArray[6] = trackpadConfig.can_short_scroll! << 7;
     
     // Updated for 2-byte values - high byte, low byte for each value
     byteArray[7] = (trackpadConfig.tap_term || 0) >> 8;     
@@ -109,17 +66,17 @@ const buildTrackpadConfigByteArray = (trackpadConfig: TrackpadConfig): number[] 
 // Convert pomodoro config object to byte array for device communication
 const buildPomodoroConfigByteArray = (pomodoroConfig: PomodoroConfig): number[] => {
     const byteArray = new Array(8); // 8 bytes for pomodoro config
-    byteArray[0] = pomodoroConfig.work_time;
-    byteArray[1] = pomodoroConfig.break_time;
-    byteArray[2] = pomodoroConfig.long_break_time;
-    byteArray[3] = pomodoroConfig.work_interval;
-    byteArray[4] = pomodoroConfig.work_hf_pattern;
-    byteArray[5] = pomodoroConfig.break_hf_pattern;    
+    byteArray[0] = pomodoroConfig.work_time!;
+    byteArray[1] = pomodoroConfig.break_time!;
+    byteArray[2] = pomodoroConfig.long_break_time!;
+    byteArray[3] = pomodoroConfig.work_interval!;
+    byteArray[4] = pomodoroConfig.work_hf_pattern!;
+    byteArray[5] = pomodoroConfig.break_hf_pattern!;    
     // Combine timer_active (bit 7), notify_haptic_enable (bit 6), continuous_mode (bit 5), and state (bits 0-1)
-    byteArray[6] = ((pomodoroConfig.timer_active || 0) << 7) | 
-                   ((pomodoroConfig.notify_haptic_enable || 0) << 6) | 
-                   ((pomodoroConfig.continuous_mode || 0) << 5) | 
-                   ((pomodoroConfig.phase || 0) & 0b00000011);
+    byteArray[6] = (Number(pomodoroConfig.timer_active || 0) << 7) | 
+                   (Number(pomodoroConfig.notify_haptic_enable || 0) << 6) | 
+                   (Number(pomodoroConfig.continuous_mode || 0) << 5) | 
+                   (Number(pomodoroConfig.phase || 0) & 0b00000011);
     byteArray[7] = pomodoroConfig.pomodoro_cycle || 1; // Default to 1 if not defined
 
     return byteArray;

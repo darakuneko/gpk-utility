@@ -10,7 +10,6 @@ import type {
   PomodoroPhaseData, 
   DeviceConnectionPomodoroData 
 } from '../src/types/ipc';
-import type { LocaleMessages } from '../src/types/i18n';
 import type { StoreSchema } from '../src/types/store';
 import type { Device } from '../src/types/device';
 
@@ -31,7 +30,7 @@ export const setMainWindow = (window: BrowserWindow | null): void => {
 // Translation utility function
 const translate = (key: string, params: Record<string, unknown> = {}): string => {
     const _locale = store.get('locale') || 'en';
-    const translations: LocaleMessages = enTranslations;
+    const translations = enTranslations as unknown as Record<string, unknown>;
     
     // Get nested value from translations using key path
     const getValue = (obj: Record<string, unknown>, path: string): string | undefined => {
@@ -43,7 +42,7 @@ const translate = (key: string, params: Record<string, unknown> = {}): string =>
         }, obj) as string | undefined;
     };
     
-    const text = getValue(translations as Record<string, unknown>, key);
+    const text = getValue(translations, key);
     
     // If still undefined, return key
     if (text === undefined) {

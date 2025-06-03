@@ -5,7 +5,7 @@ import type { ExportData } from '../preload/types';
 // File operations
 const exportFile = async (data: ExportData): Promise<void> => {
     try {
-        const result: Electron.SaveDialogReturnValue = await dialog.showSaveDialog({
+        const result = await dialog.showSaveDialog({
             title: 'Export Config File',
             defaultPath: 'gpk_utility.json',
             buttonLabel: 'Save',
@@ -14,8 +14,9 @@ const exportFile = async (data: ExportData): Promise<void> => {
                 { name: 'All Files', extensions: ['*'] }
             ]
         });
-        if (!result.canceled && result.filePath) {
-            await fs.writeFile(result.filePath, JSON.stringify(data, null, 2))
+        const dialogResult = result as unknown as Electron.SaveDialogReturnValue;
+        if (!dialogResult.canceled && dialogResult.filePath) {
+            await fs.writeFile(dialogResult.filePath, JSON.stringify(data, null, 2))
         }
     } catch (err) {
         // Ignore errors
@@ -24,7 +25,7 @@ const exportFile = async (data: ExportData): Promise<void> => {
 
 const importFile = async (): Promise<string | null> => {
     try {
-        const result: Electron.OpenDialogReturnValue = await dialog.showOpenDialog({
+        const result = await dialog.showOpenDialog({
             title: 'Import Config File',
             buttonLabel: 'Open',
             filters: [
@@ -34,11 +35,12 @@ const importFile = async (): Promise<string | null> => {
             properties: ['openFile']
         });
 
-        if (result.canceled || result.filePaths.length === 0) {
+        const dialogResult = result as unknown as Electron.OpenDialogReturnValue;
+        if (dialogResult.canceled || dialogResult.filePaths.length === 0) {
             return null;
         }
         
-        const filePath = result.filePaths[0]!;
+        const filePath = dialogResult.filePaths[0]!;
         try {
             const fileContent = await fs.readFile(filePath, 'utf-8');
             return fileContent;
@@ -54,6 +56,10 @@ const importFile = async (): Promise<string | null> => {
 
 export const setupFileHandlers = (): void => {
     // File operations
-    ipcMain.handle('exportFile', async (_event, data: ExportData) => await exportFile(data));
-    ipcMain.handle('importFile', async (_event, _fn?: string) => await importFile());
+    ipcMain.handle('exportFile', async (_event, data: ExportData) => {
+        await exportFile(data);
+    });
+    ipcMain.handle('importFile', async (_event, _fn?: string) => {
+        return await importFile();
+    });
 };
