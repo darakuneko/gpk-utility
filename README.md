@@ -163,3 +163,22 @@ GPKRC_ENABLE = yes
 - **Trackpad**: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento)
 
 **Specifications are subject to change without notice.**
+
+## Developer Support
+
+**Buy me a coffee**  
+[Amazon Wishlist](https://www.amazon.co.jp/hz/wishlist/ls/66VQJTRHISQT) | [Ko-fi](https://ko-fi.com/darakuneko)
+
+## License
+
+This project is released under the [MIT License](LICENSE).
+
+---
+
+<div align="center">
+
+**GPK FWMaker - Making QMK/Vial firmware generation easier**
+
+Made with ❤️ by [darakuneko](https://github.com/darakuneko)
+
+</div>

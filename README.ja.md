@@ -141,3 +141,24 @@ keyboard(Auto Layer Switch/OLED): [gpk60_47gr1re_vial](https://github.com/daraku
 trakpad: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento)   
 
 **仕様は予告なく変更されます**
+
+## 開発者サポート
+
+**コーヒーを奢る**  
+[Amazon Wishlist](https://www.amazon.co.jp/hz/wishlist/ls/66VQJTRHISQT) | [Ko-fi](https://ko-fi.com/darakuneko)
+
+---
+
+## ライセンス
+
+このプロジェクトは [MIT License](LICENSE) の下で公開されています。
+
+---
+
+<div align="center">
+
+**GPK FWMaker - QMK/Vialファームウェア生成をもっと簡単に**
+
+Made with ❤️ by [darakuneko](https://github.com/darakuneko)
+
+</div>
