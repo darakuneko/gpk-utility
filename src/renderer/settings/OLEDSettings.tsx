@@ -7,7 +7,7 @@ import { Device } from "../../types/device";
 
 interface OLEDSettingsProps {
   device: Device;
-  handleChange: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
+  handleChange: (property: string, deviceId: string) => (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const OLEDSettings: React.FC<OLEDSettingsProps> = memo(({ device, handleChange }): JSX.Element => {
@@ -21,25 +21,21 @@ const OLEDSettings: React.FC<OLEDSettingsProps> = memo(({ device, handleChange }
     }
   }, [device.config?.oled_enabled]);
 
-  // Handle OLED toggle
+  // Wrap handleChange to also call saveOledSettings
   const handleOledToggle = useCallback(async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const enabled = e.target.checked;
     setOledEnabled(enabled);
     
-    // Update device configuration
-    if (handleChange) {
-      await handleChange("oled_enabled", device.id)({
-          target: { value: enabled ? 1 : 0 }
-      });
-    }
+    // Call standard handler
+    await handleChange("oled_enabled", device.id)(e);
     
-    // Save OLED settings
+    // Save OLED settings via special API
     try {
       await window.api.saveOledSettings(device, { enabled });
     } catch (error) {
       console.error("Failed to save OLED settings:", error);
     }
-  }, [device.id, handleChange]);
+  }, [device, handleChange]);
 
   return (
     <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
