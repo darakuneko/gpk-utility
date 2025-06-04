@@ -240,7 +240,6 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                         {activeTab === "layer" && (
                             <LayerSettings
                                 device={device}
-                                handleChange={handleChangeSelect}
                             />
                         )}
 

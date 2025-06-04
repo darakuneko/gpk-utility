@@ -14,10 +14,15 @@ const { api } = window;
 
 interface LayerSettingsProps {
     device: Device;
-    handleChange: (field: string, deviceId: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+    // Note: LayerSettings uses completely custom implementation due to:
+    // - Complex application monitoring
+    // - Layer management logic  
+    // - Custom store settings integration
+    // - Real-time window detection
+    // Standard handleChange pattern is not applicable for this specialized component
 }
 
-const LayerSettings: React.FC<LayerSettingsProps> = ({ device, handleChange: _handleChange }): JSX.Element => {
+const LayerSettings: React.FC<LayerSettingsProps> = ({ device }): JSX.Element => {
     const { state, setState } = useStateContext();
     const { t } = useLanguage();
     const [layerSettings, setLayerSettings] = useState<LayerSetting[]>([]);
