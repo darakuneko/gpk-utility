@@ -63,7 +63,7 @@ declare global {
       // Device management
       getDeviceType: (device: Device) => Promise<string>;
       setActiveTab: (deviceId: string, tabId: string) => Promise<void>;
-      dispatchSaveDeviceConfig: (device: Device) => Promise<DeviceConfigResponse>;
+      dispatchSaveDeviceConfig: (device: Device, configTypes?: string[]) => Promise<DeviceConfigResponse>;
       setSliderActive: (deviceId: string, active: boolean) => void;
       
       // Extended store operations  

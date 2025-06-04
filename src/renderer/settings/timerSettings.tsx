@@ -409,7 +409,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
     }
     
     // Send the updated config to device - update only pomodoro settings
-    void window.api.dispatchSaveDeviceConfig(device);
+    void window.api.dispatchSaveDeviceConfig(device, ["pomodoro"]);
     
     // Dispatch update event to the switch element
     const switchElement = document.getElementById("config-pomodoro_notify_haptic_enable");
@@ -437,7 +437,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
     }
     
     // Send the updated config to device - update only pomodoro settings
-    void window.api.dispatchSaveDeviceConfig(device);
+    void window.api.dispatchSaveDeviceConfig(device, ["pomodoro"]);
     
     // Dispatch update event to the switch element
     const switchElement = document.getElementById("config-pomodoro_continuous_mode");
