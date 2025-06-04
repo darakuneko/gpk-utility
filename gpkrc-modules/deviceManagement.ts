@@ -118,14 +118,16 @@ const getKBDList = (): DeviceWithId[] => HID.devices().filter((d): boolean =>
     })
 
 // Function to set the active tab
-const setActiveTab = (device: HIDDevice, tabName: string): void => {
-    const id = encodeDeviceId(device)
+const setActiveTab = (device: GPKDevice, tabName: string): void => {
+    // Device already has encoded ID, use it directly
+    const id = device.id
     activeTabPerDevice[id] = tabName
 }
 
 // Function to get the active tab
-const getActiveTab = (device: HIDDevice): string | undefined => {
-    const id = encodeDeviceId(device)
+const getActiveTab = (device: GPKDevice): string | undefined => {
+    // Device already has encoded ID, use it directly
+    const id = device.id
     return activeTabPerDevice[id]
 }
 
@@ -136,7 +138,8 @@ const setMainWindow = (window: ElectronWindow): void => {
 
 const addKbd = async (device: GPKDevice): Promise<string> => { 
     const d = await getKBD(device);
-    const id = encodeDeviceId(device);
+    // GPKDevice already has encoded ID, use it directly
+    const id = device.id;
     
     if (!d || !d.path) {
         console.error(`Device not found or path not available for device: ${id}`);
@@ -184,13 +187,14 @@ const addKbd = async (device: GPKDevice): Promise<string> => {
     return id;
 };
 
-const start = async (device: HIDDevice): Promise<string> => {
+const start = async (device: GPKDevice): Promise<string> => {
     if (!device) {
         throw new Error("Device information is required");
     }
     
     try {
-        const id = encodeDeviceId(device);
+        // Device already has encoded ID, use it directly
+        const id = device.id;
 
         
         // Reset device status first
@@ -482,8 +486,9 @@ const start = async (device: HIDDevice): Promise<string> => {
     }
 }
 
-const stop = async (device: HIDDevice): Promise<void> => {
-    const id = encodeDeviceId(device);
+const stop = async (device: GPKDevice): Promise<void> => {
+    // Device already has encoded ID, use it directly
+    const id = device.id;
 
     if (hidDeviceInstances[id]) {
         try {
@@ -541,8 +546,9 @@ const close = async (): Promise<void> => {
     });
 }
 
-const writeCommand = async (device: HIDDevice, command: number[], retryCount: number = 0): Promise<CommandResult> => {
-    const id = encodeDeviceId(device);
+const writeCommand = async (device: GPKDevice, command: number[], retryCount: number = 0): Promise<CommandResult> => {
+    // Device already has encoded ID, use it directly
+    const id = device.id;
     const maxRetries = 2; // Allow 2 retries for communication failures
     
     try {

@@ -7,7 +7,6 @@ import {
     close, 
     getConnectKbd, 
     getKBDList, 
-    encodeDeviceId, 
     setActiveTab,
     startWindowMonitoring,
     getActiveWindows,
@@ -42,7 +41,10 @@ export const setupDeviceHandlers = (): void => {
         await close()
     });
     
-    ipcMain.handle('encodeDeviceId', async (_event, device: Device): Promise<string> => await encodeDeviceId(device));
+    ipcMain.handle('encodeDeviceId', async (_event, device: Device): Promise<string> => {
+        // Device already has encoded ID, return it directly
+        return device.id;
+    });
     ipcMain.handle('getKBDList', async (_event): Promise<DeviceWithId[]> => await getKBDList());
     ipcMain.handle('getDeviceType', (_event): typeof DeviceType => getDeviceType());
     ipcMain.handle('getConnectKbd', async (_event, id: string): Promise<DeviceStatus | undefined> => await getConnectKbd(id));
