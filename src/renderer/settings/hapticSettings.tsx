@@ -8,12 +8,13 @@ import { Device } from "../../types/device";
 
 interface HapticSettingsProps {
   device: Device;
-  handleChange: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
+  handleChange: (property: string, deviceId: string) => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleChangeValue: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
   handleSliderStart: () => void;
   handleSliderEnd: () => void;
 }
 
-const HapticSettings: React.FC<HapticSettingsProps> = ({ device, handleChange, handleSliderStart: _handleSliderStart, handleSliderEnd: _handleSliderEnd }): JSX.Element => {
+const HapticSettings: React.FC<HapticSettingsProps> = ({ device, handleChange, handleChangeValue, handleSliderStart: _handleSliderStart, handleSliderEnd: _handleSliderEnd }): JSX.Element => {
   const { t } = useLanguage();
   
   // Get trackpad configuration or empty object if not defined
@@ -29,7 +30,7 @@ const HapticSettings: React.FC<HapticSettingsProps> = ({ device, handleChange, h
           <CustomSelect
             id="config-hf_waveform_number"
             value={trackpadConfig.hf_waveform_number && trackpadConfig.hf_waveform_number !== 0 ? String(trackpadConfig.hf_waveform_number) : ''}
-            onChange={handleChange("hf_waveform_number", device.id)}
+            onChange={handleChangeValue("hf_waveform_number", device.id)}
             options={fullHapticOptions}
           />
         </div>

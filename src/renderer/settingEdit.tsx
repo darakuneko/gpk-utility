@@ -258,7 +258,8 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                         {activeTab === "dragdrop" && (
                             <DragDropSettings
                                 device={device}
-                                handleChange={handleChangeValue}
+                                handleChange={handleChange}
+                                handleChangeValue={handleChangeValue}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
                             />
@@ -297,7 +298,8 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                         {activeTab === "haptic" && (
                             <HapticSettings
                                 device={device}
-                                handleChange={handleChangeValue}
+                                handleChange={handleChange}
+                                handleChangeValue={handleChangeValue}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
                             />

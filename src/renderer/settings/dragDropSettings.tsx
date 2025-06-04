@@ -7,12 +7,13 @@ import { Device } from "../../types/device";
 
 interface DragDropSettingsProps {
   device: Device;
-  handleChange: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
+  handleChange: (property: string, deviceId: string) => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleChangeValue: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
   handleSliderStart: () => void;
   handleSliderEnd: () => void;
 }
 
-const DragDropSettings: React.FC<DragDropSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd }): JSX.Element => {
+const DragDropSettings: React.FC<DragDropSettingsProps> = ({ device, handleChange, handleChangeValue, handleSliderStart, handleSliderEnd }): JSX.Element => {
   const { t } = useLanguage();
   
   // Ensure that the device's trackpad settings exist
@@ -36,7 +37,7 @@ const DragDropSettings: React.FC<DragDropSettingsProps> = ({ device, handleChang
           <CustomSelect
             id="config-drag_strength_mode"
             value={trackpadConfig.drag_strength_mode !== undefined ? String(trackpadConfig.drag_strength_mode) : ''}
-            onChange={handleChange("drag_strength_mode", device.id)}
+            onChange={handleChangeValue("drag_strength_mode", device.id)}
             options={[
               { value: "0", label: t('dragDrop.term') },
               { value: "1", label: t('dragDrop.strength') }
@@ -60,7 +61,7 @@ const DragDropSettings: React.FC<DragDropSettingsProps> = ({ device, handleChang
               {value: 0, label: '0'},
               {value: 1000, label: '1000 ms'}
             ]}
-            onChange={handleChange("drag_term", device.id)}
+            onChange={handleChangeValue("drag_term", device.id)}
             onChangeStart={handleSliderStart}
             onChangeEnd={handleSliderEnd}
           />
@@ -80,7 +81,7 @@ const DragDropSettings: React.FC<DragDropSettingsProps> = ({ device, handleChang
               {value: 1, label: '1'},
               {value: 12, label: '12'}
             ]}
-            onChange={handleChange("drag_strength", device.id)}
+            onChange={handleChangeValue("drag_strength", device.id)}
             onChangeStart={handleSliderStart}
             onChangeEnd={handleSliderEnd}
           />
