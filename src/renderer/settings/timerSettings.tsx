@@ -298,6 +298,11 @@ const PomodoroInactiveSettings: React.FC<PomodoroInactiveSettingsProps> = ({ dev
 
 interface TimerSettingsProps {
   device: Device;
+  // Note: TimerSettings uses mixed input types requiring flexible handler:
+  // - CustomSwitch components (notifications, haptic, continuous mode)
+  // - CustomSlider components (time settings) 
+  // - CustomSelect components (haptic patterns)
+  // Mixed HTMLInputElement | HTMLSelectElement type accommodates all use cases
   handleChange: (field: string, deviceId: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   handleSliderStart: () => void;
   handleSliderEnd: () => void;
