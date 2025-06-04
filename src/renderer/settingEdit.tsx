@@ -230,7 +230,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                         {activeTab === "mouse" && (
                             <MouseSettings
                                 device={device}
-                                handleChange={handleChange}
+                                handleChange={handleChangeValue}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
                             />

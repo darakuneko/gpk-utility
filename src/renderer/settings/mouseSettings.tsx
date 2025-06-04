@@ -6,7 +6,7 @@ import { Device, TrackpadConfig } from "../../types/device";
 
 interface MouseSettingsProps {
   device: Device;
-  handleChange: (property: string, deviceId: string) => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleChange: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
   handleSliderStart: () => void;
   handleSliderEnd: () => void;
 }
