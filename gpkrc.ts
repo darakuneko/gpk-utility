@@ -66,7 +66,8 @@ import type { Device, CommandResult } from './src/types/device';
 
 // Device config functions
 const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<CommandResult> => {
-    const id = encodeDeviceId(device);
+    // Device already has encoded ID, use it directly
+    const id = device.id;
     const maxRetries = 3; // Reduced retry count for faster feedback
     
     try {

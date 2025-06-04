@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 
 import type { Device, CommandResult, WriteCommandFunction } from '../src/types/device';
 
-import { commandId, actionId, dataToBytes, encodeDeviceId } from './communication';
+import { commandId, actionId, dataToBytes } from './communication';
 
 // Store last formatted date for each device
 export const lastFormattedDateMap = new Map<string, string>();
@@ -24,7 +24,8 @@ export const writeTimeToOled = async (device: Device, forceWrite: boolean = fals
     try {
         // Format date using dayjs
         const formattedDate = dayjs().format('YYYY/MM/DD ddd HH:mm ');
-        const deviceId = encodeDeviceId(device);
+        // Device object already has encoded ID, no need to re-encode
+        const deviceId = device.id;
         
         if (forceWrite || lastFormattedDateMap.get(deviceId) !== formattedDate) {
             lastFormattedDateMap.set(deviceId, formattedDate);

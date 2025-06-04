@@ -40,6 +40,8 @@ export const DEFAULT_USAGE = {
 
 // Types
 import type { HIDDevice } from '../src/types/device';
+import type { EncodedDeviceId } from '../src/types/device-id';
+import { createEncodedDeviceId } from '../src/types/device-id';
 
 
 interface ParsedDevice {
@@ -87,12 +89,14 @@ export const commandToBytes = ({ id, data }: Command): number[] => {
     return unpadded.concat(padding);
 };
 
-export const encodeDeviceId = (device: HIDDevice | null): string => {
+export const encodeDeviceId = (device: HIDDevice | null): EncodedDeviceId => {
     if (!device || !hasRequiredDeviceProperties(device)) {
         console.error("Invalid device object for ID encoding:", device);
-        return "unknown-device";
+        // Return a default encoded ID for unknown devices
+        return createEncodedDeviceId("unknown::device::0::0");
     }
-    return `${device.manufacturer}${DEVICE_ID_SEPARATOR}${device.product}${DEVICE_ID_SEPARATOR}${device.vendorId}${DEVICE_ID_SEPARATOR}${device.productId}`;
+    const idString = `${device.manufacturer}${DEVICE_ID_SEPARATOR}${device.product}${DEVICE_ID_SEPARATOR}${device.vendorId}${DEVICE_ID_SEPARATOR}${device.productId}`;
+    return createEncodedDeviceId(idString);
 };
 
 export const parseDeviceId = (id: string): ParsedDevice | null => {

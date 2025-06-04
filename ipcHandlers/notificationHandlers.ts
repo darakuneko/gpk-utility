@@ -5,7 +5,7 @@ import { ipcMain, Notification, Menu, IpcMainEvent, BrowserWindow, Tray } from "
 import Store from 'electron-store';
 import fetch from 'node-fetch';
 
-import { encodeDeviceId, getKBDList } from '../gpkrc';
+import { getKBDList } from '../gpkrc';
 import enTranslations from '../src/i18n/locales/en';
 import type { 
   NotificationQueryPayload, 
@@ -13,7 +13,6 @@ import type {
   DeviceConnectionPomodoroData 
 } from '../src/types/ipc';
 import type { StoreSchema } from '../src/types/store';
-import type { Device } from '../src/types/device';
 import type { TranslationParams, NotificationPayload } from '../src/types/api-types';
 import type { TranslationObject } from '../src/types/translation';
 
@@ -104,7 +103,8 @@ export const setupNotificationEvents = (
         const pomodoroDesktopNotificationsSettings = store.get('pomodoroDesktopNotificationsSettings') || {};
         
         // Use provided deviceId directly if available, otherwise generate it from device name
-        const idToUse = deviceId || encodeDeviceId({ id: deviceName } as Device);
+        // deviceId is already encoded, so we don't need to encode it again
+        const idToUse = deviceId || `unknown-device-${deviceName}`;
         
         // Skip notification if disabled for this device
         if (pomodoroDesktopNotificationsSettings[idToUse] === false) {
