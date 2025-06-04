@@ -64,7 +64,9 @@ export const hasRequiredDeviceProperties = (device: unknown): device is HIDDevic
            typeof device.manufacturer === 'string' && 
            typeof device.product === 'string' && 
            typeof device.vendorId === 'number' && 
-           typeof device.productId === 'number');
+           typeof device.productId === 'number' &&
+           // Ensure it's not already a Device with encoded ID
+           !('id' in device));
 };
 
 export const dataToBytes = (data: string | number[] | undefined): number[] => {
@@ -90,11 +92,27 @@ export const commandToBytes = ({ id, data }: Command): number[] => {
 };
 
 export const encodeDeviceId = (device: HIDDevice | null): EncodedDeviceId => {
-    if (!device || !hasRequiredDeviceProperties(device)) {
-        console.error("Invalid device object for ID encoding:", device);
-        // Return a default encoded ID for unknown devices
+    if (!device) {
+        console.error("encodeDeviceId: device is null or undefined");
         return createEncodedDeviceId("unknown::device::0::0");
     }
+    
+    // Check if device already has an encoded ID (common mistake)
+    if ('id' in device && typeof device.id === 'string') {
+        console.error("encodeDeviceId: Device already has an encoded ID. Use device.id directly instead.", device);
+        // Try to return the existing ID if it's valid
+        try {
+            return createEncodedDeviceId(device.id);
+        } catch {
+            return createEncodedDeviceId("unknown::device::0::0");
+        }
+    }
+    
+    if (!hasRequiredDeviceProperties(device)) {
+        console.error("encodeDeviceId: Device missing required properties (manufacturer, product, vendorId, productId)", device);
+        return createEncodedDeviceId("unknown::device::0::0");
+    }
+    
     const idString = `${device.manufacturer}${DEVICE_ID_SEPARATOR}${device.product}${DEVICE_ID_SEPARATOR}${device.vendorId}${DEVICE_ID_SEPARATOR}${device.productId}`;
     return createEncodedDeviceId(idString);
 };
