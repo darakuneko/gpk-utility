@@ -294,7 +294,7 @@ const SettingsContainer: React.FC = (): JSX.Element => {
     const hasNoDevicesAtAll = !state.devices || state.devices.length === 0;
 
     return (
-        <div className="bg-card-bg dark:bg-card-bg rounded-lg shadow-sm">
+        <div className="bg-card-bg dark:bg-card-bg rounded-lg shadow-xs">
             {/* Tab Header - Device selection tabs at the top */}
             <div className="flex border-b border-gray-200 dark:border-gray-700 relative">
                 <div className="flex-grow flex justify-start">

@@ -1,10 +1,7 @@
-import type { Config } from 'postcss-load-config';
-
-const config: Config = {
+const config = {
   plugins: {
     'postcss-import': {},
-    'tailwindcss/nesting': {},
-    tailwindcss: {},
+    '@tailwindcss/postcss': {},
     autoprefixer: {},
   }
 };

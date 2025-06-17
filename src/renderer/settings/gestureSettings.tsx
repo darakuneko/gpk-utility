@@ -19,7 +19,7 @@ const GestureSettings: React.FC<GestureSettingsProps> = ({ device, handleChange,
   const trackpadConfig = device.config?.trackpad || {};
   
   return (
-    <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+    <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs">
       <div className="flex flex-wrap items-center gap-6 mb-6">
         <div className="pt-2 w-[45%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">

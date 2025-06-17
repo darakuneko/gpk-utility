@@ -1,30 +1,6 @@
-@import "tailwindcss";
-
-@theme {
-  /* Tailwind カスタムカラー定義 */
-  --color-background: var(--color-background);
-  --color-text-primary: var(--color-text-primary);
-  --color-accent-primary: var(--color-accent-primary);
-  --color-accent-secondary: var(--color-accent-secondary);
-  --color-primary: var(--color-primary);
-  --color-secondary: var(--color-secondary);
-  --color-card-bg: var(--card-background);
-  --color-container-bg: var(--settings-container-bg);
-  --color-white: #ffffff;
-  --color-black: #000000;
-  
-  /* Gray colors */
-  --color-gray-50: #f9f9f9;
-  --color-gray-100: #f0f0f0;
-  --color-gray-200: #e5e5e5;
-  --color-gray-300: #d4d4d4;
-  --color-gray-400: #a3a3a3;
-  --color-gray-500: #737373;
-  --color-gray-600: #525252;
-  --color-gray-700: #404040;
-  --color-gray-800: #262626;
-  --color-gray-900: #171717;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* ===============
    Default Color Palette Definition
@@ -135,7 +111,7 @@
   }
 
   .card {
-    @apply bg-card-bg dark:bg-gray-800 rounded-lg shadow-xs p-4;
+    @apply bg-card-bg dark:bg-gray-800 rounded-lg shadow-sm p-4;
   }
 
   .container-settings {
