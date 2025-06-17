@@ -49,6 +49,13 @@ import {
     getPomodoroConfig, 
     getPomodoroActiveStatus 
 } from './gpkrc-modules/pomodoroConfig';
+import { 
+    receiveLedConfig, 
+    receiveLedLayerConfig, 
+    getLedConfig, 
+    getLedLayerConfig,
+    saveLedConfig 
+} from './gpkrc-modules/ledConfig';
 import { writeTimeToOled, lastFormattedDateMap } from './gpkrc-modules/oledDisplay';
 import {
     activeWindows, 
@@ -189,7 +196,7 @@ export { getSelectedAppSettings, addNewAppToAutoLayerSettings };
 export { encodeDeviceId, parseDeviceId };
 export { getDeviceInitConfig, getDeviceConfig, writeTimeToOled, getPomodoroConfig };
 export { getDeviceType };
-export { saveTrackpadConfig, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData };
+export { saveTrackpadConfig, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData, getLedConfig, getLedLayerConfig, saveLedConfig };
 
 // Export additional functions and variables that were in the original file
 export { deviceStatusMap, hidDeviceInstances, activeTabPerDevice, isEditingPomodoroPerDevice, settingsStore };
@@ -213,6 +220,10 @@ export {
 export { 
     receivePomodoroConfig, 
     receivePomodoroActiveStatus
+};
+export { 
+    receiveLedConfig, 
+    receiveLedLayerConfig
 };
 export { writeCommand, addKbd };
 export { startDeviceHealthMonitoring, stopDeviceHealthMonitoring, checkDeviceHealth, isDeviceHealthMonitoringActive };

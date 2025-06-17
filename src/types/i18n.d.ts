@@ -42,6 +42,7 @@ export interface LocaleMessages {
     oled: string;
     gesture: string;
     haptic: string;
+    led: string;
   };
   mouse: {
     speed: string;
@@ -132,5 +133,21 @@ export interface LocaleMessages {
     stopBody: string;
     enableDesktopNotifications: string;
     enableHapticNotifications: string;
+  };
+  led: {
+    title: string;
+    mouseSpeedAccel: string;
+    scrollStepAccel: string;
+    pomodoro: string;
+    work: string;
+    break: string;
+    longBreak: string;
+    layer: string;
+    settings: string;
+    currentColor: string;
+    red: string;
+    green: string;
+    blue: string;
+    colorPalette: string;
   };
 }

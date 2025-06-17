@@ -23,6 +23,7 @@ import {
 import { injectOledDependencies, writeTimeToOled } from './oledDisplay';
 import { injectPomodoroDependencies, receivePomodoroConfig, receivePomodoroActiveStatus } from './pomodoroConfig';
 import { injectTrackpadDependencies, receiveTrackpadSpecificConfig } from './trackpadConfig';
+import { injectLedDependencies, receiveLedConfig, receiveLedLayerConfig } from './ledConfig';
 import { injectWindowMonitoringDependencies, cleanupDeviceLayerTracking } from './windowMonitoring';
 import { stopDeviceHealthMonitoring } from './deviceHealth';
 
@@ -424,6 +425,32 @@ const start = async (device: GPKDevice): Promise<string> => {
                                     pomodoroConfig: deviceStatusMap[id]!.config.pomodoro,
                                     phaseChanged: phaseChanged,
                                 });
+                            } else if (receivedActionId === actionId.ledGetValue) {
+                                // Use imported receiveLedConfig function
+                                const receivedLedConfig = receiveLedConfig(Array.from(actualData));
+                                deviceStatusMap[id]!.config.led = receivedLedConfig.led;
+
+                                (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionStateChanged", {
+                                    deviceId: id,
+                                    connected: deviceStatusMap[id]!.connected,
+                                    gpkRCVersion: deviceStatusMap[id]!.gpkRCVersion,
+                                    deviceType: deviceStatusMap[id]!.deviceType,
+                                    config: deviceStatusMap[id]!.config
+                                });
+                            } else if (receivedActionId === actionId.ledLayerGetValue) {
+                                // Use imported receiveLedLayerConfig function
+                                const receivedLedLayerConfig = receiveLedLayerConfig(Array.from(actualData));
+                                if (deviceStatusMap[id]!.config.led) {
+                                    deviceStatusMap[id]!.config.led.layers = receivedLedLayerConfig.layers;
+                                }
+
+                                (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionStateChanged", {
+                                    deviceId: id,
+                                    connected: deviceStatusMap[id]!.connected,
+                                    gpkRCVersion: deviceStatusMap[id]!.gpkRCVersion,
+                                    deviceType: deviceStatusMap[id]!.deviceType,
+                                    config: deviceStatusMap[id]!.config
+                                });
                             }
                         }
                     }
@@ -691,6 +718,9 @@ export const initializeDependencies = (): void => {
 
     // Inject dependencies for trackpad config
     injectTrackpadDependencies(writeCommand);
+
+    // Inject dependencies for LED config
+    injectLedDependencies(writeCommand);
 
     // Inject dependencies for window monitoring
     injectWindowMonitoringDependencies({

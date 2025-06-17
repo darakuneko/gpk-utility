@@ -67,6 +67,24 @@ export const command = {
     savePomodoroConfigData: async (device: Device, pomodoroDataBytes: Buffer): Promise<CommandResult> => {
         return await ipcRenderer.invoke('savePomodoroConfigData', device, pomodoroDataBytes);
     },
+    getLedConfig: async (device: Device): Promise<CommandResult> => {
+        return await ipcRenderer.invoke('getLedConfig', device);
+    },
+    getLedLayerConfig: async (device: Device): Promise<CommandResult> => {
+        return await ipcRenderer.invoke('getLedLayerConfig', device);
+    },
+    saveLedConfig: async (device: Device): Promise<CommandResult> => {
+        if (device && device.config && 'led' in device.config && device.config.led) {
+            try {
+                return await ipcRenderer.invoke('saveLedConfig', device);
+            } catch (error) {
+                console.error("Error sending LED config:", error);
+                return { success: false, error: error instanceof Error ? error.message : String(error) };
+            }
+        } else {
+            return { success: false, error: "Invalid device or missing LED configuration" };
+        }
+    },
 
     setSliderActive: (active: boolean): void => {
         setSliderActive(active);

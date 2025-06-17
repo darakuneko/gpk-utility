@@ -12,12 +12,15 @@ export const actionId = {
     setValueComplete: 0x01,
     trackpadSetValue: 0x02,
     pomodoroSetValue: 0x03,
+    ledSetValue: 0x04,
 
     // Actions for customGetValue (commandId: 0x03)
     deviceGetValue: 0x01,
     trackpadGetValue: 0x02,
     pomodoroGetValue: 0x03,
     pomodoroActiveGetValue: 0x04,
+    ledGetValue: 0x05,
+    ledLayerGetValue: 0x06,
 
     // Actions for gpkRCOperation (commandId: 0x04)
     layerMove: 0x01,

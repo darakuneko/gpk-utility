@@ -4,6 +4,7 @@ import Store from 'electron-store';
 import {
     saveTrackpadConfig,
     savePomodoroConfigData,
+    saveLedConfig,
     updateAutoLayerSettings
 } from '../gpkrc';
 import type { StoreSchema } from '../src/types/store';
@@ -126,6 +127,8 @@ export const setupConfigHandlers = (): void => {
             
             let trackpadSaved = false;
             let pomodoroSaved = false;
+            let ledSaved = false;
+            
             // Handle trackpad config
             if ((updateAll || typesToUpdate.includes('trackpad')) && deviceWithConfig.config.trackpad) {
                 // Use the existing local function
@@ -141,7 +144,13 @@ export const setupConfigHandlers = (): void => {
                 pomodoroSaved = true;
             }
 
-            if (trackpadSaved || pomodoroSaved) {
+            // Handle LED config
+            if ((updateAll || typesToUpdate.includes('led')) && deviceWithConfig.config.led) {
+                void saveLedConfig(deviceWithConfig); // Deliberately not awaiting to prevent UI sluggishness
+                ledSaved = true;
+            }
+
+            if (trackpadSaved || pomodoroSaved || ledSaved) {
                 // Send configUpdated event to UI for immediate feedback before device state updates
                 if (mainWindow) {
                     mainWindow.webContents.send("configUpdated", {
@@ -149,13 +158,19 @@ export const setupConfigHandlers = (): void => {
                         config: deviceWithConfig.config // Send the config that was intended to be saved
                     });
                 }
+                const updates = {
+                    trackpad: trackpadSaved,
+                    pomodoro: pomodoroSaved
+                } as { trackpad: boolean; pomodoro: boolean; led?: boolean };
+                
+                if (ledSaved) {
+                    updates.led = ledSaved;
+                }
+                
                 return { 
                     success: true, 
                     message: "Device config dispatched for saving.",
-                    updates: {
-                        trackpad: trackpadSaved,
-                        pomodoro: pomodoroSaved
-                    }
+                    updates
                 };
             } else {
                 return { success: false, message: "No config found to save for the specified types." };

@@ -18,7 +18,8 @@ export const getSupportedSettingTabs = (device: Device | null, t: TranslationFun
         dragdrop: { id: "dragdrop", label: t('tabs.dragDrop') },
         gesture: { id: "gesture", label: t('tabs.gesture') },
         timer: { id: "timer", label: t('tabs.timer') },
-        haptic: { id: "haptic", label: t('tabs.haptic') }
+        haptic: { id: "haptic", label: t('tabs.haptic') },
+        led: { id: "led", label: t('tabs.led') }
     };
 
     // Check if device is a trackpad device type
@@ -37,18 +38,42 @@ export const getSupportedSettingTabs = (device: Device | null, t: TranslationFun
                              typeof device.config?.trackpad?.default_speed === 'number' &&
                              device.config.trackpad.default_speed >= 1;
 
+    // Check if device supports LED configuration
+    const isLedDevice = device.deviceType === 'macropad_tp' || 
+                       device.deviceType === 'macropad_tp_btns' || 
+                       device.deviceType === 'keyboard_tp';
+                       
+    // More robust LED config check - only show if device supports LED and config is available
+    const hasLedConfig = isLedDevice && 
+                        device.connected === true &&
+                        device.config?.led !== undefined &&
+                        device.config?.led !== null &&
+                        typeof device.config?.led === 'object' &&
+                        !device.initializing;
+
     // 共通セット - only include trackpad tabs if config is available and stable
     // However, always show layer tab for TP devices regardless of trackpad config status
     const tpTabs = hasTrackpadConfig 
         ? [tabs.mouse, tabs.scroll, tabs.dragdrop, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer] as Tab[]
         : []; // Always show layer tab, even without trackpad config
+        
+    const macropadBtnsTabs = hasTrackpadConfig 
+        ? [tabs.mouse, tabs.scroll, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer] as Tab[]
+        : [];
+
+    // Add LED tab independently of trackpad config if LED config is available
+    const finalTpTabs = [...tpTabs];
+    const finalMacropadBtnsTabs = [...macropadBtnsTabs];
+    
+    if (hasLedConfig && tabs.led) {
+        finalTpTabs.push(tabs.led);
+        finalMacropadBtnsTabs.push(tabs.led);
+    }
 
     const tabDefinitions: Record<string, Tab[]> = {
-        'macropad_tp': tpTabs,
-        'macropad_tp_btns': hasTrackpadConfig 
-            ? [tabs.mouse, tabs.scroll, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer] as Tab[]
-            : [], // Always show layer tab, even without trackpad config
-        'keyboard_tp': tpTabs,
+        'macropad_tp': finalTpTabs,
+        'macropad_tp_btns': finalMacropadBtnsTabs,
+        'keyboard_tp': finalTpTabs,
         'keyboard_oled': [tabs.layer, tabs.oled] as Tab[]
     };
     return tabDefinitions[device.deviceType || ''] || [];

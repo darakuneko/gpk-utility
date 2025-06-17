@@ -13,6 +13,7 @@ import LayerSettings from "./settings/layerSettings.tsx";
 import OLEDSettings from "./settings/OLEDSettings.tsx";
 import GestureSettings from "./settings/gestureSettings.tsx";
 import HapticSettings from "./settings/hapticSettings.tsx";
+import LedSettings from "./settings/ledSettings.tsx";
 
 const { api } = window;
 
@@ -34,8 +35,8 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
     const sendConfigToDevice = async (updatedDevice: Device): Promise<DeviceConfig | undefined> => {
         try {
             // Determine which configuration type to update based on the active tab
-            // Update only pomodoro settings for "timer" tab, otherwise update only trackpad settings
-            const configTypes = activeTab === "timer" ? ["pomodoro"] : ["trackpad"];
+            // Update only pomodoro settings for "timer" tab, LED settings for "led" tab, otherwise update only trackpad settings
+            const configTypes = activeTab === "timer" ? ["pomodoro"] : activeTab === "led" ? ["led"] : ["trackpad"];
             const updatedConfig = await api.dispatchSaveDeviceConfig(updatedDevice, configTypes);
             
             if (updatedConfig && updatedConfig.success && updatedConfig.config) {
@@ -301,6 +302,14 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                                 handleChangeValue={handleChangeValue}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
+                            />
+                        )}
+
+                        {/* LED Settings */}
+                        {activeTab === "led" && (
+                            <LedSettings
+                                device={device}
+                                handleChange={handleChangeSelect}
                             />
                         )}
                     </div>

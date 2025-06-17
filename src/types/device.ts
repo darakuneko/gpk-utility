@@ -160,11 +160,34 @@ export interface TrackpadConfig {
     pinch_distance?: number;
 }
 
+export interface RgbColor {
+    r: number;
+    g: number;
+    b: number;
+}
+
+export interface LedLayerConfig extends RgbColor {
+    layer_id: number;
+}
+
+export interface LedConfig {
+    enabled?: number;
+    mouse_speed_accel?: RgbColor;
+    scroll_step_accel?: RgbColor;
+    pomodoro?: {
+        work: RgbColor;
+        break: RgbColor;
+        long_break: RgbColor;
+    };
+    layers?: LedLayerConfig[];
+}
+
 export interface DeviceConfig {
     init?: number;
     pomodoro: PomodoroConfig;
     trackpad: TrackpadConfig;
     oled_enabled?: number;
+    led?: LedConfig;
     [key: string]: unknown; // Allow any additional properties
 }
 

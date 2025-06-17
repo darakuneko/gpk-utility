@@ -40,7 +40,8 @@ const enMessages: LocaleMessages = {
     timer: 'Timer',
     oled: 'OLED',
     gesture: 'Gesture',
-    haptic: 'Haptic'
+    haptic: 'Haptic',
+    led: 'LED'
   },
   mouse: {
     speed: 'Speed'
@@ -131,6 +132,22 @@ const enMessages: LocaleMessages = {
     stopBody: 'Your pomodoro session has ended',
     enableDesktopNotifications: 'Desktop Notifications',
     enableHapticNotifications: 'Haptic Feedback Notifications'
+  },
+  led: {
+    title: 'LED Settings',
+    mouseSpeedAccel: 'Mouse Speed Accel',
+    scrollStepAccel: 'Scroll Step Accel',
+    pomodoro: 'Pomodoro',
+    work: 'Work',
+    break: 'Break',
+    longBreak: 'Long Break',
+    layer: 'Layer',
+    settings: 'Settings',
+    currentColor: 'Current Color',
+    red: 'Red',
+    green: 'Green',
+    blue: 'Blue',
+    colorPalette: 'Color Palette'
   }
 };
 

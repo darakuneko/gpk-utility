@@ -16,7 +16,10 @@ import {
     getPomodoroConfig,
     writeTimeToOled,
     getPomodoroActiveStatus,
-    getTrackpadConfigData
+    getTrackpadConfigData,
+    getLedConfig,
+    getLedLayerConfig,
+    saveLedConfig
 } from '../gpkrc';
 import type { Device, DeviceWithId, DeviceStatus, CommandResult, ActiveWindowResult } from '../src/types/device';
 import { DeviceType } from '../gpkrc-modules/deviceTypes';
@@ -80,6 +83,38 @@ export const setupDeviceHandlers = (): void => {
     // Device config data handlers
     ipcMain.handle('getPomodoroActiveStatus', async (event, device: Device): Promise<CommandResult> => await getPomodoroActiveStatus(device));
     ipcMain.handle('getTrackpadConfigData', async (event, device: Device): Promise<CommandResult> => await getTrackpadConfigData(device));
+    
+    // LED config handlers
+    ipcMain.handle('getLedConfig', async (event, device: Device): Promise<CommandResult> => {
+        try {
+            const result = await getLedConfig(device);
+            return result;
+        } catch (error) {
+            console.error(`IPC handler: Error getting LED config for ${device.id}:`, error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { success: false, error: errorMessage };
+        }
+    });
+    ipcMain.handle('getLedLayerConfig', async (event, device: Device): Promise<CommandResult> => {
+        try {
+            const result = await getLedLayerConfig(device);
+            return result;
+        } catch (error) {
+            console.error(`IPC handler: Error getting LED layer config for ${device.id}:`, error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { success: false, error: errorMessage };
+        }
+    });
+    ipcMain.handle('saveLedConfig', async (event, device: Device): Promise<CommandResult> => {
+        try {
+            const result = await saveLedConfig(device);
+            return result;
+        } catch (error) {
+            console.error(`IPC handler: Error saving LED config for ${device.id}:`, error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { success: false, error: errorMessage };
+        }
+    });
 
     // Tab switch handler
     ipcMain.handle('setActiveTab', async (event, device: Device, tabName: string): Promise<void> => {

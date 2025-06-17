@@ -40,7 +40,8 @@ const jaMessages: LocaleMessages = {
     timer: 'タイマー',
     oled: 'OLED',
     gesture: 'ジェスチャー',
-    haptic: '振動'
+    haptic: '振動',
+    led: 'LED'
   },
   mouse: {
     speed: '速度',
@@ -131,6 +132,22 @@ const jaMessages: LocaleMessages = {
     stopBody: 'ポモドーロセッションが終了しました',
     enableDesktopNotifications: 'デスクトップ通知',
     enableHapticNotifications: '振動フィードバック通知'
+  },
+  led: {
+    title: 'LED設定',
+    mouseSpeedAccel: 'マウススピードアクセル',
+    scrollStepAccel: 'スクロールステップアクセル',
+    pomodoro: 'ポモドーロ',
+    work: '作業',
+    break: '休憩',
+    longBreak: '長期休憩',
+    layer: 'レイヤー',
+    settings: '設定',
+    currentColor: '現在の色',
+    red: '赤',
+    green: '緑',
+    blue: '青',
+    colorPalette: 'カラーパレット'
   }
 };
 
