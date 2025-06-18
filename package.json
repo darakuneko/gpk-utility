@@ -2,7 +2,7 @@
   "license": "MIT",
   "scripts": {
     "build": "rm -rf ./dist && rm -rf ./dist-electron && npm run check && vite build && cp -r dist dist-electron/",
-    "build:win": "del /s /q dist && del /s /q dist-electron && type-check && vite build && xcopy dist dist-electron\\dist /e /i",
+    "build:win": "del /s /q dist && del /s /q dist-electron && npm run type-check && vite build && xcopy dist dist-electron\\dist /e /i",
     "start": "npm run build && vite build && npx electron dist-electron/index.js",
     "start:electron": "npm run build && cross-env NODE_ENV=development npx electron dist-electron/index.js",
     "type-check": "tsc --noEmit",
