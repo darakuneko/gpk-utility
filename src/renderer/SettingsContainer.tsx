@@ -355,7 +355,7 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                         <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 border border-gray-200 dark:border-gray-700 overflow-hidden">
                             {/* Language Settings */}
                             <div className="relative">
-                                <MenuItem onClick={(): void => toggleLanguageMenu({} as React.MouseEvent)}>
+                                <MenuItem onClick={(e: React.MouseEvent): void => toggleLanguageMenu(e)}>
                                     <div className="flex justify-between items-center w-full">
                                         <span className="mr-2">{t('settings.language')}</span>
                                         <span className="text-sm text-gray-900 dark:text-gray-100 ml-auto font-medium">{availableLanguages[locale as keyof typeof availableLanguages]}</span>
@@ -520,7 +520,7 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                 
                 {/* Save status display - positioned absolutely on top-right of content */}
                 {saveStatus?.visible && (
-                    <div className={`absolute top-1 right-4 p-2 text-sm transition-opacity duration-300 z-10 ${
+                    <div className={`absolute -top-1.5 right-4 p-2 text-sm transition-opacity duration-300 z-10 ${
                         saveStatus.success 
                             ? "text-green-600 dark:text-green-400" 
                             : "text-red-600 dark:text-red-400"

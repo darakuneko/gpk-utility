@@ -11,18 +11,11 @@ export const injectLedDependencies = (writeCommand: WriteCommandFunction): void 
 
 export function receiveLedConfig(buffer: number[]): {led: LedConfig} {
     // Based on send_led_config firmware implementation:
-    // data[0-2]: pomodoro work RGB (53, 255, 0)
-    // data[3-5]: pomodoro break RGB (0, 0, 255) 
-    // data[6-8]: pomodoro long_break RGB (0, 0, 255)
-    // data[9-11]: indicator speed RGB (255, 1, 1)
-    // data[12-14]: indicator step RGB (0, 0, 0)
-    
-    console.log('DEBUG receiveLedConfig buffer:', buffer.slice(0, 20));
-    console.log('DEBUG pomodoro work RGB (buffer[0-2]):', buffer[0], buffer[1], buffer[2]);
-    console.log('DEBUG pomodoro break RGB (buffer[3-5]):', buffer[3], buffer[4], buffer[5]);
-    console.log('DEBUG pomodoro long_break RGB (buffer[6-8]):', buffer[6], buffer[7], buffer[8]);
-    console.log('DEBUG indicator speed RGB (buffer[9-11]):', buffer[9], buffer[10], buffer[11]);
-    console.log('DEBUG indicator step RGB (buffer[12-14]):', buffer[12], buffer[13], buffer[14]);
+    // data[0-2]: pomodoro work RGB
+    // data[3-5]: pomodoro break RGB 
+    // data[6-8]: pomodoro long_break RGB
+    // data[9-11]: indicator speed RGB
+    // data[12-14]: indicator step RGB
     
     const led: LedConfig = {
         enabled: 1,
@@ -60,24 +53,20 @@ export function receiveLedConfig(buffer: number[]): {led: LedConfig} {
 
 export function receiveLedLayerConfig(buffer: number[]): {layers: LedLayerConfig[]} {
     // Based on send_led_layer_config firmware implementation:
-    // data[0]: layer_count (7)
+    // data[0]: layer_count
     // data[1-24]: layer_colors (8 layers * 3 bytes each)
-    
-    console.log('DEBUG receiveLedLayerConfig buffer:', buffer.slice(0, 30));
-    console.log('DEBUG layer_count (buffer[0]):', buffer[0]);
     
     const layers: LedLayerConfig[] = [];
     const layerCount = buffer[0] || 0;
     
     for (let i = 0; i < layerCount; i++) {
-        const layerBase = 1 + (i * 3); // Start from buffer[1]
+        const layerBase = 1 + (i * 3);
         const layer = {
             layer_id: i,
             r: buffer[layerBase] || 0,
             g: buffer[layerBase + 1] || 0,
             b: buffer[layerBase + 2] || 0
         };
-        console.log(`DEBUG layer[${i}] RGB (buffer[${layerBase}-${layerBase + 2}]):`, layer.r, layer.g, layer.b);
         layers.push(layer);
     }
     
@@ -88,6 +77,7 @@ export const saveLedConfigData = async (device: Device, ledDataBytes: number[]):
     if (!writeCommandFunction) {
         throw new Error("WriteCommand function not injected in ledConfig");
     }
+    
     
     try {
         const result = await writeCommandFunction(device, [commandId.customSetValue, actionId.ledSetValue, ...ledDataBytes]);
@@ -106,6 +96,7 @@ export const saveLedLayerConfigData = async (device: Device, ledDataBytes: numbe
     if (!writeCommandFunction) {
         throw new Error("WriteCommand function not injected in ledConfig");
     }
+    
     
     try {
         const result = await writeCommandFunction(device, [commandId.customSetValue, actionId.ledLayerSetValue, ...ledDataBytes]);

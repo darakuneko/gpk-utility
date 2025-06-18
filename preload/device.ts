@@ -133,6 +133,7 @@ export const keyboardSendLoop = async (): Promise<void> => {
                     existingDevice.initializing = true; // Mark as initializing
                     // Mark for restart to ensure clean initialization
                     existingDevice.needsRestart = true;
+                    
                 }
                 // Update device properties but don't mark as connected until initialization is complete
                 Object.assign(existingDevice, device);
@@ -157,20 +158,18 @@ export const keyboardSendLoop = async (): Promise<void> => {
             }
         });
         
-        // Remove disconnected devices from cachedDeviceRegistry after a delay
-        // This prevents UI flickering during temporary disconnections
+        // Remove disconnected devices from cachedDeviceRegistry immediately
+        // Treat each reconnection as a fresh new device connection
         if (disconnectedDeviceIds.length > 0) {
-            setTimeout((): void => {
-                const filteredRegistry = cachedDeviceRegistry.filter((device): boolean => 
-                    connectedIds.has(device.id) || device.connected !== false
-                );
-                updateCachedDeviceRegistry(filteredRegistry);
-                command.changeConnectDevice(cachedDeviceRegistry);
-            }, 2000); // 2 second delay
+            const filteredRegistry = cachedDeviceRegistry.filter((device): boolean => 
+                connectedIds.has(device.id)
+            );
+            updateCachedDeviceRegistry(filteredRegistry);
+            command.changeConnectDevice(filteredRegistry);
+        } else {
+            // Only notify UI if no disconnected devices (to avoid duplicate calls)
+            command.changeConnectDevice(cachedDeviceRegistry);
         }
-        
-        // Always notify UI of current device states
-        command.changeConnectDevice(cachedDeviceRegistry);
         
         // Process each device with lock mechanism to prevent concurrent processing
         const results = await Promise.all(cachedDeviceRegistry.map(async (device): Promise<Device> => {
@@ -199,7 +198,13 @@ export const keyboardSendLoop = async (): Promise<void> => {
                             startSuccess = true;
                         } catch (startError) {
                             startAttempts++;
-                            console.warn(`Failed to start device ${device.id} (attempt ${startAttempts}/${maxStartAttempts}):`, startError instanceof Error ? startError.message : String(startError));
+                            const errorMessage = startError instanceof Error ? startError.message : String(startError);
+                            
+                            // Note: "Device not found or path not available" errors during reconnection are normal
+                            // and harmless - they occur due to timing between device detection and HID path availability
+                            if (!errorMessage.includes("Device not found or path not available")) {
+                                console.warn(`Failed to start device ${device.id} (attempt ${startAttempts}/${maxStartAttempts}):`, errorMessage);
+                            }
                             
                             if (startAttempts < maxStartAttempts) {
                                 await new Promise((resolve): void => {setTimeout(resolve, 1000 * startAttempts);}); // Progressive delay
@@ -230,8 +235,24 @@ export const keyboardSendLoop = async (): Promise<void> => {
             // If device is not connected via HID, attempt to start it
             if (!connectKbd) {
                 device.initializing = true;
-                await command.start(device);
-                await new Promise((resolve): void => {setTimeout(resolve, 800);}); // Wait for device to initialize
+                try {
+                    await command.start(device);
+                    await new Promise((resolve): void => {setTimeout(resolve, 800);}); // Wait for device to initialize
+                } catch (startError) {
+                    const errorMessage = startError instanceof Error ? startError.message : String(startError);
+                    
+                    // Note: "Device not found or path not available" errors during initial connection are normal
+                    // and harmless - they occur due to timing between device detection and HID path availability
+                    if (!errorMessage.includes("Device not found or path not available")) {
+                        console.error(`Failed to start device ${device.id} during initial connection:`, errorMessage);
+                    }
+                    
+                    // Mark device for retry on next cycle
+                    device.initializing = false;
+                    device.connected = false;
+                    device.needsRestart = true;
+                    return device;
+                }
             } else {
                 // Device is connected, check if we need to initialize configuration
                 const existConfingInit = device.config?.init;

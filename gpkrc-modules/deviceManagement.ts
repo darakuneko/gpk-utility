@@ -143,7 +143,7 @@ const addKbd = async (device: GPKDevice): Promise<string> => {
     const id = device.id;
     
     if (!d || !d.path) {
-        console.error(`Device not found or path not available for device: ${id}`);
+        // Note: This is normal during device reconnection - HID path becomes available after detection
         throw new Error(`Device not found or path not available for device: ${id}`);
     }
     
@@ -232,7 +232,12 @@ const start = async (device: GPKDevice): Promise<string> => {
                 throw new Error(`HID instance not created despite successful addKbd call`);
             } catch (addError) {
                 retryCount++;
-                console.warn(`Failed to add device ${id} (attempt ${retryCount}/${maxRetries}):`, addError instanceof Error ? addError.message : String(addError));
+                const errorMessage = addError instanceof Error ? addError.message : String(addError);
+                
+                // Note: "Device not found or path not available" errors during reconnection are normal
+                if (!errorMessage.includes("Device not found or path not available")) {
+                    console.warn(`Failed to add device ${id} (attempt ${retryCount}/${maxRetries}):`, errorMessage);
+                }
                 
                 if (retryCount >= maxRetries) {
                     console.error(`Failed to create HID instance for ${id} after ${maxRetries} attempts`);
@@ -271,12 +276,7 @@ const start = async (device: GPKDevice): Promise<string> => {
             hidDeviceInstances[newId!]!.on('error', (err: Error): void => {
                 console.error(`Device error: ${newId}`, err);
                 
-                // Mark device as disconnected and clean up HID instance
-                if (deviceStatusMap[newId!]) {
-                    deviceStatusMap[newId!]!.connected = false;
-                }
-                
-                // Clean up the problematic HID instance
+                // Completely remove all traces of the device (treat as fresh connection next time)
                 try {
                     if (hidDeviceInstances[newId!]) {
                         hidDeviceInstances[newId!]!.removeAllListeners();
@@ -286,6 +286,23 @@ const start = async (device: GPKDevice): Promise<string> => {
                     console.error(`Error closing HID instance after error for ${newId}:`, closeError);
                 }
                 hidDeviceInstances[newId!] = null;
+                
+                // Completely remove device status
+                if (deviceStatusMap[newId!]) {
+                    delete deviceStatusMap[newId!];
+                }
+                
+                // Clean up all related data
+                if (activeTabPerDevice[newId!]) {
+                    delete activeTabPerDevice[newId!];
+                }
+                
+                if (isEditingPomodoroPerDevice[newId!]) {
+                    delete isEditingPomodoroPerDevice[newId!];
+                }
+                
+                // Clean up layer tracking
+                cleanupDeviceLayerTracking(newId!);
                 
                 // Notify UI about device disconnection
                 if ((global as { mainWindow?: ElectronWindow }).mainWindow) {
@@ -352,25 +369,6 @@ const start = async (device: GPKDevice): Promise<string> => {
                                 // Mark initialization as complete
                                 deviceStatusMap[id]!.initializing = false;
                                 initializationComplete = true;
-
-                                // Check if device supports LED and fetch LED config automatically
-                                const isLedDevice = deviceStatusMap[id]!.deviceType === DeviceType.MACROPAD_TP || 
-                                                   deviceStatusMap[id]!.deviceType === DeviceType.MACROPAD_TP_BTNS || 
-                                                   deviceStatusMap[id]!.deviceType === DeviceType.KEYBOARD_TP;
-
-                                if (isLedDevice) {
-                                    setTimeout((): void => {
-                                        try {
-                                            if (hidDeviceInstances[id]) {
-                                                const bytes = [0, commandId.gpkRCPrefix, commandId.customGetValue, actionId.ledGetValue];
-                                                const padding = Array(PACKET_PADDING - (bytes.length % PACKET_PADDING)).fill(0);
-                                                hidDeviceInstances[id]!.write(bytes.concat(padding));
-                                            }
-                                        } catch (writeError) {
-                                            console.error(`Failed to request LED config for ${id}:`, writeError);
-                                        }
-                                    }, 500);
-                                }
 
                                 (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
@@ -536,7 +534,12 @@ const start = async (device: GPKDevice): Promise<string> => {
         
         return newId!;
     } catch (err) {
-        console.error(`Error starting device:`, err);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        
+        // Note: "Device not found or path not available" errors during reconnection are normal
+        if (!errorMessage.includes("Device not found or path not available")) {
+            console.error(`Error starting device:`, errorMessage);
+        }
         throw err;
     } finally {
         // Start device health monitoring if not already running
@@ -553,16 +556,16 @@ const stop = async (device: GPKDevice): Promise<void> => {
     if (hidDeviceInstances[id]) {
         try {
             hidDeviceInstances[id]!.removeAllListeners();
+            hidDeviceInstances[id]!.close();
         } catch (error) {
             console.error(`Error during device stop for ${id}:`, error);
         }
         hidDeviceInstances[id] = null;
     }
     
-    // Clean up device status and related data
+    // Completely remove device status (treat as new device next time)
     if (deviceStatusMap[id]) {
-        deviceStatusMap[id]!.connected = false;
-        deviceStatusMap[id] = undefined;
+        delete deviceStatusMap[id];
     }
     
     // Clean up other related data

@@ -124,20 +124,18 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
         }
         
         // Wait a bit before attempting communication to ensure device is ready
-        await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 300)); // Increased initial delay
+        await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 200));
         
         const trackpadResult = await writeCommand(device, [commandId.customGetValue, actionId.trackpadGetValue]);
-
         
         if (!trackpadResult.success) {
             throw new Error(`Failed to request trackpad config: ${trackpadResult.error}`);
         }
         
-        // Add delay between commands
-        await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 300)); // Increased delay between commands
+        // Short delay between commands
+        await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 150));
         
         const pomodoroResult = await writeCommand(device, [commandId.customGetValue, actionId.pomodoroGetValue]);
-
         
         if (!pomodoroResult.success) {
             throw new Error(`Failed to request pomodoro config: ${pomodoroResult.error}`);
@@ -149,24 +147,21 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
                            device.deviceType === 'keyboard_tp';
         
         if (isLedDevice) {
-            
-            // Add delay between commands
-            await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 300)); 
+            // Short delay before LED commands
+            await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 150)); 
             
             const ledResult = await writeCommand(device, [commandId.customGetValue, actionId.ledGetValue]);
             
             if (!ledResult.success) {
                 console.warn(`Failed to request LED config for ${id}: ${ledResult.error}`);
-                // Don't throw error, as LED might not be supported on all devices
             } else {
-                // Add delay between LED commands
-                await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 300)); 
+                // Short delay between LED commands
+                await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 150)); 
                 
                 const ledLayerResult = await writeCommand(device, [commandId.customGetValue, actionId.ledLayerGetValue]);
                 
                 if (!ledLayerResult.success) {
                     console.warn(`Failed to request LED layer config for ${id}: ${ledLayerResult.error}`);
-                    // Don't throw error, as some devices might not support layer LEDs
                 }
             }
         }

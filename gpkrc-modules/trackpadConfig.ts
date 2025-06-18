@@ -55,6 +55,7 @@ export const saveTrackpadConfig = async (device: Device, trackpadDataBytes: numb
         throw new Error("WriteCommand function not injected in trackpadConfig");
     }
     
+    
     try {
         const result = await writeCommandFunction(device, [commandId.customSetValue, actionId.trackpadSetValue, ...trackpadDataBytes]);
         if (!result.success) {
