@@ -54,7 +54,8 @@ import {
     receiveLedLayerConfig, 
     getLedConfig, 
     getLedLayerConfig,
-    saveLedConfig 
+    saveLedConfig,
+    saveLedLayerConfig 
 } from './gpkrc-modules/ledConfig';
 import { writeTimeToOled, lastFormattedDateMap } from './gpkrc-modules/oledDisplay';
 import {
@@ -142,6 +143,33 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
             throw new Error(`Failed to request pomodoro config: ${pomodoroResult.error}`);
         }
         
+        // Check if device supports LED functionality before requesting LED config
+        const isLedDevice = device.deviceType === 'macropad_tp' || 
+                           device.deviceType === 'macropad_tp_btns' || 
+                           device.deviceType === 'keyboard_tp';
+        
+        if (isLedDevice) {
+            
+            // Add delay between commands
+            await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 300)); 
+            
+            const ledResult = await writeCommand(device, [commandId.customGetValue, actionId.ledGetValue]);
+            
+            if (!ledResult.success) {
+                console.warn(`Failed to request LED config for ${id}: ${ledResult.error}`);
+                // Don't throw error, as LED might not be supported on all devices
+            } else {
+                // Add delay between LED commands
+                await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, 300)); 
+                
+                const ledLayerResult = await writeCommand(device, [commandId.customGetValue, actionId.ledLayerGetValue]);
+                
+                if (!ledLayerResult.success) {
+                    console.warn(`Failed to request LED layer config for ${id}: ${ledLayerResult.error}`);
+                    // Don't throw error, as some devices might not support layer LEDs
+                }
+            }
+        }
 
         return { success: true };
     } catch (err) {
@@ -196,7 +224,7 @@ export { getSelectedAppSettings, addNewAppToAutoLayerSettings };
 export { encodeDeviceId, parseDeviceId };
 export { getDeviceInitConfig, getDeviceConfig, writeTimeToOled, getPomodoroConfig };
 export { getDeviceType };
-export { saveTrackpadConfig, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData, getLedConfig, getLedLayerConfig, saveLedConfig };
+export { saveTrackpadConfig, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData, getLedConfig, getLedLayerConfig, saveLedConfig, saveLedLayerConfig };
 
 // Export additional functions and variables that were in the original file
 export { deviceStatusMap, hidDeviceInstances, activeTabPerDevice, isEditingPomodoroPerDevice, settingsStore };

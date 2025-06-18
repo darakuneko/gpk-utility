@@ -38,7 +38,7 @@ const OLEDSettings: React.FC<OLEDSettingsProps> = memo(({ device, handleChange }
   }, [device, handleChange]);
 
   return (
-    <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs">
+    <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
       <div className="flex flex-col gap-3 mb-3">
         <div className="pt-2 w-[45%]">
           <label className="block mb-1 text-gray-900 dark:text-white">{t('oled.title')}</label>

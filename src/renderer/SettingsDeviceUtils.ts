@@ -43,7 +43,7 @@ export const getSupportedSettingTabs = (device: Device | null, t: TranslationFun
                        device.deviceType === 'macropad_tp_btns' || 
                        device.deviceType === 'keyboard_tp';
                        
-    // More robust LED config check - only show if device supports LED and config is available
+    // Check if device supports LED configuration
     const hasLedConfig = isLedDevice && 
                         device.connected === true &&
                         device.config?.led !== undefined &&
@@ -51,24 +51,34 @@ export const getSupportedSettingTabs = (device: Device | null, t: TranslationFun
                         typeof device.config?.led === 'object' &&
                         !device.initializing;
 
-    // 共通セット - only include trackpad tabs if config is available and stable
-    // However, always show layer tab for TP devices regardless of trackpad config status
+    // Build tab arrays with LED positioned between Layer and Haptics
+    const buildTabsWithLed = (baseTabs: Tab[]): Tab[] => {
+        if (!hasLedConfig || !tabs.led) {
+            return baseTabs;
+        }
+        
+        // Find the position of haptic tab and insert LED before it
+        const hapticIndex = baseTabs.findIndex((tab): boolean => tab === tabs.haptic);
+        if (hapticIndex !== -1) {
+            const newTabs = [...baseTabs];
+            newTabs.splice(hapticIndex, 0, tabs.led);
+            return newTabs;
+        }
+        
+        // If haptic tab not found, add LED at the end
+        return [...baseTabs, tabs.led];
+    };
+
     const tpTabs = hasTrackpadConfig 
         ? [tabs.mouse, tabs.scroll, tabs.dragdrop, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer] as Tab[]
-        : []; // Always show layer tab, even without trackpad config
+        : [];
         
     const macropadBtnsTabs = hasTrackpadConfig 
         ? [tabs.mouse, tabs.scroll, tabs.gesture, tabs.layer, tabs.haptic, tabs.timer] as Tab[]
         : [];
 
-    // Add LED tab independently of trackpad config if LED config is available
-    const finalTpTabs = [...tpTabs];
-    const finalMacropadBtnsTabs = [...macropadBtnsTabs];
-    
-    if (hasLedConfig && tabs.led) {
-        finalTpTabs.push(tabs.led);
-        finalMacropadBtnsTabs.push(tabs.led);
-    }
+    const finalTpTabs = buildTabsWithLed(tpTabs);
+    const finalMacropadBtnsTabs = buildTabsWithLed(macropadBtnsTabs);
 
     const tabDefinitions: Record<string, Tab[]> = {
         'macropad_tp': finalTpTabs,

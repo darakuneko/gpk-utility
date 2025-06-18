@@ -18,7 +18,7 @@ const MouseSettings: React.FC<MouseSettingsProps> = ({ device, handleChange, han
   const trackpadConfig: TrackpadConfig = device.config?.trackpad || {};
   
   return (
-    <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs">
+    <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
       <div className="flex items-center justify-center mb-3">
         <div className="pt-4 w-full">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">

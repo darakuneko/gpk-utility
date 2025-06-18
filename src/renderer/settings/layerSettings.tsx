@@ -328,7 +328,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device }): JSX.Element =>
     }, [layerSettings, localActiveWindows, state.activeWindow]);
     
     return (
-        <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs">
+        <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
             {device.deviceType === DeviceType.KEYBOARD_TP && (
                 <div className="flex items-center mb-4">
                     <div className="flex-1">

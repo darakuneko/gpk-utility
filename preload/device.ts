@@ -85,6 +85,18 @@ export const command = {
             return { success: false, error: "Invalid device or missing LED configuration" };
         }
     },
+    saveLedLayerConfig: async (device: Device): Promise<CommandResult> => {
+        if (device && device.config && 'led' in device.config && device.config.led) {
+            try {
+                return await ipcRenderer.invoke('saveLedLayerConfig', device);
+            } catch (error) {
+                console.error("Error sending LED layer config:", error);
+                return { success: false, error: error instanceof Error ? error.message : String(error) };
+            }
+        } else {
+            return { success: false, error: "Invalid device or missing LED layer configuration" };
+        }
+    },
 
     setSliderActive: (active: boolean): void => {
         setSliderActive(active);

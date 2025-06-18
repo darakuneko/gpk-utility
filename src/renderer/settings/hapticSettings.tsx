@@ -21,7 +21,7 @@ const HapticSettings: React.FC<HapticSettingsProps> = ({ device, handleChange, h
   const trackpadConfig = device.config?.trackpad || {};
   
   return (
-    <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs">
+    <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
       <div className="flex flex-col gap-3">
         <div className="pt-2 w-[45%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">

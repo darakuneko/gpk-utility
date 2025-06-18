@@ -149,5 +149,6 @@ export interface LocaleMessages {
     green: string;
     blue: string;
     colorPalette: string;
+    clickToOpenColorPicker: string;
   };
 }

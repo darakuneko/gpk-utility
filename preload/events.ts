@@ -11,12 +11,13 @@ export const setupEventListeners = (): void => {
     
     setEventListenersRegistered(true);
     
-    ipcRenderer.on("deviceConnectionStateChanged", (event: IpcRendererEvent, { deviceId, connected, gpkRCVersion, deviceType, config }: {
+    ipcRenderer.on("deviceConnectionStateChanged", (event: IpcRendererEvent, { deviceId, connected, gpkRCVersion, deviceType, config, initializing }: {
         deviceId: string;
         connected: boolean;
         gpkRCVersion: string;
         deviceType: string;
         config: DeviceConfig;
+        initializing?: boolean;
     }): void => {
         const deviceIndex = cachedDeviceRegistry.findIndex((device): boolean => device.id === deviceId);
         if (deviceIndex === -1) {
@@ -49,7 +50,13 @@ export const setupEventListeners = (): void => {
                 changed = true;
             }
             
-            // Mark initialization as complete and device as connected when config is received
+            // Handle explicit initializing property from backend
+            if (initializing !== undefined && device.initializing !== initializing) {
+                cachedDeviceRegistry[deviceIndex]!.initializing = initializing;
+                changed = true;
+            }
+            
+            // Mark initialization as complete and device as connected when config is received (fallback)
             if (initializationComplete && device.initializing) {
                 cachedDeviceRegistry[deviceIndex]!.initializing = false;
                 cachedDeviceRegistry[deviceIndex]!.connected = true;

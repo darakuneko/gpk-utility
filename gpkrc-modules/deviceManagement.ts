@@ -353,6 +353,24 @@ const start = async (device: GPKDevice): Promise<string> => {
                                 deviceStatusMap[id]!.initializing = false;
                                 initializationComplete = true;
 
+                                // Check if device supports LED and fetch LED config automatically
+                                const isLedDevice = deviceStatusMap[id]!.deviceType === DeviceType.MACROPAD_TP || 
+                                                   deviceStatusMap[id]!.deviceType === DeviceType.MACROPAD_TP_BTNS || 
+                                                   deviceStatusMap[id]!.deviceType === DeviceType.KEYBOARD_TP;
+
+                                if (isLedDevice) {
+                                    setTimeout((): void => {
+                                        try {
+                                            if (hidDeviceInstances[id]) {
+                                                const bytes = [0, commandId.gpkRCPrefix, commandId.customGetValue, actionId.ledGetValue];
+                                                const padding = Array(PACKET_PADDING - (bytes.length % PACKET_PADDING)).fill(0);
+                                                hidDeviceInstances[id]!.write(bytes.concat(padding));
+                                            }
+                                        } catch (writeError) {
+                                            console.error(`Failed to request LED config for ${id}:`, writeError);
+                                        }
+                                    }, 500);
+                                }
 
                                 (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
@@ -426,7 +444,6 @@ const start = async (device: GPKDevice): Promise<string> => {
                                     phaseChanged: phaseChanged,
                                 });
                             } else if (receivedActionId === actionId.ledGetValue) {
-                                // Use imported receiveLedConfig function
                                 const receivedLedConfig = receiveLedConfig(Array.from(actualData));
                                 deviceStatusMap[id]!.config.led = receivedLedConfig.led;
 
@@ -438,18 +455,34 @@ const start = async (device: GPKDevice): Promise<string> => {
                                     config: deviceStatusMap[id]!.config
                                 });
                             } else if (receivedActionId === actionId.ledLayerGetValue) {
-                                // Use imported receiveLedLayerConfig function
                                 const receivedLedLayerConfig = receiveLedLayerConfig(Array.from(actualData));
                                 if (deviceStatusMap[id]!.config.led) {
                                     deviceStatusMap[id]!.config.led.layers = receivedLedLayerConfig.layers;
+                                } else {
+                                    // Create default LED config if it doesn't exist
+                                    deviceStatusMap[id]!.config.led = {
+                                        enabled: 255,
+                                        mouse_speed_accel: { r: 0, g: 0, b: 0 },
+                                        scroll_step_accel: { r: 255, g: 0, b: 0 },
+                                        pomodoro: {
+                                            work: { r: 0, g: 255, b: 255 },
+                                            break: { r: 0, g: 0, b: 255 },
+                                            long_break: { r: 0, g: 0, b: 0 }
+                                        },
+                                        layers: receivedLedLayerConfig.layers
+                                    };
                                 }
+
+                                // Mark LED initialization as complete
+                                deviceStatusMap[id]!.initializing = false;
 
                                 (global as { mainWindow?: ElectronWindow }).mainWindow!.webContents.send("deviceConnectionStateChanged", {
                                     deviceId: id,
                                     connected: deviceStatusMap[id]!.connected,
                                     gpkRCVersion: deviceStatusMap[id]!.gpkRCVersion,
                                     deviceType: deviceStatusMap[id]!.deviceType,
-                                    config: deviceStatusMap[id]!.config
+                                    config: deviceStatusMap[id]!.config,
+                                    initializing: deviceStatusMap[id]!.initializing
                                 });
                             }
                         }

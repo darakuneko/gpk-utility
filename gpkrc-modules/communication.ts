@@ -13,6 +13,7 @@ export const actionId = {
     trackpadSetValue: 0x02,
     pomodoroSetValue: 0x03,
     ledSetValue: 0x04,
+    ledLayerSetValue: 0x05,
 
     // Actions for customGetValue (commandId: 0x03)
     deviceGetValue: 0x01,

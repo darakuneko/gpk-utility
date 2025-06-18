@@ -88,6 +88,12 @@ declare global {
       
       // Trackpad settings
       saveTrackpadConfig: (device: Device, config: import('./device').TrackpadConfig) => Promise<void>;
+      
+      // LED settings
+      saveLedConfig: (device: Device) => Promise<CommandResult>;
+      saveLedLayerConfig: (device: Device) => Promise<CommandResult>;
+      getLedConfig: (device: Device) => Promise<CommandResult>;
+      getLedLayerConfig: (device: Device) => Promise<CommandResult>;
     };
   }
 }

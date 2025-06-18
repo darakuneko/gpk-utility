@@ -3,7 +3,6 @@ import type { JSX } from 'react';
 
 import SettingsContainer from "./renderer/SettingsContainer.tsx"
 import {useStateContext} from "./context.tsx"
-import { useLanguage } from "./i18n/LanguageContext.tsx"
 import type { Device } from "./types/device"
 
 interface SaveStatus {
@@ -18,7 +17,6 @@ const hasApi = !!api;
 const Content: React.FC = (): JSX.Element => {
     const {state, setState} = useStateContext();
     const stateRef = useRef(state);
-    const { t } = useLanguage(); // Hook for internationalization
 
     useEffect((): void => {
         stateRef.current = state;
@@ -101,18 +99,7 @@ const Content: React.FC = (): JSX.Element => {
     return (
         <div className="min-h-screen bg-background overflow-auto p-4">
             <div className="max-w-7xl mx-auto">
-                <SettingsContainer/>
-                {saveStatus.visible && (
-                    <div className={`fixed bottom-4 right-4 p-3 rounded-md shadow-md text-sm transition-opacity duration-300 ${
-                        saveStatus.success 
-                            ? "text-green-800 dark:text-green-200" 
-                            : "text-red-800 dark:text-red-200"
-                    }`}>
-                        {saveStatus.success 
-                            ? t('common.saveComplete') 
-                            : t('common.saveError')}
-                    </div>
-                )}
+                <SettingsContainer saveStatus={saveStatus} />
             </div>
         </div>
     )

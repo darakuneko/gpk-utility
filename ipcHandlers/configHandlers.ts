@@ -5,6 +5,7 @@ import {
     saveTrackpadConfig,
     savePomodoroConfigData,
     saveLedConfig,
+    saveLedLayerConfig,
     updateAutoLayerSettings
 } from '../gpkrc';
 import type { StoreSchema } from '../src/types/store';
@@ -147,6 +148,12 @@ export const setupConfigHandlers = (): void => {
             // Handle LED config
             if ((updateAll || typesToUpdate.includes('led')) && deviceWithConfig.config.led) {
                 void saveLedConfig(deviceWithConfig); // Deliberately not awaiting to prevent UI sluggishness
+                ledSaved = true;
+            }
+
+            // Handle LED layer config
+            if ((updateAll || typesToUpdate.includes('led_layer')) && deviceWithConfig.config.led) {
+                void saveLedLayerConfig(deviceWithConfig); // Deliberately not awaiting to prevent UI sluggishness
                 ledSaved = true;
             }
 

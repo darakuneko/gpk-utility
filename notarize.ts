@@ -24,7 +24,7 @@ async function notarizing(context: NotarizeContext): Promise<void> {
     appleId: process.env.APPLE_ID!,
     appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD!,
     teamId: process.env.APPLE_TEAM_ID!,
-  });
+  } as Parameters<typeof notarize>[0]);
 }
 
 module.exports = notarizing;

@@ -12,7 +12,14 @@ import SettingEdit from "./settingEdit.tsx"
 import { HamburgerIcon, MenuItem, LeftMenuItem } from "./SettingsUIComponents.tsx"
 import { getSupportedSettingTabs } from "./SettingsDeviceUtils.ts"
 
-const SettingsContainer: React.FC = (): JSX.Element => {
+interface SettingsContainerProps {
+    saveStatus?: {
+        visible: boolean;
+        success: boolean;
+    };
+}
+
+const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JSX.Element => {
     const {state, dispatch} = useStateContext();
     const DeviceType = useDeviceType();
     const { t, locale, changeLocale, isLoading: _isLoading } = useLanguage();
@@ -444,7 +451,7 @@ const SettingsContainer: React.FC = (): JSX.Element => {
             </div>
             
             {/* Two-column layout */}
-            <div className="flex">            {/* Left navigation menu */}
+            <div className="flex relative">            {/* Left navigation menu */}
             <div className="w-64 p-4 border-r border-gray-200 dark:border-gray-700">
                 <div className="space-y-1">
                     {connectedDevices.length > 0 ? (
@@ -510,6 +517,19 @@ const SettingsContainer: React.FC = (): JSX.Element => {
                         ))
                     )}
                 </div>
+                
+                {/* Save status display - positioned absolutely on top-right of content */}
+                {saveStatus?.visible && (
+                    <div className={`absolute top-1 right-4 p-2 text-sm transition-opacity duration-300 z-10 ${
+                        saveStatus.success 
+                            ? "text-green-600 dark:text-green-400" 
+                            : "text-red-600 dark:text-red-400"
+                    }`}>
+                        {saveStatus.success 
+                            ? t('common.saveComplete') 
+                            : t('common.saveError')}
+                    </div>
+                )}
             </div>
             
             {/* Updates Notification Modal */}

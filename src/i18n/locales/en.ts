@@ -147,7 +147,8 @@ const enMessages: LocaleMessages = {
     red: 'Red',
     green: 'Green',
     blue: 'Blue',
-    colorPalette: 'Color Palette'
+    colorPalette: 'Color Palette',
+    clickToOpenColorPicker: 'Click to open color picker'
   }
 };
 

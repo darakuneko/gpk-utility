@@ -147,7 +147,8 @@ const jaMessages: LocaleMessages = {
     red: '赤',
     green: '緑',
     blue: '青',
-    colorPalette: 'カラーパレット'
+    colorPalette: 'カラーパレット',
+    clickToOpenColorPicker: 'クリックしてカラーピッカーを開く'
   }
 };
 

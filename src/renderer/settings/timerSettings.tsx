@@ -516,7 +516,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ device, handleChange, han
   };
   
   return (
-    <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs">
+    <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
       {device.config?.pomodoro?.timer_active ? (
         <PomodoroActiveDisplay device={device} formatTime={formatTime} desktopNotificationsEnabled={desktopNotificationsEnabled} />
       ) : (

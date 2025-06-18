@@ -19,7 +19,8 @@ import {
     getTrackpadConfigData,
     getLedConfig,
     getLedLayerConfig,
-    saveLedConfig
+    saveLedConfig,
+    saveLedLayerConfig
 } from '../gpkrc';
 import type { Device, DeviceWithId, DeviceStatus, CommandResult, ActiveWindowResult } from '../src/types/device';
 import { DeviceType } from '../gpkrc-modules/deviceTypes';
@@ -111,6 +112,16 @@ export const setupDeviceHandlers = (): void => {
             return result;
         } catch (error) {
             console.error(`IPC handler: Error saving LED config for ${device.id}:`, error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { success: false, error: errorMessage };
+        }
+    });
+    ipcMain.handle('saveLedLayerConfig', async (event, device: Device): Promise<CommandResult> => {
+        try {
+            const result = await saveLedLayerConfig(device);
+            return result;
+        } catch (error) {
+            console.error(`IPC handler: Error saving LED layer config for ${device.id}:`, error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             return { success: false, error: errorMessage };
         }
