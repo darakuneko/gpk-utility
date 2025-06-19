@@ -27,12 +27,69 @@ const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix
   const [localColor, setLocalColor] = useState<RgbColor>(value || { r: 0, g: 0, b: 0 });
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false);
   const [pickerPosition, setPickerPosition] = useState<'bottom' | 'top'>('bottom');
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
 
   useEffect((): void => {
     if (value) {
       setLocalColor(value);
     }
   }, [value]);
+
+  // Calculate optimal picker position
+  const calculatePickerPosition = (): void => {
+    if (!buttonRef.current) return;
+    
+    const rect = buttonRef.current.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
+    const pickerHeight = 420;
+    const margin = 20; // Additional margin for safety
+    const spaceBelow = windowHeight - rect.bottom - margin;
+    const spaceAbove = rect.top - margin;
+    
+    if (spaceBelow >= pickerHeight) {
+      setPickerPosition('bottom');
+    } else if (spaceAbove >= pickerHeight) {
+      setPickerPosition('top');
+    } else {
+      setPickerPosition(spaceBelow > spaceAbove ? 'bottom' : 'top');
+    }
+  };
+
+  // Handle window resize to recalculate position
+  useEffect((): (() => void) => {
+    if (!showColorPicker) return (): void => {};
+
+    // Initial position calculation when picker opens
+    calculatePickerPosition();
+
+    const handleResize = (): void => {
+      calculatePickerPosition();
+    };
+
+    const handleScroll = (): void => {
+      calculatePickerPosition();
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, true); // Use capture phase
+    document.addEventListener('scroll', handleScroll, true);
+    
+    return (): void => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
+      document.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [showColorPicker]);
+
+  // Recalculate position when picker is shown
+  useEffect((): void => {
+    if (showColorPicker) {
+      // Use RAF to ensure DOM has updated
+      requestAnimationFrame((): void => {
+        calculatePickerPosition();
+      });
+    }
+  }, [showColorPicker]);
 
   const handleColorPickerChange = (color: ColorResult): void => {
     const newColor: RgbColor = {
@@ -70,18 +127,14 @@ const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix
       {/* Color Preview & Picker Button */}
       <div className="relative">
         <button
+          ref={buttonRef}
           type="button"
-          className="w-12 h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors shadow-sm"
+          className="w-12 h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors shadow-sm hover:shadow-md dark:shadow-gray-800/50"
           style={{ backgroundColor: hexColor }}
-          onClick={(event): void => {
-            // Calculate optimal position for color picker
-            const rect = event.currentTarget.getBoundingClientRect();
-            const windowHeight = window.innerHeight;
-            const pickerHeight = 350; // Approximate height of SketchPicker
-            const spaceBelow = windowHeight - rect.bottom;
-            
-            // Use bottom position if there's enough space, otherwise use top
-            setPickerPosition(spaceBelow >= pickerHeight ? 'bottom' : 'top');
+          onClick={(): void => {
+            if (!showColorPicker) {
+              calculatePickerPosition();
+            }
             setShowColorPicker(!showColorPicker);
           }}
           title={t('led.clickToOpenColorPicker') || 'Click to open color picker'}
@@ -94,32 +147,41 @@ const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix
               className="fixed inset-0 z-10" 
               onClick={(): void => setShowColorPicker(false)}
             />
-            <div className={`absolute z-20 left-1/2 transform -translate-x-1/2 ${
-              pickerPosition === 'bottom' 
-                ? 'top-14' 
-                : 'bottom-14'
-            }`}>
-              <SketchPicker
-                color={localColor}
-                onChange={handleColorPickerChange}
-                disableAlpha={true}
-                presetColors={[
-                  '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
-                  '#FF00FF', '#00FFFF', '#FFFFFF', '#000000',
-                  '#FFA500', '#800080', '#FFC0CB', '#A52A2A',
-                  '#808080', '#008000', '#000080', '#800000'
-                ]}
-              />
+            <div 
+              className={`fixed z-20 transform -translate-x-1/2 ${
+                pickerPosition === 'bottom' 
+                  ? 'top-full mt-2' 
+                  : 'bottom-full mb-2'
+              }`}
+              style={{
+                left: buttonRef.current ? buttonRef.current.getBoundingClientRect().left + buttonRef.current.offsetWidth / 2 : '50%',
+                top: pickerPosition === 'bottom' 
+                  ? (buttonRef.current ? buttonRef.current.getBoundingClientRect().bottom + 8 : 'auto')
+                  : 'auto',
+                bottom: pickerPosition === 'top' 
+                  ? (buttonRef.current ? window.innerHeight - buttonRef.current.getBoundingClientRect().top + 8 : 'auto')
+                  : 'auto'
+              }}
+            >
+              <div className="color-picker-wrapper">
+                <SketchPicker
+                  color={localColor}
+                  onChange={handleColorPickerChange}
+                  disableAlpha={true}
+                  presetColors={[
+                    '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
+                    '#FF00FF', '#00FFFF', '#FFFFFF', '#000000',
+                    '#FFA500', '#800080', '#FFC0CB', '#A52A2A',
+                    '#808080', '#008000'
+                  ]}
+                  className="sketch-picker"
+                />
+              </div>
             </div>
           </div>
         )}
       </div>
       
-      {/* Color Values */}
-      <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-        <div>{hexColor.toUpperCase()}</div>
-        <div className="text-[10px]">RGB({localColor.r},{localColor.g},{localColor.b})</div>
-      </div>
     </div>
   );
 };

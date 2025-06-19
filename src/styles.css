@@ -56,7 +56,7 @@
   /* Interactive elements */
   --color-button-hover: #3355bb;
   --color-button-active: #2244aa;
-  --color-input-focus: rgba(68, 102, 204, 0.2);
+  --color-input-focus: #4466cc33;
   
   /* Feedback colors */
   --color-success: #4caf50;
@@ -83,7 +83,7 @@
   /* Interactive elements - Dark theme */
   --color-button-hover: #7599ff;
   --color-button-active: #5477dd;
-  --color-input-focus: rgba(100, 136, 238, 0.2);
+  --color-input-focus: #6488ee33;
   
   /* Feedback colors - Dark theme */
   --color-success: #66bb6a;
@@ -103,7 +103,7 @@
   --color-background-subtle: #1f2937;
   --color-button-hover: #93c5fd;
   --color-button-active: #3b82f6;
-  --color-input-focus: rgba(96, 165, 250, 0.4);
+  --color-input-focus: #60a5fa66;
 }
 
 @layer base {
@@ -149,4 +149,144 @@
   .pomodoro-inactive-state {
     @apply font-normal text-gray-400 dark:text-gray-500;
   }
+}
+
+/* ===============
+   Color Picker Styles
+   =============== */
+/* Base styles */
+.sketch-picker {
+  background: #ffffff !important;
+  box-shadow: 0 0 0 1px #e5e5e5, 0 4px 8px #e5e5e5 !important;
+  border-radius: 8px !important;
+  min-width: 280px !important;
+  max-height: 420px !important;
+  overflow: hidden !important;
+  animation: colorPickerSlideIn 0.2s ease-out !important;
+}
+
+/* Suppress hover effects except preset colors */
+.sketch-picker *:hover {
+  transform: none !important;
+  scale: none !important;
+  transition: none !important;
+}
+
+.sketch-picker .flexbox-fix:last-child > div > span > div:hover {
+  transform: scale(1.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Fix HEX/RGB label backgrounds */
+.color-picker-wrapper .sketch-picker label {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Color picker wrapper */
+.color-picker-wrapper {
+  box-shadow: 0 10px 25px #d4d4d4 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  text-align: center;
+}
+
+.sketch-picker input {
+  text-align: center;
+}
+
+/* Dark mode */
+.dark .sketch-picker {
+  background: #1f2937 !important;
+  box-shadow: 0 0 0 1px #3a3a3a, 0 8px 16px #1a1a1a !important;
+}
+
+.dark .sketch-picker input {
+  background: #374151 !important;
+  color: #f3f4f6 !important;
+  box-shadow: inset 0 0 0 1px #4a4a4a !important;
+  border: none !important;
+  text-align: center;
+}
+
+.dark .sketch-picker input:focus {
+  box-shadow: inset 0 0 0 1px #60a5fa !important;
+}
+
+.dark .color-picker-wrapper .sketch-picker label {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  color: #9ca3af !important;
+}
+
+.dark .color-picker-wrapper {
+  box-shadow: 0 10px 25px #1a1a1a !important;
+  text-align: center;
+}
+
+@keyframes colorPickerSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Preset color palette styling */
+.sketch-picker .flexbox-fix:last-child {
+  border-top: 1px solid #eee !important;
+  padding: 15px 10px !important;
+  background: transparent !important;
+  justify-content: center !important;
+  align-items: center !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-content: center !important;
+}
+
+.sketch-picker .flexbox-fix:last-child > div {
+  width: 32px !important;
+  height: 32px !important;
+  margin: 4px !important;
+}
+
+.dark .sketch-picker .flexbox-fix:last-child {
+  border-top: 1px solid #374151 !important;
+}
+
+.sketch-picker .flexbox-fix:last-child > div > span > div {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 6px !important;
+  border: 2px solid #ddd !important;
+  box-shadow: 0 2px 4px #ccc !important;
+}
+
+.sketch-picker .flexbox-fix:last-child > div > span > div:hover {
+  transform: scale(1.1) !important;
+  border-color: #888888 !important;
+  box-shadow: 0 3px 12px #bbb !important;
+}
+
+.dark .sketch-picker .flexbox-fix:last-child > div > span > div {
+  border: 2px solid #555 !important;
+  box-shadow: 0 2px 4px #333 !important;
+}
+
+.dark .sketch-picker .flexbox-fix:last-child > div > span > div:hover {
+  border-color: #777 !important;
+  box-shadow: 0 3px 12px #222 !important;
+}
+
+/* Hide Alpha channel - RGB only */
+.sketch-picker .flexbox-fix:nth-child(3) > div:last-child,
+.sketch-picker .flexbox-fix:first-child > div:last-child,
+.sketch-picker input[id*="rc-editable-input-5"],
+.sketch-picker label[for*="rc-editable-input-5"] {
+  display: none !important;
 }
