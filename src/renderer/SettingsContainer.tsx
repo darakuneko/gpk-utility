@@ -230,11 +230,6 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
         setMenuOpen(false);
     };
 
-    // Toggle language submenu
-    const toggleLanguageMenu = (e: React.MouseEvent): void => {
-        e.stopPropagation();
-        setLanguageMenuOpen(!languageMenuOpen);
-    };
 
     // Get current active device
     const getActiveDevice = (): Device | null => {
@@ -355,7 +350,7 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                         <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 border border-gray-200 dark:border-gray-700 overflow-hidden">
                             {/* Language Settings */}
                             <div className="relative">
-                                <MenuItem onClick={(e: React.MouseEvent): void => toggleLanguageMenu(e)}>
+                                <MenuItem onClick={(): void => setLanguageMenuOpen(!languageMenuOpen)}>
                                     <div className="flex justify-between items-center w-full">
                                         <span className="mr-2">{t('settings.language')}</span>
                                         <span className="text-sm text-gray-900 dark:text-gray-100 ml-auto font-medium">{availableLanguages[locale as keyof typeof availableLanguages]}</span>
