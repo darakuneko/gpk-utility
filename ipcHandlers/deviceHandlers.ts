@@ -20,7 +20,8 @@ import {
     getLedConfig,
     getLedLayerConfig,
     saveLedConfig,
-    saveLedLayerConfig
+    saveLedLayerConfig,
+    switchLayer
 } from '../gpkrc';
 import type { Device, DeviceWithId, DeviceStatus, CommandResult, ActiveWindowResult } from '../src/types/device';
 import { DeviceType } from '../gpkrc-modules/deviceTypes';
@@ -178,6 +179,18 @@ export const setupDeviceHandlers = (): void => {
         } catch (error) {
             console.error(`Error in dateTimeOledWrite handler:`, error);
             return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+
+    // Layer switching handler
+    ipcMain.handle('switchLayer', async (event, device: Device, targetLayer: number): Promise<CommandResult> => {
+        try {
+            const result = await switchLayer(device, targetLayer);
+            return result;
+        } catch (error) {
+            console.error(`IPC handler: Error switching layer for ${device.id}:`, error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { success: false, error: errorMessage };
         }
     });
 };

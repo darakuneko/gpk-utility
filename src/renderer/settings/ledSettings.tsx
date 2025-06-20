@@ -19,11 +19,13 @@ interface RgbInputProps {
   deviceId: string;
   handleChange: (field: string, deviceId: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   skipHandleChange?: boolean; // Skip calling handleChange for layer colors
+  layerId?: number; // Layer ID for layer switching when opening color picker
+  device?: Device; // Device object for layer switching
 }
 
 
 // RGB Input Component with React Color
-const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix, deviceId, handleChange, skipHandleChange = false }): JSX.Element => {
+const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix, deviceId, handleChange, skipHandleChange = false, layerId, device }): JSX.Element => {
   const { t } = useLanguage();
   const [localColor, setLocalColor] = useState<RgbColor>(value || { r: 0, g: 0, b: 0 });
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false);
@@ -33,6 +35,17 @@ const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix
   useEffect((): void => {
     setLocalColor(value || { r: 0, g: 0, b: 0 });
   }, [value]);
+
+  // Helper function to switch device layers
+  const switchToLayer = async (targetLayer: number): Promise<void> => {
+    if (device && typeof layerId === 'number') {
+      try {
+        await window.api.switchLayer(device, targetLayer);
+      } catch (error) {
+        console.error(`Failed to switch to layer ${targetLayer}:`, error);
+      }
+    }
+  };
 
   // Calculate optimal picker position
   const calculatePickerPosition = (): void => {
@@ -133,9 +146,16 @@ const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix
           type="button"
           className="w-12 h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors shadow-sm hover:shadow-md dark:shadow-gray-800/50"
           style={{ backgroundColor: hexColor }}
-          onClick={(): void => {
+          onClick={async (): Promise<void> => {
             if (!showColorPicker) {
               calculatePickerPosition();
+              // Switch to the layer when opening color picker
+              if (typeof layerId === 'number') {
+                await switchToLayer(layerId);
+              }
+            } else {
+              // Switch back to layer 0 when closing color picker
+              await switchToLayer(0);
             }
             setShowColorPicker(!showColorPicker);
           }}
@@ -147,7 +167,11 @@ const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix
           <div className="relative">
             <div 
               className="fixed inset-0 z-10" 
-              onClick={(): void => setShowColorPicker(false)}
+              onClick={async (): Promise<void> => {
+                // Switch back to layer 0 when closing color picker
+                await switchToLayer(0);
+                setShowColorPicker(false);
+              }}
             />
             <div 
               className={`fixed z-20 transform -translate-x-1/2 ${
@@ -293,9 +317,12 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
 
   return (
     <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
-      <h4 className="text-md font-medium mb-4 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-1">
+      <h4 className="text-md font-medium mb-2 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-1">
         {t('led.title')}
       </h4>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        {t('led.rgbEffectSolidColorOnly')}
+      </p>
 
       {/* Speed Indicators */}
       <div className="flex flex-wrap gap-4 mb-4">
@@ -319,9 +346,12 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
 
       {/* Pomodoro Settings */}
       <div className="mb-4">
-        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-100 dark:border-gray-600 pb-1">
+        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2 border-b border-gray-100 dark:border-gray-600 pb-1">
           {t('led.pomodoro')}
         </h5>
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+          {t('led.pomodoroColorChangeDescription')}
+        </p>
         
         <div className="flex flex-wrap gap-4">
           <RgbInput
@@ -355,9 +385,12 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
 
       {/* Layer Settings */}
       <div className="mb-4">
-        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-100 dark:border-gray-600 pb-1">
+        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2 border-b border-gray-100 dark:border-gray-600 pb-1">
           {t('led.layer')} {t('led.settings')}
         </h5>
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+          {t('led.layerColorPickerDescription')}
+        </p>
         
         <LayerLedSettings
           device={device}
@@ -453,6 +486,8 @@ const LayerLedSettings: React.FC<LayerLedSettingsProps> = ({ device, ledConfig, 
               deviceId={device.id}
               handleChange={handleChange}
               skipHandleChange={true}
+              layerId={layer.layer_id}
+              device={device}
             />
           );
         })}

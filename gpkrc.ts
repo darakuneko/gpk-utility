@@ -253,5 +253,16 @@ export { startDeviceHealthMonitoring, stopDeviceHealthMonitoring, checkDeviceHea
 export { checkAndSwitchLayer, cleanupDeviceLayerTracking };
 export { lastFormattedDateMap };
 
+const switchLayer = async (device: Device, targetLayer: number): Promise<CommandResult> => {
+    try {
+        const result = await writeCommand(device, [commandId.gpkRCOperation, actionId.layerMove, targetLayer]);
+        return result;
+    } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+};
+
+export { switchLayer };
+
 // Initialize dependencies on module load
 initializeDependencies();
