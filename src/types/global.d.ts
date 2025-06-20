@@ -94,6 +94,7 @@ declare global {
       saveLedLayerConfig: (device: Device) => Promise<CommandResult>;
       getLedConfig: (device: Device) => Promise<CommandResult>;
       getLedLayerConfig: (device: Device) => Promise<CommandResult>;
+      switchLayer: (device: Device, targetLayer: number) => Promise<CommandResult>;
     };
   }
 }

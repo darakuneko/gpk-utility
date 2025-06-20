@@ -97,6 +97,9 @@ export const command = {
             return { success: false, error: "Invalid device or missing LED layer configuration" };
         }
     },
+    switchLayer: async (device: Device, targetLayer: number): Promise<CommandResult> => {
+        return await ipcRenderer.invoke('switchLayer', device, targetLayer);
+    },
 
     setSliderActive: (active: boolean): void => {
         setSliderActive(active);

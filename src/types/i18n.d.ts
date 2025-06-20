@@ -150,5 +150,8 @@ export interface LocaleMessages {
     blue: string;
     colorPalette: string;
     clickToOpenColorPicker: string;
+    rgbEffectSolidColorOnly: string;
+    pomodoroColorChangeDescription: string;
+    layerColorPickerDescription: string;
   };
 }

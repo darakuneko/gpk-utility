@@ -33,6 +33,7 @@ export const exposeAPI = (): void => {
         getLedLayerConfig: async (device: Device): Promise<CommandResult> => await command.getLedLayerConfig(device),
         saveLedConfig: async (device: Device): Promise<CommandResult> => await command.saveLedConfig(device),
         saveLedLayerConfig: async (device: Device): Promise<CommandResult> => await command.saveLedLayerConfig(device),
+        switchLayer: async (device: Device, targetLayer: number): Promise<CommandResult> => await command.switchLayer(device, targetLayer),
         saveTrackpadConfig: async (device: Device): Promise<CommandResult> => await command.saveTrackpadConfig(device),
         savePomodoroConfigData: async (device: Device, pomodoroDataBytes: Buffer): Promise<CommandResult> => await command.savePomodoroConfigData(device, pomodoroDataBytes),
         sleep: async (msec: number): Promise<void> => await ipcRenderer.invoke('sleep', msec),

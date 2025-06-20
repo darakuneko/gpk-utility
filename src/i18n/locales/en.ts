@@ -148,7 +148,10 @@ const enMessages: LocaleMessages = {
     green: 'Green',
     blue: 'Blue',
     colorPalette: 'Color Palette',
-    clickToOpenColorPicker: 'Click to open color picker'
+    clickToOpenColorPicker: 'Click to open color picker',
+    rgbEffectSolidColorOnly: 'LED indicators for Mouse/Step/Pomodoro are displayed only when RGB Effect is Solid Color',
+    pomodoroColorChangeDescription: 'Color changes will light up for 5 seconds',
+    layerColorPickerDescription: 'Opening color picker switches to that layer, closing returns to layer 0'
   }
 };
 

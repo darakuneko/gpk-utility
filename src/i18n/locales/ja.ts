@@ -148,7 +148,10 @@ const jaMessages: LocaleMessages = {
     green: '緑',
     blue: '青',
     colorPalette: 'カラーパレット',
-    clickToOpenColorPicker: 'クリックしてカラーピッカーを開く'
+    clickToOpenColorPicker: 'クリックしてカラーピッカーを開く',
+    rgbEffectSolidColorOnly: 'RGB EffectがSolid Colorの時のみ、Mouse/Step/PomodoroのLEDインジケータが表示されます',
+    pomodoroColorChangeDescription: '色を変更すると5秒間光ります',
+    layerColorPickerDescription: 'カラーピッカーを開くと該当レイヤーへ移動し、閉じるとレイヤー0へ戻ります'
   }
 };
 
