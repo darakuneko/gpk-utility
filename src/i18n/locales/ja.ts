@@ -135,8 +135,8 @@ const jaMessages: LocaleMessages = {
   },
   led: {
     title: 'LED設定',
-    mouseSpeedAccel: 'マウススピードアクセル',
-    scrollStepAccel: 'スクロールステップアクセル',
+    mouseSpeedAccel: 'マウス速度加速',
+    scrollStepAccel: 'スクロールステップ加速',
     pomodoro: 'ポモドーロ',
     work: '作業',
     break: '休憩',
@@ -149,7 +149,7 @@ const jaMessages: LocaleMessages = {
     blue: '青',
     colorPalette: 'カラーパレット',
     clickToOpenColorPicker: 'クリックしてカラーピッカーを開く',
-    rgbEffectSolidColorOnly: 'RGB EffectがSolid Colorの時のみ、Mouse/Step/PomodoroのLEDインジケータが表示されます',
+      rgbEffectSolidColorOnly: 'RGB EffectがSolid Colorの時のみ、マウス・ステップ・ポモドーロのLEDインジケータが表示されます',
     pomodoroColorChangeDescription: '色を変更すると5秒間光ります',
     layerColorPickerDescription: 'カラーピッカーを開くと該当レイヤーへ移動し、閉じるとレイヤー0へ戻ります'
   }
