@@ -151,7 +151,7 @@ const enMessages: LocaleMessages = {
     clickToOpenColorPicker: 'Click to open color picker',
     rgbEffectSolidColorOnly: 'LED indicators for Mouse/Step/Pomodoro are displayed only when RGB Effect is Solid Color',
     pomodoroColorChangeDescription: 'Color changes will light up for 5 seconds',
-    layerColorPickerDescription: 'Opening color picker switches to that layer, closing returns to layer 0'
+    layerColorPickerDescription: 'Opening color picker switches to that layer, closing returns to layer 0\nIf trackpad layer is enabled, please turn it off from the Layer tab before setting colors'
   }
 };
 

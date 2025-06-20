@@ -149,9 +149,9 @@ const jaMessages: LocaleMessages = {
     blue: '青',
     colorPalette: 'カラーパレット',
     clickToOpenColorPicker: 'クリックしてカラーピッカーを開く',
-      rgbEffectSolidColorOnly: 'RGB EffectがSolid Colorの時のみ、マウス・ステップ・ポモドーロのLEDインジケータが表示されます',
+    rgbEffectSolidColorOnly: 'RGB EffectがSolid Colorの時のみ、マウス・ステップ・ポモドーロのLEDインジケータが表示されます',
     pomodoroColorChangeDescription: '色を変更すると5秒間光ります',
-    layerColorPickerDescription: 'カラーピッカーを開くと該当レイヤーへ移動し、閉じるとレイヤー0へ戻ります'
+    layerColorPickerDescription: 'カラーピッカーを開くと該当レイヤーへ移動し、閉じるとレイヤー0へ戻ります\nトラックパッドレイヤーを有効にしてる場合はレイヤータブから一旦オフにしてから設定してください'
   }
 };
 
