@@ -6,46 +6,88 @@ import type { ColorResult } from 'react-color';
 import { useLanguage } from "../../i18n/LanguageContext.tsx";
 import type { Device, RgbColor } from "../../types/device";
 
+// Color constants
+const DEFAULT_COLORS = {
+  BLACK: { r: 0, g: 0, b: 0 },
+  RED: { r: 255, g: 0, b: 0 },
+  GREEN: { r: 0, g: 255, b: 0 },
+  BLUE: { r: 0, g: 0, b: 255 }
+} as const;
+
+// CSS class constants
+const CSS_CLASSES = {
+  MAIN_HEADER: "text-md font-medium mb-2 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-1",
+  SUB_HEADER: "text-sm font-medium text-gray-900 dark:text-white mb-2 border-b border-gray-100 dark:border-gray-600 pb-1",
+  DESCRIPTION: "text-xs text-gray-600 dark:text-gray-400 mb-3",
+  CONTAINER: "w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs"
+} as const;
+
 interface LedSettingsProps {
   device: Device;
-  handleChange: (field: string, deviceId: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  handleChange: (pType: string, id: string) => ((event: React.ChangeEvent<HTMLInputElement>) => Promise<void>);
 }
 
 interface RgbInputProps {
   label: string;
   value: RgbColor;
   onChange: (color: RgbColor) => void;
-  fieldPrefix: string;
-  deviceId: string;
-  handleChange: (field: string, deviceId: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  skipHandleChange?: boolean; // Skip calling handleChange for layer colors
   layerId?: number; // Layer ID for layer switching when opening color picker
   device?: Device; // Device object for layer switching
+  field?: string; // Field name for handleChange
+  handleChange?: (pType: string, id: string) => ((event: React.ChangeEvent<HTMLInputElement>) => Promise<void>);
+  deviceId?: string;
 }
 
 
+// Helper function to switch device layers
+const switchToLayer = async (device: Device | undefined, layerId: number | undefined, targetLayer: number): Promise<void> => {
+  if (device && typeof layerId === 'number') {
+    try {
+      await window.api.switchLayer(device, targetLayer);
+    } catch (error) {
+      console.error(`Failed to switch to layer ${targetLayer}:`, error);
+    }
+  }
+};
+
+// Helper function to close color picker and switch to layer 0
+const closeColorPickerAndSwitchToDefaultLayer = async (
+  device: Device | undefined, 
+  layerId: number | undefined, 
+  setShowColorPicker: (show: boolean) => void
+): Promise<void> => {
+  // Only switch to layer 0 if this is a layer color picker (layerId is defined)
+  if (typeof layerId === 'number') {
+    await switchToLayer(device, layerId, 0);
+  }
+  setShowColorPicker(false);
+};
+
+// Utility function to create default layer configuration
+const createDefaultLayers = (layerCount: number): Array<{ layer_id: number; r: number; g: number; b: number }> => {
+  const defaultLayers = [];
+  for (let i = 0; i < layerCount; i++) {
+    defaultLayers.push({
+      layer_id: i,
+      r: i === 0 ? 255 : (i * 50) % 255,
+      g: i === 1 ? 255 : (i * 80) % 255,
+      b: i === 2 ? 255 : (i * 120) % 255
+    });
+  }
+  return defaultLayers;
+};
+
 // RGB Input Component with React Color
-const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix, deviceId, handleChange, skipHandleChange = false, layerId, device }): JSX.Element => {
+const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, layerId, device, field, handleChange: propHandleChange, deviceId }): JSX.Element => {
   const { t } = useLanguage();
-  const [localColor, setLocalColor] = useState<RgbColor>(value || { r: 0, g: 0, b: 0 });
+  const [localColor, setLocalColor] = useState<RgbColor>(value || DEFAULT_COLORS.BLACK);
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false);
   const [pickerPosition, setPickerPosition] = useState<'bottom' | 'top'>('bottom');
   const buttonRef = React.useRef<HTMLButtonElement>(null);
 
   useEffect((): void => {
-    setLocalColor(value || { r: 0, g: 0, b: 0 });
+    setLocalColor(value || DEFAULT_COLORS.BLACK);
   }, [value]);
-
-  // Helper function to switch device layers
-  const switchToLayer = async (targetLayer: number): Promise<void> => {
-    if (device && typeof layerId === 'number') {
-      try {
-        await window.api.switchLayer(device, targetLayer);
-      } catch (error) {
-        console.error(`Failed to switch to layer ${targetLayer}:`, error);
-      }
-    }
-  };
 
   // Calculate optimal picker position
   const calculatePickerPosition = (): void => {
@@ -103,7 +145,7 @@ const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix
     }
   }, [showColorPicker]);
 
-  const handleColorPickerChange = (color: ColorResult): void => {
+  const handleColorPickerChange = async (color: ColorResult): Promise<void> => {
     const newColor: RgbColor = {
       r: Math.round(color.rgb.r),
       g: Math.round(color.rgb.g),
@@ -111,21 +153,18 @@ const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix
     };
     
     setLocalColor(newColor);
-    onChange(newColor);
     
-    // Only trigger change events if not skipHandleChange (for non-layer colors)
-    if (!skipHandleChange) {
-      // Trigger change events for each component to maintain compatibility
-      ['r', 'g', 'b'].forEach((component): void => {
-        const syntheticEvent = {
-          target: {
-            value: newColor[component as keyof RgbColor].toString(),
-            type: 'number'
-          }
-        } as React.ChangeEvent<HTMLInputElement>;
-        
-        handleChange(`${fieldPrefix}_${component}`, deviceId)(syntheticEvent);
-      });
+    // Use handleChange if provided (for LED settings), otherwise use onChange (for layers)
+    if (field && propHandleChange && deviceId) {
+      const syntheticEvent = {
+        target: {
+          value: JSON.stringify(newColor)
+        }
+      } as React.ChangeEvent<HTMLInputElement>;
+      
+      await propHandleChange(field, deviceId)(syntheticEvent);
+    } else {
+      onChange(newColor);
     }
   };
 
@@ -149,28 +188,24 @@ const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix
           onClick={async (): Promise<void> => {
             if (!showColorPicker) {
               calculatePickerPosition();
-              // Switch to the layer when opening color picker
               if (typeof layerId === 'number') {
-                await switchToLayer(layerId);
+                await switchToLayer(device, layerId, layerId);
               }
+              setShowColorPicker(true);
             } else {
-              // Switch back to layer 0 when closing color picker
-              await switchToLayer(0);
+              await closeColorPickerAndSwitchToDefaultLayer(device, layerId, setShowColorPicker);
             }
-            setShowColorPicker(!showColorPicker);
           }}
           title={t('led.clickToOpenColorPicker') || 'Click to open color picker'}
         />
 
         {/* Color Picker */}
         {showColorPicker && (
-          <div className="relative">
+          <div>
             <div 
               className="fixed inset-0 z-10" 
               onClick={async (): Promise<void> => {
-                // Switch back to layer 0 when closing color picker
-                await switchToLayer(0);
-                setShowColorPicker(false);
+                await closeColorPickerAndSwitchToDefaultLayer(device, layerId, setShowColorPicker);
               }}
             />
             <div 
@@ -214,6 +249,7 @@ const RgbInput: React.FC<RgbInputProps> = ({ label, value, onChange, fieldPrefix
 
 const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.Element => {
   const { t } = useLanguage();
+  const [forceUpdate, setForceUpdate] = useState<number>(0);
   
   // Check if device supports LED configuration
   const isLedDevice = device.deviceType === 'macropad_tp' || 
@@ -225,12 +261,12 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
     if (device && device.config && !device.config.led && isLedDevice) {
       device.config.led = {
         enabled: 1,
-        mouse_speed_accel: { r: 255, g: 0, b: 0 },
-        scroll_step_accel: { r: 0, g: 255, b: 0 },
+        mouse_speed_accel: DEFAULT_COLORS.RED,
+        scroll_step_accel: DEFAULT_COLORS.GREEN,
         pomodoro: {
-          work: { r: 255, g: 0, b: 0 },
-          break: { r: 0, g: 255, b: 0 },
-          long_break: { r: 0, g: 0, b: 255 }
+          work: DEFAULT_COLORS.RED,
+          break: DEFAULT_COLORS.GREEN,
+          long_break: DEFAULT_COLORS.BLUE
         },
         layers: []
       };
@@ -240,8 +276,8 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
   // Early return if device doesn't support LED or config is not available
   if (!isLedDevice || !device.config?.led) {
     return (
-      <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
-        <h4 className="text-md font-medium mb-2 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-1">
+      <div className={CSS_CLASSES.CONTAINER}>
+        <h4 className={CSS_CLASSES.MAIN_HEADER}>
           {t('led.title')}
         </h4>
         <div className="text-gray-600 dark:text-gray-400">
@@ -251,73 +287,38 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
     );
   }
 
+  // Ensure that the device's LED settings exist
   const ledConfig = device.config?.led || {};
 
   const handleLayerColorChange = (layerId: number, color: RgbColor): void => {
     if (device.config?.led?.layers) {
       const layerIndex = device.config.led.layers.findIndex((layer): boolean => layer.layer_id === layerId);
       if (layerIndex !== -1) {
-        // Create immutable update of layers array
-        const updatedLayers = [...device.config.led.layers];
-        updatedLayers[layerIndex] = {
+        // Update device config directly
+        device.config.led.layers[layerIndex] = {
           layer_id: layerId,
           ...color
         };
         
-        // Create immutable update of LED config
-        const updatedLedConfig = {
-          ...device.config.led,
-          layers: updatedLayers
-        };
+        // Use handleChange with synthetic event
+        const syntheticEvent = {
+          target: {
+            value: JSON.stringify(color)
+          }
+        } as React.ChangeEvent<HTMLInputElement>;
         
-        // Create immutable update of device config
-        const updatedConfig = {
-          ...device.config,
-          led: updatedLedConfig
-        };
+        void handleChange(`led_layer_${layerId}`, device.id)(syntheticEvent);
         
-        // Update device config immutably
-        device.config = updatedConfig;
-        
-        // Save LED layer config to device
-        void window.api.saveLedLayerConfig(device);
+        // Force UI update
+        setForceUpdate((prev: number): number => prev + 1);
       }
     }
   };
 
-  const handleColorUpdate = (field: string): ((color: RgbColor) => void) => (color: RgbColor): void => {
-    if (device.config?.led) {
-      const fieldParts = field.split('.');
-      if (fieldParts.length === 1) {
-        // Simple field like mouse_speed_accel, scroll_step_accel
-        if (fieldParts[0] === 'mouse_speed_accel') {
-          device.config.led.mouse_speed_accel = color;
-        } else if (fieldParts[0] === 'scroll_step_accel') {
-          device.config.led.scroll_step_accel = color;
-        }
-      } else if (fieldParts.length === 2 && fieldParts[0] === 'pomodoro') {
-        // Nested field like pomodoro.work
-        if (!device.config.led.pomodoro) {
-          device.config.led.pomodoro = {
-            work: { r: 255, g: 0, b: 0 },
-            break: { r: 0, g: 255, b: 0 },
-            long_break: { r: 0, g: 0, b: 255 }
-          };
-        }
-        if (fieldParts[1] === 'work') {
-          device.config.led.pomodoro.work = color;
-        } else if (fieldParts[1] === 'break') {
-          device.config.led.pomodoro.break = color;
-        } else if (fieldParts[1] === 'long_break') {
-          device.config.led.pomodoro.long_break = color;
-        }
-      }
-    }
-  };
 
   return (
-    <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
-      <h4 className="text-md font-medium mb-2 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-1">
+    <div className={CSS_CLASSES.CONTAINER}>
+      <h4 className={CSS_CLASSES.MAIN_HEADER}>
         {t('led.title')}
       </h4>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -327,76 +328,82 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
       {/* Speed Indicators */}
       <div className="flex flex-wrap gap-4 mb-4">
         <RgbInput
+          key={`mouse-speed-${forceUpdate}`}
           label={t('led.mouseSpeedAccel')}
-          value={ledConfig.mouse_speed_accel || { r: 255, g: 0, b: 0 }}
-          onChange={handleColorUpdate('mouse_speed_accel')}
-          fieldPrefix="led_mouse_speed_accel"
-          deviceId={device.id}
+          value={ledConfig.mouse_speed_accel || DEFAULT_COLORS.RED}
+          onChange={(): void => {}}
+          field="led_mouse_speed_accel"
           handleChange={handleChange}
+          deviceId={device.id}
         />
         <RgbInput
+          key={`scroll-step-${forceUpdate}`}
           label={t('led.scrollStepAccel')}
-          value={ledConfig.scroll_step_accel || { r: 0, g: 255, b: 0 }}
-          onChange={handleColorUpdate('scroll_step_accel')}
-          fieldPrefix="led_scroll_step_accel"
-          deviceId={device.id}
+          value={ledConfig.scroll_step_accel || DEFAULT_COLORS.GREEN}
+          onChange={(): void => {}}
+          field="led_scroll_step_accel"
           handleChange={handleChange}
+          deviceId={device.id}
         />
       </div>
 
       {/* Pomodoro Settings */}
       <div className="mb-4">
-        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2 border-b border-gray-100 dark:border-gray-600 pb-1">
+        <h5 className={CSS_CLASSES.SUB_HEADER}>
           {t('led.pomodoro')}
         </h5>
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+        <p className={CSS_CLASSES.DESCRIPTION}>
           {t('led.pomodoroColorChangeDescription')}
         </p>
         
         <div className="flex flex-wrap gap-4">
           <RgbInput
+            key={`pomodoro-work-${forceUpdate}`}
             label={t('led.work')}
-            value={ledConfig.pomodoro?.work || { r: 255, g: 0, b: 0 }}
-            onChange={handleColorUpdate('pomodoro.work')}
-            fieldPrefix="led_pomodoro_work"
-            deviceId={device.id}
+            value={ledConfig.pomodoro?.work || DEFAULT_COLORS.RED}
+            onChange={(): void => {}}
+            field="led_pomodoro.work"
             handleChange={handleChange}
+            deviceId={device.id}
           />
           
           <RgbInput
+            key={`pomodoro-break-${forceUpdate}`}
             label={t('led.break')}
-            value={ledConfig.pomodoro?.break || { r: 0, g: 255, b: 0 }}
-            onChange={handleColorUpdate('pomodoro.break')}
-            fieldPrefix="led_pomodoro_break"
-            deviceId={device.id}
+            value={ledConfig.pomodoro?.break || DEFAULT_COLORS.GREEN}
+            onChange={(): void => {}}
+            field="led_pomodoro.break"
             handleChange={handleChange}
+            deviceId={device.id}
           />
           
           <RgbInput
+            key={`pomodoro-long-break-${forceUpdate}`}
             label={t('led.longBreak')}
-            value={ledConfig.pomodoro?.long_break || { r: 0, g: 0, b: 255 }}
-            onChange={handleColorUpdate('pomodoro.long_break')}
-            fieldPrefix="led_pomodoro_long_break"
-            deviceId={device.id}
+            value={ledConfig.pomodoro?.long_break || DEFAULT_COLORS.BLUE}
+            onChange={(): void => {}}
+            field="led_pomodoro.long_break"
             handleChange={handleChange}
+            deviceId={device.id}
           />
         </div>
       </div>
 
       {/* Layer Settings */}
       <div className="mb-4">
-        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2 border-b border-gray-100 dark:border-gray-600 pb-1">
+        <h5 className={CSS_CLASSES.SUB_HEADER}>
           {t('led.layer')} {t('led.settings')}
         </h5>
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+        <p className={CSS_CLASSES.DESCRIPTION}>
           {t('led.layerColorPickerDescription')}
         </p>
         
         <LayerLedSettings
           device={device}
           ledConfig={ledConfig}
-          handleChange={handleChange}
           onLayerColorChange={handleLayerColorChange}
+          forceUpdate={forceUpdate}
+          handleChange={handleChange}
         />
       </div>
     </div>
@@ -407,85 +414,57 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
 interface LayerLedSettingsProps {
   device: Device;
   ledConfig: { layers?: Array<{ layer_id: number; r: number; g: number; b: number }> };
-  handleChange: (field: string, deviceId: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onLayerColorChange: (layerId: number, color: RgbColor) => void;
+  forceUpdate: number;
+  handleChange: (pType: string, id: string) => ((event: React.ChangeEvent<HTMLInputElement>) => Promise<void>);
 }
 
-const LayerLedSettings: React.FC<LayerLedSettingsProps> = ({ device, ledConfig, handleChange, onLayerColorChange }): JSX.Element => {
+const LayerLedSettings: React.FC<LayerLedSettingsProps> = ({ device, onLayerColorChange, forceUpdate, handleChange }): JSX.Element => {
   const { t } = useLanguage();
   const [layerCount, setLayerCount] = useState<number>(4); // Default 4 layers
   
-  // Local state for layer colors to prevent external interference
-  const [localLayers, setLocalLayers] = useState<Array<{ layer_id: number; r: number; g: number; b: number }>>([]);
+  // Directly use device config layers without local state
+  const deviceLayers = useMemo((): Array<{ layer_id: number; r: number; g: number; b: number }> => {
+    return device.config?.led?.layers || [];
+  }, [device.config?.led?.layers]);
   
-  // Stabilize layers data with useMemo to prevent unnecessary re-renders
-  const stableLayers = useMemo((): Array<{ layer_id: number; r: number; g: number; b: number }> => {
-    return ledConfig.layers || [];
-  }, [ledConfig.layers]);
-  
-  // Initialize local layers from device config only once or when device changes
+  // Initialize device layers if they don't exist
   useEffect((): void => {
-    if (stableLayers.length > 0) {
-      setLocalLayers([...stableLayers]);
+    if (deviceLayers.length === 0 && device.config?.led) {
+      const defaultLayers = createDefaultLayers(layerCount);
+      
+      // Initialize first layer to trigger device state update
+      if (defaultLayers.length > 0) {
+        const firstLayer = defaultLayers[0];
+        if (firstLayer) {
+          onLayerColorChange(0, { r: firstLayer.r, g: firstLayer.g, b: firstLayer.b });
+        }
+      }
     }
-  }, [device.id]);
+  }, [device.id, deviceLayers.length, layerCount, onLayerColorChange]);
 
+  // Set layer count based on device layers
   useEffect((): void => {
-    // Initialize layers if they don't exist - only when device changes
-    if ((!stableLayers || stableLayers.length === 0) && device.config?.led) {
-      const defaultLayers = [];
-      for (let i = 0; i < layerCount; i++) {
-        defaultLayers.push({
-          layer_id: i,
-          r: i === 0 ? 255 : (i * 50) % 255,
-          g: i === 1 ? 255 : (i * 80) % 255,
-          b: i === 2 ? 255 : (i * 120) % 255
-        });
-      }
-      device.config.led.layers = defaultLayers;
-      setLocalLayers([...defaultLayers]);
-    } else if (stableLayers && stableLayers.length > 0 && localLayers.length === 0) {
-      setLayerCount(stableLayers.length);
-      setLocalLayers([...stableLayers]);
+    if (deviceLayers.length > 0) {
+      setLayerCount(deviceLayers.length);
     }
-  }, [device.id, layerCount, stableLayers, localLayers.length]); // Only trigger when device changes or initial setup needed
-
-
-  const handleLayerColorUpdate = (layerId: number): ((color: RgbColor) => void) => (color: RgbColor): void => {
-    // Update local state immediately for UI responsiveness
-    setLocalLayers((prevLayers): Array<{ layer_id: number; r: number; g: number; b: number }> => {
-      const updatedLayers = [...prevLayers];
-      const layerIndex = updatedLayers.findIndex((layer): boolean => layer.layer_id === layerId);
-      if (layerIndex !== -1) {
-        updatedLayers[layerIndex] = {
-          layer_id: layerId,
-          ...color
-        };
-      }
-      return updatedLayers;
-    });
-    
-    // Call parent handler to save to device
-    onLayerColorChange(layerId, color);
-  };
-
+  }, [deviceLayers.length]);
 
   return (
     <div>
       {/* Layer Color Settings */}
       <div className="flex flex-wrap gap-4">
-        {localLayers.slice(0, layerCount).map((layer): JSX.Element | null => {
+        {deviceLayers.slice(0, layerCount).map((layer): JSX.Element | null => {
           if (!layer) return null;
           return (
             <RgbInput
-              key={`${device.id}-layer-${layer.layer_id}`}
+              key={`${device.id}-layer-${layer.layer_id}-${forceUpdate}`}
               label={`${t('led.layer')} ${layer.layer_id}`}
               value={{ r: layer.r, g: layer.g, b: layer.b }}
-              onChange={handleLayerColorUpdate(layer.layer_id)}
-              fieldPrefix={`led_layer_${layer.layer_id}`}
-              deviceId={device.id}
+              onChange={(): void => {}}
+              field={`led_layer_${layer.layer_id}`}
               handleChange={handleChange}
-              skipHandleChange={true}
+              deviceId={device.id}
               layerId={layer.layer_id}
               device={device}
             />

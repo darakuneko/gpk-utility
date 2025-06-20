@@ -36,9 +36,17 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
         try {
             // Determine which configuration type to update based on the active tab
             // Update only pomodoro settings for "timer" tab, LED settings for "led" tab, otherwise update only trackpad settings
-            const configTypes = activeTab === "timer" ? ["pomodoro"] : activeTab === "led" ? ["led"] : ["trackpad"];
-            const updatedConfig = await api.dispatchSaveDeviceConfig(updatedDevice, configTypes);
+            let configTypes = activeTab === "timer" ? ["pomodoro"] : activeTab === "led" ? ["led"] : ["trackpad"];
             
+            // Check if this is a layer change when in LED tab
+            if (activeTab === "led" && updatedDevice.config?.led && (updatedDevice.config.led as { changedLayer?: boolean }).changedLayer) {
+                configTypes = ["led_layer"];
+                // Clear the changedLayer flag
+                delete (updatedDevice.config.led as { changedLayer?: boolean }).changedLayer;
+            }
+            
+            const updatedConfig = await api.dispatchSaveDeviceConfig(updatedDevice, configTypes);
+            // Device updated successfully
             if (updatedConfig && updatedConfig.success && updatedConfig.config) {
                 const newState = {
                     ...state,
@@ -97,6 +105,17 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                             throw new Error(`Invalid value for ${pType}: ${rawValue}`);
                         }
                         newValue = Math.round(parseFloat(rawValue) * 10);
+                    } else if (pType.startsWith('led_')) {
+                        // For LED color settings, parse JSON color value
+                        const rawValue = event.target.value;
+                        if (rawValue === undefined || rawValue === null || rawValue === "") {
+                            throw new Error(`Invalid value for ${pType}: ${rawValue}`);
+                        }
+                        try {
+                            newValue = JSON.parse(rawValue);
+                        } catch {
+                            throw new Error(`Cannot parse LED color value for ${pType}: ${rawValue}`);
+                        }
                     } else {
                         // For other values, convert to integer, eliminate possibility of NaN or undefined
                         const rawValue = event.target.value;
@@ -121,6 +140,55 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                         const actualProp = pType.replace('pomodoro_', '');
                         if (updatedDevice.config && updatedDevice.config.pomodoro) {
                             (updatedDevice.config.pomodoro as Record<string, number | boolean>)[actualProp] = newValue;
+                        }
+                    } else if (pType.startsWith('led_')) {
+                        // LED related settings
+                        if (!updatedDevice.config?.led) {
+                            // Initialize LED config if it doesn't exist
+                            if (updatedDevice.config) {
+                                updatedDevice.config.led = {
+                                    enabled: 1,
+                                    mouse_speed_accel: { r: 255, g: 0, b: 0 },
+                                    scroll_step_accel: { r: 0, g: 255, b: 0 },
+                                    pomodoro: {
+                                        work: { r: 255, g: 0, b: 0 },
+                                        break: { r: 0, g: 255, b: 0 },
+                                        long_break: { r: 0, g: 0, b: 255 }
+                                    },
+                                    layers: []
+                                };
+                            }
+                        }
+                        
+                        if (updatedDevice.config?.led) {
+                            if (pType === 'led_mouse_speed_accel') {
+                                updatedDevice.config.led.mouse_speed_accel = newValue;
+                            } else if (pType === 'led_scroll_step_accel') {
+                                updatedDevice.config.led.scroll_step_accel = newValue;
+                            } else if (pType.startsWith('led_pomodoro.')) {
+                                const pomodoroField = pType.replace('led_pomodoro.', '');
+                                if (!updatedDevice.config.led.pomodoro) {
+                                    updatedDevice.config.led.pomodoro = {
+                                        work: { r: 255, g: 0, b: 0 },
+                                        break: { r: 0, g: 255, b: 0 },
+                                        long_break: { r: 0, g: 0, b: 255 }
+                                    };
+                                }
+                                (updatedDevice.config.led.pomodoro as Record<string, unknown>)[pomodoroField] = newValue;
+                            } else if (pType.startsWith('led_layer_')) {
+                                const layerId = parseInt(pType.replace('led_layer_', ''), 10);
+                                if (!isNaN(layerId) && updatedDevice.config.led.layers) {
+                                    const layerIndex = updatedDevice.config.led.layers.findIndex((layer): boolean => layer.layer_id === layerId);
+                                    if (layerIndex !== -1) {
+                                        updatedDevice.config.led.layers[layerIndex] = {
+                                            layer_id: layerId,
+                                            ...newValue
+                                        };
+                                        // Mark that layer has changed
+                                        (updatedDevice.config.led as { changedLayer?: boolean }).changedLayer = true;
+                                    }
+                                }
+                            }
                         }
                     } else if (pType === "can_hf_for_layer" || pType === "can_drag" || 
                               pType === "can_trackpad_layer" || pType === "can_reverse_scrolling_direction" || 
@@ -155,11 +223,11 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                     };
                     setState(newState);
                     
-                    // For switch operations, apply immediately; for slider operations during movement, hold pending
+                    // For switch operations and LED color changes, apply immediately; for slider operations during movement, hold pending
                     if (pType === "can_hf_for_layer" || pType === "can_drag" || 
                         pType === "can_trackpad_layer" || pType === "can_reverse_scrolling_direction" || 
-                        pType === "can_short_scroll") {
-                        // Send switches immediately
+                        pType === "can_short_scroll" || pType.startsWith('led_')) {
+                        // Send switches and LED changes immediately
                         await sendConfigToDevice(updatedDevice);
                     } else if (isSliderActive) {
                         // During slider operation, only store the setting value without sending
@@ -309,7 +377,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                         {activeTab === "led" && (
                             <LedSettings
                                 device={device}
-                                handleChange={handleChangeSelect}
+                                handleChange={handleChange}
                             />
                         )}
                     </div>
