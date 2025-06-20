@@ -394,7 +394,7 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
         <h5 className={CSS_CLASSES.SUB_HEADER}>
           {t('led.layer')} {t('led.settings')}
         </h5>
-        <p className={CSS_CLASSES.DESCRIPTION}>
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 whitespace-pre-line">
           {t('led.layerColorPickerDescription')}
         </p>
         
