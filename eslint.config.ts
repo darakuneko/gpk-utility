@@ -1,6 +1,5 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
-// @ts-expect-error - No types available for eslint-plugin-import
 import importPlugin from 'eslint-plugin-import';
 import unusedImportsPlugin from 'eslint-plugin-unused-imports';
 import type { TSESLint } from '@typescript-eslint/utils';
