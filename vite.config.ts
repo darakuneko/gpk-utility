@@ -5,10 +5,11 @@ import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron';
 import tailwindcss from '@tailwindcss/vite';
 import type { UserConfig } from 'vite';
+import type { ElectronOptions } from 'vite-plugin-electron';
 
 const isDarwin = process.platform === 'darwin';
 
-const electronConfigs = [
+const electronConfigs: ElectronOptions[] = [
   {
     entry: 'index.ts',
     vite: {
@@ -29,35 +30,30 @@ const electronConfigs = [
       }
     }
   },
-  // notarizeはmacOSのみ
-  ...(isDarwin
-    ? [
-        {
-          entry: 'notarize.ts',
-          vite: {
-            build: {
-              sourcemap: true,
-              minify: false,
-              outDir: 'dist-electron',
-              lib: {
-                entry: 'notarize.ts',
-                formats: ['cjs'],
-                fileName: (): string => 'notarize.cjs'
-              },
-              rollupOptions: {
-                external: ['@electron/notarize', 'dotenv'],
-                output: {
-                  format: 'cjs'
-                }
-              }
-            }
+  {
+    entry: isDarwin ? 'notarize.ts' : 'notarize-stub.ts',
+    vite: {
+      build: {
+        sourcemap: true,
+        minify: false,
+        outDir: 'dist-electron',
+        lib: {
+          entry: isDarwin ? 'notarize.ts' : 'notarize-stub.ts',
+          formats: ['cjs' as const],
+          fileName: (): string => 'notarize.cjs'
+        },
+        rollupOptions: {
+          external: isDarwin ? ['@electron/notarize', 'dotenv'] : [],
+          output: {
+            format: 'cjs' as const
           }
         }
-      ]
-    : []),
+      }
+    }
+  },
   {
     entry: 'preload.ts',
-    onstart(options): void {
+    onstart(options: { reload: () => void }): void {
       options.reload();
     },
     vite: {
@@ -67,7 +63,7 @@ const electronConfigs = [
         outDir: 'dist-electron',
         lib: {
           entry: 'preload.ts',
-          formats: ['cjs'],
+          formats: ['cjs' as const],
           fileName: (): string => 'preload.js'
         },
         rollupOptions: {
@@ -80,7 +76,7 @@ const electronConfigs = [
             'dotenv'
           ],
           output: {
-            format: 'cjs'
+            format: 'cjs' as const
           }
         }
       }
