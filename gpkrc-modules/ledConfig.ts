@@ -54,7 +54,7 @@ export function receiveLedConfig(buffer: number[]): {led: LedConfig} {
 export function receiveLedLayerConfig(buffer: number[]): {layers: LedLayerConfig[]} {
     // Based on send_led_layer_config firmware implementation:
     // data[0]: layer_count
-    // data[1-24]: layer_colors (8 layers * 3 bytes each)
+    // data[1-n]: layer_colors (layer_count * 3 bytes each)
     
     const layers: LedLayerConfig[] = [];
     const layerCount = buffer[0] || 0;
@@ -200,20 +200,18 @@ export const saveLedLayerConfig = async (device: Device): Promise<CommandResult>
     
     // Based on receive_led_layer_config firmware implementation:
     // data[0]: layer_count
-    // data[1-24]: layer_colors (8 layers * 3 bytes each)
+    // data[1-n]: layer_colors (layer_count * 3 bytes each)
     
     const layerCount = ledConfig.layers?.length || 0;
     ledDataBytes.push(layerCount);
     
-    // Pack layer colors - fill up to 8 layers
-    for (let i = 0; i < 8; i++) {
-        if (i < layerCount && ledConfig.layers && i < ledConfig.layers.length) {
+    // Pack layer colors - send actual layer count
+    for (let i = 0; i < layerCount; i++) {
+        if (ledConfig.layers && i < ledConfig.layers.length) {
             const layer = ledConfig.layers[i];
             ledDataBytes.push(layer?.r || 0);
             ledDataBytes.push(layer?.g || 0);
             ledDataBytes.push(layer?.b || 0);
-        } else {
-            ledDataBytes.push(0, 0, 0); // Fill unused layers with zeros
         }
     }
     
