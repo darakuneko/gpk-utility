@@ -217,7 +217,7 @@ const createWindow = async (): Promise<void> => {
     
     mainWindow = new BrowserWindow(windowOptions);
 
-    void mainWindow.loadURL(`file://${__dirname}/../dist/public/index.html`);
+    void mainWindow.loadURL(`file://${__dirname}/public/index.html`);
     mainWindow.setMenu(null);
 
     // Pass the main window reference to modules
