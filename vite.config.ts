@@ -6,91 +6,95 @@ import electron from 'vite-plugin-electron';
 import tailwindcss from '@tailwindcss/vite';
 import type { UserConfig } from 'vite';
 
+const isDarwin = process.platform === 'darwin';
+
+const electronConfigs = [
+  {
+    entry: 'index.ts',
+    vite: {
+      build: {
+        sourcemap: true,
+        minify: false,
+        outDir: 'dist-electron',
+        rollupOptions: {
+          external: [
+            'electron',
+            'node-hid',
+            '@paymoapp/active-window',
+            'electron-store',
+            'node-fetch',
+            'dotenv'
+          ]
+        }
+      }
+    }
+  },
+  // notarizeはmacOSのみ
+  ...(isDarwin
+    ? [
+        {
+          entry: 'notarize.ts',
+          vite: {
+            build: {
+              sourcemap: true,
+              minify: false,
+              outDir: 'dist-electron',
+              lib: {
+                entry: 'notarize.ts',
+                formats: ['cjs'],
+                fileName: (): string => 'notarize.cjs'
+              },
+              rollupOptions: {
+                external: ['@electron/notarize', 'dotenv'],
+                output: {
+                  format: 'cjs'
+                }
+              }
+            }
+          }
+        }
+      ]
+    : []),
+  {
+    entry: 'preload.ts',
+    onstart(options): void {
+      options.reload();
+    },
+    vite: {
+      build: {
+        sourcemap: true,
+        minify: false,
+        outDir: 'dist-electron',
+        lib: {
+          entry: 'preload.ts',
+          formats: ['cjs'],
+          fileName: (): string => 'preload.js'
+        },
+        rollupOptions: {
+          external: [
+            'electron',
+            'node-hid',
+            '@paymoapp/active-window',
+            'electron-store',
+            'node-fetch',
+            'dotenv'
+          ],
+          output: {
+            format: 'cjs'
+          }
+        }
+      }
+    }
+  }
+];
+
 const config: UserConfig = defineConfig({
   plugins: [
     react({
       jsxRuntime: 'automatic'
     }),
     tailwindcss(),
-    electron([
-      {
-        entry: 'index.ts',
-        vite: {
-          build: {
-            sourcemap: true,
-            minify: false,
-            outDir: 'dist-electron',
-            rollupOptions: {
-              external: [
-                'electron',
-                'node-hid',
-                '@paymoapp/active-window',
-                'electron-store',
-                'node-fetch',
-                'dotenv'
-              ]
-            }
-          }
-        }
-      },
-      {
-        entry: 'notarize.ts',
-        vite: {
-          build: {
-            sourcemap: true,
-            minify: false,
-            outDir: 'dist-electron',
-            lib: {
-              entry: 'notarize.ts',
-              formats: ['cjs'],
-              fileName: (): string => 'notarize.cjs'
-            },
-            rollupOptions: {
-              external: [
-                '@electron/notarize',
-                'dotenv'
-              ],
-              output: {
-                format: 'cjs'
-              }
-            }
-          }
-        }
-      },
-      {
-        entry: 'preload.ts',
-        onstart(options): void {
-          // Notify the Renderer-Process to reload the page when the Preload-Scripts build is complete
-          options.reload();
-        },
-        vite: {
-          build: {
-            sourcemap: true,
-            minify: false,
-            outDir: 'dist-electron',
-            lib: {
-              entry: 'preload.ts',
-              formats: ['cjs'],
-              fileName: (): string => 'preload.js'
-            },
-            rollupOptions: {
-              external: [
-                'electron',
-                'node-hid',
-                '@paymoapp/active-window',
-                'electron-store',
-                'node-fetch',
-                'dotenv'
-              ],
-              output: {
-                format: 'cjs'
-              }
-            }
-          }
-        }
-      }
-    ])
-    // renderer()
+    electron(electronConfigs)
   ],
   root: '.',
   base: './',
