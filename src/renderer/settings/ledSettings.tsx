@@ -263,6 +263,7 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
         enabled: 1,
         mouse_speed_accel: DEFAULT_COLORS.RED,
         scroll_step_accel: DEFAULT_COLORS.GREEN,
+        horizontal_scroll: DEFAULT_COLORS.BLUE,
         pomodoro: {
           work: DEFAULT_COLORS.RED,
           break: DEFAULT_COLORS.GREEN,
@@ -342,6 +343,15 @@ const LedSettings: React.FC<LedSettingsProps> = ({ device, handleChange }): JSX.
           value={ledConfig.scroll_step_accel || DEFAULT_COLORS.GREEN}
           onChange={(): void => {}}
           field="led_scroll_step_accel"
+          handleChange={handleChange}
+          deviceId={device.id}
+        />
+        <RgbInput
+          key={`horizontal-scroll-${forceUpdate}`}
+          label={t('led.horizontalScroll')}
+          value={ledConfig.horizontal_scroll || DEFAULT_COLORS.BLUE}
+          onChange={(): void => {}}
+          field="led_horizontal_scroll"
           handleChange={handleChange}
           deviceId={device.id}
         />

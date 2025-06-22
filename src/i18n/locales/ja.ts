@@ -47,7 +47,8 @@ const jaMessages: LocaleMessages = {
     speed: '速度',
   },
   scroll: {
-    reverseDirection: '方向を反転',
+    reverseDirection: '垂直方向を反転',
+    reverseHDirection: '水平方向を反転',
     shortScroll: 'ショートスクロール',
     term: 'スクロール間隔',
     scrollStep: 'スクロール幅',
@@ -137,6 +138,7 @@ const jaMessages: LocaleMessages = {
     title: 'LED設定',
     mouseSpeedAccel: 'マウス速度加速',
     scrollStepAccel: 'スクロールステップ加速',
+    horizontalScroll: '水平スクロール',
     pomodoro: 'ポモドーロ',
     work: '作業',
     break: '休憩',
@@ -149,7 +151,7 @@ const jaMessages: LocaleMessages = {
     blue: '青',
     colorPalette: 'カラーパレット',
     clickToOpenColorPicker: 'クリックしてカラーピッカーを開く',
-    rgbEffectSolidColorOnly: 'RGB EffectがSolid Colorの時のみ、マウス・ステップ・ポモドーロのLEDインジケータが表示されます',
+    rgbEffectSolidColorOnly: 'RGB EffectがSolid Colorの時のみ、マウス・ステップ・ポモドーロ・水平スクロールのLEDインジケータが表示されます',
     pomodoroColorChangeDescription: '色を変更すると5秒間光ります',
     layerColorPickerDescription: 'カラーピッカーを開くと該当レイヤーへ移動し、閉じるとレイヤー0へ戻ります\nトラックパッドレイヤーを有効にしてる場合はレイヤータブから一旦オフにしてから設定してください'
   }

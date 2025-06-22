@@ -49,6 +49,7 @@ export interface LocaleMessages {
   };
   scroll: {
     reverseDirection: string;
+    reverseHDirection: string;
     shortScroll: string;
     term: string;
     scrollStep: string;
@@ -138,6 +139,7 @@ export interface LocaleMessages {
     title: string;
     mouseSpeedAccel: string;
     scrollStepAccel: string;
+    horizontalScroll: string;
     pomodoro: string;
     work: string;
     break: string;

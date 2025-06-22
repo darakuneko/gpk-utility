@@ -42,7 +42,8 @@ const buildTrackpadConfigByteArray = (trackpadConfig: TrackpadConfig): number[] 
         lower_default_speed;
     byteArray[5] = (trackpadConfig.default_speed! & 0b001111) << 4 |
         trackpadConfig.scroll_step!;
-    byteArray[6] = trackpadConfig.can_short_scroll! << 7;
+    byteArray[6] = trackpadConfig.can_short_scroll! << 7 |
+        trackpadConfig.can_reverse_h_scrolling_direction! << 6;
     
     // Updated for 2-byte values - high byte, low byte for each value
     byteArray[7] = (trackpadConfig.tap_term || 0) >> 8;     
