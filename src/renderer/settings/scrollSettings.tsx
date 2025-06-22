@@ -28,6 +28,14 @@ const ScrollSettings: React.FC<ScrollSettingsProps> = ({ device, handleChange, h
             checked={trackpadConfig.can_reverse_scrolling_direction === 1}
           />
         </div>
+        <div className="pt-2 w-[45%]">
+          <label className="block mb-1 text-gray-900 dark:text-white">{t('scroll.reverseHDirection')}</label>
+          <CustomSwitch
+            id="config-can_reverse_h_scrolling_direction"
+            onChange={handleChange("can_reverse_h_scrolling_direction", device.id)}
+            checked={trackpadConfig.can_reverse_h_scrolling_direction === 1}
+          />
+        </div>
       </div>
       <div className="flex flex-wrap items-center gap-6 mb-6">
         <div className="pt-2 w-[45%]">

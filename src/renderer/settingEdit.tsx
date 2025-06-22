@@ -95,6 +95,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                 try {
                     if(pType === "can_hf_for_layer" || pType === "can_drag" || 
                         pType === "can_trackpad_layer" || pType === "can_reverse_scrolling_direction" || 
+                        pType === "can_reverse_h_scrolling_direction" ||
                         pType === "can_short_scroll") {
                         // For switches, set integer value 0 or 1
                         newValue = event.target.checked ? 1 : 0;
@@ -165,6 +166,8 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                                 updatedDevice.config.led.mouse_speed_accel = newValue;
                             } else if (pType === 'led_scroll_step_accel') {
                                 updatedDevice.config.led.scroll_step_accel = newValue;
+                            } else if (pType === 'led_horizontal_scroll') {
+                                updatedDevice.config.led.horizontal_scroll = newValue;
                             } else if (pType.startsWith('led_pomodoro.')) {
                                 const pomodoroField = pType.replace('led_pomodoro.', '');
                                 if (!updatedDevice.config.led.pomodoro) {
@@ -192,6 +195,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                         }
                     } else if (pType === "can_hf_for_layer" || pType === "can_drag" || 
                               pType === "can_trackpad_layer" || pType === "can_reverse_scrolling_direction" || 
+                              pType === "can_reverse_h_scrolling_direction" ||
                               pType === "can_short_scroll" || pType === "default_speed" || 
                               pType === "drag_strength" || pType === "drag_strength_mode" ||
                               pType === "scroll_term" || pType === "drag_term" || 
@@ -226,6 +230,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                     // For switch operations and LED color changes, apply immediately; for slider operations during movement, hold pending
                     if (pType === "can_hf_for_layer" || pType === "can_drag" || 
                         pType === "can_trackpad_layer" || pType === "can_reverse_scrolling_direction" || 
+                        pType === "can_reverse_h_scrolling_direction" ||
                         pType === "can_short_scroll" || pType.startsWith('led_')) {
                         // Send switches and LED changes immediately
                         await sendConfigToDevice(updatedDevice);

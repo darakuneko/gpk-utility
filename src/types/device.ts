@@ -148,6 +148,7 @@ export interface TrackpadConfig {
     drag_term?: number;
     can_trackpad_layer?: number;
     can_reverse_scrolling_direction?: number;
+    can_reverse_h_scrolling_direction?: number;
     drag_strength_mode?: number;
     drag_strength?: number;
     scroll_step?: number;
@@ -174,6 +175,7 @@ export interface LedConfig {
     enabled?: number;
     mouse_speed_accel?: RgbColor;
     scroll_step_accel?: RgbColor;
+    horizontal_scroll?: RgbColor;
     pomodoro?: {
         work: RgbColor;
         break: RgbColor;

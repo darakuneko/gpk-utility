@@ -16,6 +16,7 @@ export function receiveLedConfig(buffer: number[]): {led: LedConfig} {
     // data[6-8]: pomodoro long_break RGB
     // data[9-11]: indicator speed RGB
     // data[12-14]: indicator step RGB
+    // data[15-17]: indicator h_scroll RGB
     
     const led: LedConfig = {
         enabled: 1,
@@ -45,6 +46,11 @@ export function receiveLedConfig(buffer: number[]): {led: LedConfig} {
             r: buffer[12] || 0,
             g: buffer[13] || 0,
             b: buffer[14] || 0
+        },
+        horizontal_scroll: {
+            r: buffer[15] || 0,
+            g: buffer[16] || 0,
+            b: buffer[17] || 0
         }
     };
     
@@ -161,6 +167,7 @@ export const saveLedConfig = async (device: Device): Promise<CommandResult> => {
     // data[6-8]: pomodoro long_break RGB
     // data[9-11]: indicator speed RGB
     // data[12-14]: indicator step RGB
+    // data[15-17]: indicator h_scroll RGB
     
     // Pomodoro work RGB
     ledDataBytes.push(ledConfig.pomodoro?.work?.r || 0);
@@ -186,6 +193,11 @@ export const saveLedConfig = async (device: Device): Promise<CommandResult> => {
     ledDataBytes.push(ledConfig.scroll_step_accel?.r || 0);
     ledDataBytes.push(ledConfig.scroll_step_accel?.g || 0);
     ledDataBytes.push(ledConfig.scroll_step_accel?.b || 0);
+    
+    // Indicator h_scroll RGB
+    ledDataBytes.push(ledConfig.horizontal_scroll?.r || 0);
+    ledDataBytes.push(ledConfig.horizontal_scroll?.g || 0);
+    ledDataBytes.push(ledConfig.horizontal_scroll?.b || 0);
     
     return await saveLedConfigData(device, ledDataBytes);
 };

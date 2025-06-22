@@ -41,6 +41,7 @@ export function receiveTrackpadSpecificConfig(buffer: number[]): TrackpadConfig 
         default_speed: joinDefaultSpeed(buffer[4] || 0, buffer[5] || 0),
         scroll_step: (buffer[5] || 0) & 0b00001111,
         can_short_scroll: ((buffer[6] || 0) & 0b10000000) >> 7,
+        can_reverse_h_scrolling_direction: ((buffer[6] || 0) & 0b01000000) >> 6,
         tap_term: ((buffer[7] || 0) << 8) | (buffer[8] || 0),
         swipe_term: ((buffer[9] || 0) << 8) | (buffer[10] || 0),
         pinch_term: ((buffer[11] || 0) << 8) | (buffer[12] || 0),
