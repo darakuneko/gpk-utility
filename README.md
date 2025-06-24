@@ -51,7 +51,8 @@ Customize mouse cursor behavior.
 #### Scroll
 Adjust scroll speed and direction settings.<br>Configure smooth scrolling and direction inversion.
 
-- **Direction Inversion**: Invert scrolling direction (standard/inverted)
+- **Reverse Vertical Direction**: Invert vertical scrolling direction (standard/inverted)
+- **Reverse Horizontal Direction**: Invert horizontal scrolling direction (standard/inverted)
 - **Short Scroll**: Enable/disable high-volume scrolling with short scroll operations
 - **Scroll Term**: Adjust the interval between scroll commands within a range of 0–300 ms.
 - **Scroll Steps**: Adjust the number of lines moved per scroll action (1-16 lines)
@@ -124,6 +125,17 @@ Configure touchpad gesture settings
 Display settings for keyboard OLED screens
 
 - **Time Display**: Displays the current time on the last line of the OLED screen.
+
+#### LED
+Configure LED colors for various device states and layers
+
+- **Speed Indicators**: Set colors for mouse speed acceleration, scroll step acceleration, and horizontal scroll indicators
+- **Pomodoro Colors**: Configure colors for work, break, and long break phases (colors light up for 5 seconds on phase change)
+- **Layer Colors**: Set individual colors for each layer
+  - Opening the color picker automatically switches to that layer
+  - Closing the color picker returns to layer 0
+  - Note: If trackpad layer is enabled, please turn it off from the Layer tab before setting colors
+- **Important**: LED indicators only work when RGB Effect is set to Solid Color mode
 
 ## Other Features
 
