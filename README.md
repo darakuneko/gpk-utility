@@ -12,11 +12,16 @@ If you do not wish to use these functions, you can configure the application via
 ![Image](https://github.com/user-attachments/assets/b9a13791-89b5-4eea-942b-cd967c2d444d)
 
 #### Notice
-Please do not launch any applications that communicate with the device, such as Vial, before starting GPK Utility.  
-If the device is not recognized when multiple applications are running simultaneously, please close all related applications, reconnect the device, and then launch GPK Utility.  
+Please do not launch any applications that communicate with the device, such as Vial, before starting GPK Utility.
+If the device is not recognized when multiple applications are running simultaneously, please close all related applications, reconnect the device, and then launch GPK Utility.
 Some touchpad settings may interfere with the proper operation of the device depending on the configuration.<br>
 Please review and apply settings carefully. <br>
 If any operational issues occur, you can initialize the device settings by pressing the **"EEPROM Clear"** button within the application.<br>
+
+#### Linux: X11 Required for Auto Layer Switch
+The **Automatic Layer Switching** feature requires **X11** on Linux.<br>
+Windows running natively on Wayland cannot be detected.<br>
+To use this feature, please log in with an **X11 session** (e.g., "Ubuntu on Xorg" at the login screen).<br>
 
 
 ## Feature Tabs
