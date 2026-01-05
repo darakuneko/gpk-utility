@@ -199,6 +199,7 @@ const createWindow = async (): Promise<void> => {
         minWidth: minWidth,
         minHeight: minHeight,
         icon: `${__dirname}/../icons/256x256.png`,
+        backgroundColor: '#111827',
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             backgroundThrottling: false,
