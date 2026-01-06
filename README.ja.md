@@ -18,10 +18,17 @@ EEPROM Clearはトラックパッド以外の全ての設定もクリアされ�
 
 ![Image](https://github.com/user-attachments/assets/b9a13791-89b5-4eea-942b-cd967c2d444d)
 
-#### Linux: Auto Layer SwitchにはX11が必要
-**Auto Layer Switch**機能はLinuxでは**X11**が必要です。<br>
-Waylandでネイティブ動作しているウィンドウは検出できません。<br>
-この機能を使用するには、**X11セッション**（ログイン画面で「Ubuntu on Xorg」など）でログインしてください。<br>
+#### Linux: Auto Layer Switch機能について
+Linux環境ではX11またはGNOME Shell拡張を前提としています。
+
+**Wayland / GNOME環境の場合:**<br>
+以下のGNOME Shell拡張機能をインストールしてください。<br>
+https://extensions.gnome.org/extension/5592/focused-window-d-bus/
+
+**注意事項:**<br>
+本機能はX11環境を除き、GNOME Shellに依存しているため、KDE Plasmaなど他のデスクトップ環境では動作しません。<br>
+KDE環境で同等の機能を実現するには、KWinスクリプト等を用いた独自実装が必要となります。<br>
+現時点ではKDE環境を保有していないため公式対応は行っていませんが、実装・改善に関するプルリクエストは歓迎します。<br>
 
 
 ## Feature Tabs

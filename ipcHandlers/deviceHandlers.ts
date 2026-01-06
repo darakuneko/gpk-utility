@@ -1,3 +1,6 @@
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
 import { ipcMain, BrowserWindow } from "electron";
 import { ActiveWindow } from '@paymoapp/active-window';
 
@@ -25,6 +28,8 @@ import {
 } from '../gpkrc';
 import type { Device, DeviceWithId, DeviceStatus, CommandResult, ActiveWindowResult } from '../src/types/device';
 import { DeviceType } from '../gpkrc-modules/deviceTypes';
+
+const execAsync = promisify(exec);
 
 let mainWindow: BrowserWindow | null;
 
@@ -135,21 +140,39 @@ export const setupDeviceHandlers = (): void => {
 
     // Window monitoring control
     ipcMain.handle('startWindowMonitoring', async (_event): Promise<void> => {
-        try {
-            await startWindowMonitoring({
-                getActiveWindow: async (): Promise<ActiveWindowResult> => {
+        await startWindowMonitoring({
+            getActiveWindow: async (): Promise<ActiveWindowResult | null> => {
+                try {
                     const result = await ActiveWindow.getActiveWindow();
                     return {
-                        title: result.title,
-                        application: result.application,
-                        name: result.application,
-                        executableName: result.application
+                        application: result.application
                     };
+                } catch {
+                    // Fallback for Linux using gdbus
+                    if (process.platform === 'linux') {
+                        try {
+                            const { stdout } = await execAsync(
+                                'gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/shell/extensions/FocusedWindow --method org.gnome.shell.extensions.FocusedWindow.Get'
+                            );
+                            // Parse GVariant tuple: ('{"wm_class":"...", ...}',)
+                            const jsonStr = stdout.trim().slice(2, -3);
+                            const data = JSON.parse(jsonStr) as { wm_class?: string };
+                            if (data.wm_class) {
+                                // Extract last part: "org.gnome.Nautilus" -> "Nautilus"
+                                const parts = data.wm_class.split('.');
+                                const appName = parts[parts.length - 1] || data.wm_class;
+                                return {
+                                    application: appName
+                                };
+                            }
+                        } catch {
+                            // gdbus fallback also failed, return null
+                        }
+                    }
+                    return null;
                 }
-            });
-        } catch (error) {
-            console.error('[ERROR] IPC handler: startWindowMonitoring failed:', error);
-        }
+            }
+        });
     });
 
     // Active window list retrieval handler

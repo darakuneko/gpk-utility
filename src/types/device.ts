@@ -209,12 +209,7 @@ export interface LayerSetting {
 }
 
 export interface ActiveWindowResult {
-    title: string;
-    executableName: string;
     application: string;
-    name: string;
-    path?: string;
-    pid?: number;
 }
 
 export interface AutoLayerSettings {

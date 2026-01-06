@@ -18,10 +18,17 @@ Some touchpad settings may interfere with the proper operation of the device dep
 Please review and apply settings carefully. <br>
 If any operational issues occur, you can initialize the device settings by pressing the **"EEPROM Clear"** button within the application.<br>
 
-#### Linux: X11 Required for Auto Layer Switch
-The **Automatic Layer Switching** feature requires **X11** on Linux.<br>
-Windows running natively on Wayland cannot be detected.<br>
-To use this feature, please log in with an **X11 session** (e.g., "Ubuntu on Xorg" at the login screen).<br>
+#### Linux: Auto Layer Switch Feature
+This feature requires X11 or a GNOME Shell extension on Linux.
+
+**For Wayland / GNOME environments:**<br>
+Please install the following GNOME Shell extension:<br>
+https://extensions.gnome.org/extension/5592/focused-window-d-bus/
+
+**Note:**<br>
+Except for X11 environments, this feature depends on GNOME Shell and will not work on other desktop environments such as KDE Plasma.<br>
+To achieve equivalent functionality on KDE, a custom implementation using KWin scripts or similar would be required.<br>
+We currently do not have access to a KDE environment and therefore do not provide official support, but pull requests for implementation or improvements are welcome.<br>
 
 
 ## Feature Tabs
