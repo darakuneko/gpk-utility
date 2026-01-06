@@ -1,9 +1,13 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 import { app, BrowserWindow, Tray, Menu, nativeImage } from "electron";
 import Store from 'electron-store';
 import { ActiveWindow } from '@paymoapp/active-window';
+
+const execAsync = promisify(exec);
 
 import {
     close, 
@@ -304,21 +308,40 @@ app.on('ready', async (): Promise<void> => {
     }
     
     // Start window monitoring for automatic layer switching
-    try {
-        void startWindowMonitoring({
-            getActiveWindow: async (): Promise<ActiveWindowResult> => {
+    void startWindowMonitoring({
+        getActiveWindow: async (): Promise<ActiveWindowResult | null> => {
+            try {
                 const result = await ActiveWindow.getActiveWindow();
                 return {
-                    title: result.title,
-                    application: result.application,
-                    name: result.application,
-                    executableName: result.application
+                    application: result.application
                 };
+            } catch {
+                // Fallback for Linux using gdbus
+                if (process.platform === 'linux') {
+                    try {
+                        const { stdout } = await execAsync(
+                            'gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/shell/extensions/FocusedWindow --method org.gnome.shell.extensions.FocusedWindow.Get'
+                        );
+                        // Parse GVariant tuple: ('{"wm_class":"...", ...}',)
+                        // trim() removes trailing newline, then slice removes (' and ',)
+                        const jsonStr = stdout.trim().slice(2, -3);
+                        const data = JSON.parse(jsonStr) as { wm_class?: string };
+                        if (data.wm_class) {
+                            // Extract last part: "org.gnome.Nautilus" -> "Nautilus"
+                            const parts = data.wm_class.split('.');
+                            const appName = parts[parts.length - 1] || data.wm_class;
+                            return {
+                                application: appName
+                            };
+                        }
+                    } catch {
+                        // gdbus fallback also failed, return null
+                    }
+                }
+                return null;
             }
-        });
-    } catch (error) {
-        console.error('[ERROR] Failed to start window monitoring:', error);
-    }
+        }
+    });
     
     if (process.env.NODE_ENV === 'development') {
         mainWindow!.webContents.openDevTools();

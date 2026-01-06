@@ -43,13 +43,12 @@ export const currentLayers: { [deviceId: string]: number } = {}; // Track curren
 // ActiveWindow type definition
 interface ActiveWindowModule {
     getActiveWindow: () => Promise<{
-        title: string;
         application?: string;
         name?: string;
         path?: string;
         pid?: number;
         icon?: string;
-    }>;
+    } | null>;
 }
 
 // Function for monitoring active windows and switching layers
@@ -63,10 +62,7 @@ export const startWindowMonitoring = async (ActiveWindow: ActiveWindowModule): P
 
         // Map the result to ActiveWindowResult format
         const result: ActiveWindowResult = {
-            title: rawResult.title || '',
-            executableName: rawResult.application || rawResult.name || '',
-            application: rawResult.application || rawResult.name || '',
-            name: rawResult.name || rawResult.application || ''
+            application: rawResult.application || rawResult.name || ''
         };
         
         const appName = result.application;
