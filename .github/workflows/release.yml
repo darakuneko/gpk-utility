@@ -44,13 +44,10 @@ jobs:
         include:
           - os: macos-latest
             platform: mac
-            dist_cmd: npm run dist:mac
           - os: windows-latest
             platform: win
-            dist_cmd: npm run dist:win
           - os: ubuntu-latest
             platform: linux
-            dist_cmd: npm run dist:linux
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +64,7 @@ jobs:
       - run: npm ci
 
       - name: Build and package
-        run: ${{ matrix.dist_cmd }}
+        run: npm run dist:${{ matrix.platform }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' }}
