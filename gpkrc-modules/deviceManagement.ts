@@ -246,7 +246,7 @@ const start = async (device: GPKDevice): Promise<string> => {
                         deviceStatusMap[id].initializing = false;
                         deviceStatusMap[id].connected = false;
                     }
-                    throw new Error(`Failed to initialize device ${id} after ${maxRetries} attempts: ${addError instanceof Error ? addError.message : String(addError)}`);
+                    throw new Error(`Failed to initialize device ${id} after ${maxRetries} attempts: ${addError instanceof Error ? addError.message : String(addError)}`, { cause: addError });
                 }
                 
                 // Wait before retry
@@ -703,7 +703,7 @@ const writeCommand = async (device: GPKDevice, command: number[], retryCount: nu
                     // Retry the command
                     return writeCommand(device, command, retryCount + 1);
                 } else {
-                    throw new Error("Failed to recreate HID instance");
+                    throw new Error("Failed to recreate HID instance", { cause: err });
                 }
             } catch (recreateError) {
                 console.error(`Failed to recreate HID instance for ${id}:`, recreateError);

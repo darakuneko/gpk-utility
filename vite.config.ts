@@ -104,9 +104,10 @@ const config: UserConfig = defineConfig({
         main: resolve(__dirname, 'public/index.html')
       },
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          utils: ['dayjs']
+        manualChunks(id: string): string | undefined {
+          if (id.includes('react') || id.includes('react-dom')) return 'vendor'
+          if (id.includes('dayjs')) return 'utils'
+          return undefined
         }
       }
     }
