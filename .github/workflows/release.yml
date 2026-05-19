@@ -57,7 +57,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install Linux dependencies
+      - name: Install Linux build dependencies for native modules
         if: matrix.platform == 'linux'
         run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev libudev-dev libx11-dev
 
