@@ -188,6 +188,13 @@ GPKRC_ENABLE = yes
 
 **Specifications are subject to change without notice.**
 
+### Implementation Guide
+- [Vial Firmware Integration Guide](./docs/features/vial_firmware_integration.md)
+- [Appendix A: Packet / Struct Reference](./docs/features/vial_firmware_appendix_a_packets.md)
+- [Appendix B: Device Type Matrix](./docs/features/vial_firmware_appendix_b_device_matrix.md)
+- [Appendix C: Host UI ↔ Field Mapping](./docs/features/vial_firmware_appendix_c_host_mapping.md)
+- [Appendix D: Implementation Checklist](./docs/features/vial_firmware_appendix_d_checklist.md)
+
 ## Developer Support
 
 **Buy me a coffee**  
