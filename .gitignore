@@ -4,10 +4,8 @@ node_modules
 /dist
 yarn.lock
 /public/build/
-.github
 package-lock.json
 .claude/
 dist-electron/
-docs/
 CLAUDE.md
 build.log

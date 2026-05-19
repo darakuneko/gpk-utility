@@ -167,6 +167,13 @@ trakpad: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/num
 
 **仕様は予告なく変更されます**
 
+### 実装ガイド
+- [Vial ファームウェア統合仕様書](./docs/features/vial_firmware_integration.md)
+- [付録A: パケット / 構造体早見表](./docs/features/vial_firmware_appendix_a_packets.md)
+- [付録B: device_type 別必須機能マトリクス](./docs/features/vial_firmware_appendix_b_device_matrix.md)
+- [付録C: ホスト UI ↔ フィールド対応表](./docs/features/vial_firmware_appendix_c_host_mapping.md)
+- [付録D: 実装チェックリスト](./docs/features/vial_firmware_appendix_d_checklist.md)
+
 ## 開発者サポート
 
 **コーヒーを奢る**  
