@@ -105,8 +105,8 @@ const config: UserConfig = defineConfig({
       },
       output: {
         manualChunks(id: string): string | undefined {
-          if (id.includes('react') || id.includes('react-dom')) return 'vendor'
-          if (id.includes('dayjs')) return 'utils'
+          if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/')) return 'vendor'
+          if (id.includes('/node_modules/dayjs/')) return 'utils'
           return undefined
         }
       }
