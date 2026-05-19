@@ -156,4 +156,14 @@ export interface LocaleMessages {
     pomodoroColorChangeDescription: string;
     layerColorPickerDescription: string;
   };
+  data: {
+    tabLabel: string;
+    settingsTabLabel: string;
+    saveHint: string;
+    save: string;
+    saveList: string;
+    load: string;
+    deleteConfirm: string;
+    noSaves: string;
+  };
 }

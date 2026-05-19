@@ -134,6 +134,16 @@ const enMessages: LocaleMessages = {
     enableDesktopNotifications: 'Desktop Notifications',
     enableHapticNotifications: 'Haptic Feedback Notifications'
   },
+  data: {
+    tabLabel: 'Data',
+    settingsTabLabel: 'Settings',
+    saveHint: 'Mouse / Scroll / Gesture',
+    save: 'Save',
+    saveList: 'Save list',
+    load: 'Load',
+    deleteConfirm: 'Delete this save?',
+    noSaves: 'No saved configs'
+  },
   led: {
     title: 'LED Settings',
     mouseSpeedAccel: 'Mouse Speed Accel',

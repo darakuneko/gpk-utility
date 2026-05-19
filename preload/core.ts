@@ -28,6 +28,7 @@ export let cachedStoreSettings: StoreSettings = {
     oledSettings: {},
     pomodoroDesktopNotificationsSettings: {},
     savedNotifications: [],
+    savedConfigs: [],
     traySettings: {
         minimizeToTray: true,
         backgroundStart: false

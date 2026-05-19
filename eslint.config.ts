@@ -32,13 +32,13 @@ const config: TSESLint.FlatConfig.ConfigArray = tseslint.config(
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
-      'import': importPlugin,
+      'import-x': importPlugin,
       'unused-imports': unusedImportsPlugin,
     },
     rules: {
       // Import rules
-      'import/no-cycle': 'error',
-      'import/order': [
+      'import-x/no-cycle': 'error',
+      'import-x/order': [
         'error',
         {
           groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],

@@ -1,11 +1,12 @@
 // Global type definitions for GPK Utility
 import { Device, DeviceConfig, AppInfo, ActiveWindowResult, CommandResult } from './device';
-import { 
-  ImportResult, 
-  ExportResponse, 
+import {
+  ImportResult,
+  ExportResponse,
   SaveResult,
-  GenericEventCallback 
+  GenericEventCallback
 } from './api-types';
+import { SavedConfig } from './store';
 import { DeviceConfigResponse } from './ipc-responses';
 
 // Window API exposed by preload script
@@ -86,6 +87,13 @@ declare global {
       // OLED settings
       saveOledSettings: (device: Device, settings: { enabled: boolean }) => Promise<void>;
       
+      // Saved config slots
+      listSavedConfigs: () => Promise<SavedConfig[]>;
+      saveConfig: (entry: SavedConfig) => Promise<SaveResult>;
+      loadConfig: (entry: SavedConfig) => Promise<ImportResult>;
+      deleteConfig: (id: string) => Promise<SaveResult>;
+      renameConfig: (id: string, name: string) => Promise<SaveResult>;
+
       // Trackpad settings
       saveTrackpadConfig: (device: Device, config: import('./device').TrackpadConfig) => Promise<void>;
       

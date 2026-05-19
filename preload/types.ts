@@ -47,11 +47,23 @@ export interface AutoLayerSetting {
     layerSettings: LayerSetting[];
 }
 
+export interface SavedConfig {
+    id: string;
+    name: string;
+    deviceId: string;
+    config: DeviceConfig;
+    autoLayerSettings?: AutoLayerSetting;
+    oledEnabled?: boolean;
+    pomodoroNotifEnabled?: boolean;
+    savedAt: number;
+}
+
 export interface StoreSettings {
     autoLayerSettings: Record<string, AutoLayerSetting>;
     oledSettings: Record<string, { enabled: boolean }>;
     pomodoroDesktopNotificationsSettings: Record<string, boolean>;
     savedNotifications: NotificationData[];
+    savedConfigs: SavedConfig[];
     traySettings: {
         minimizeToTray: boolean;
         backgroundStart: boolean;

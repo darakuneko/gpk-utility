@@ -3,11 +3,12 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { NotificationData } from '../src/types/notification';
 import type { CommandResult } from '../src/types/device';
 
-import type { 
-    Device, 
-    ConfigSaveCompleteDetail, 
-    ExportData, 
+import type {
+    Device,
+    ConfigSaveCompleteDetail,
+    ExportData,
     ImportResult,
+    SavedConfig,
     TraySettings,
     AppInfo,
     StoreSettings,
@@ -233,6 +234,58 @@ export const exposeAPI = (): void => {
             }
         },
         
+        // Saved config slots
+        listSavedConfigs: async (): Promise<SavedConfig[]> => {
+            return await ipcRenderer.invoke('listSavedConfigs');
+        },
+        saveConfig: async (entry: SavedConfig): Promise<ImportResult> => {
+            return await ipcRenderer.invoke('saveConfig', entry);
+        },
+        loadConfig: async (entry: SavedConfig): Promise<ImportResult> => {
+            try {
+                const device = cachedDeviceRegistry.find((d): boolean => d.id === entry.deviceId);
+                if (!device) {
+                    return { success: false, error: 'Device not found' };
+                }
+                const deviceToApply = { ...device, config: entry.config };
+                await command.dispatchSaveDeviceConfig(deviceToApply, ['trackpad']);
+
+                const autoLayerSettings = { ...cachedStoreSettings.autoLayerSettings };
+                const oledSettings = { ...cachedStoreSettings.oledSettings };
+                const pomodoroNotifSettings = { ...cachedStoreSettings.pomodoroDesktopNotificationsSettings };
+
+                if (entry.autoLayerSettings) {
+                    autoLayerSettings[entry.deviceId] = entry.autoLayerSettings;
+                }
+                if (entry.oledEnabled !== undefined) {
+                    oledSettings[entry.deviceId] = { enabled: entry.oledEnabled };
+                }
+                if (entry.pomodoroNotifEnabled !== undefined) {
+                    pomodoroNotifSettings[entry.deviceId] = entry.pomodoroNotifEnabled;
+                }
+
+                await Promise.all([
+                    saveStoreSetting('autoLayerSettings', autoLayerSettings, null),
+                    saveStoreSetting('oledSettings', oledSettings, null),
+                    saveStoreSetting('pomodoroDesktopNotificationsSettings', pomodoroNotifSettings, null)
+                ]);
+
+                const updatedRegistry = cachedDeviceRegistry.map((d): Device =>
+                    d.id === entry.deviceId ? deviceToApply : d
+                );
+                command.changeConnectDevice(updatedRegistry);
+                return { success: true, devicesUpdated: 1 };
+            } catch (err) {
+                return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+        },
+        deleteConfig: async (id: string): Promise<ImportResult> => {
+            return await ipcRenderer.invoke('deleteConfig', id);
+        },
+        renameConfig: async (id: string, name: string): Promise<ImportResult> => {
+            return await ipcRenderer.invoke('renameConfig', id, name);
+        },
+
         // Unified store settings API
         getStoreSetting: <K extends keyof StoreSettings>(key: K): StoreSettings[K] => {
             return (cachedStoreSettings as StoreSettings)[key];

@@ -8,6 +8,7 @@ import { CustomSlider } from "../components/CustomComponents.tsx"
 import UpdatesNotificationModal from "../components/UpdatesNotificationModal.tsx"
 import VersionModal from "../components/VersionModal.tsx"
 
+import DataTab from "./DataTab.tsx"
 import SettingEdit from "./settingEdit.tsx"
 import { HamburgerIcon, MenuItem, LeftMenuItem } from "./SettingsUIComponents.tsx"
 import { getSupportedSettingTabs } from "./SettingsDeviceUtils.ts"
@@ -24,6 +25,7 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
     const DeviceType = useDeviceType();
     const { t, locale, changeLocale, isLoading: _isLoading } = useLanguage();
     
+    const [activeMainTab, setActiveMainTab] = useState<'settings' | 'data'>('settings')
     const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null)
     const [activeSettingTab, setActiveSettingTab] = useState("mouse")
     const [userSelectedTab, setUserSelectedTab] = useState(false) // Flag to track manual tab selection
@@ -191,23 +193,6 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
         setMenuOpen(!menuOpen)
     }
 
-    // Close menu
-    const closeMenu = (): void => {
-        setMenuOpen(false)
-    }
-
-    // Import function
-    const handleImport = async (): Promise<void> => {
-        await window.api.importFile()
-        closeMenu()
-    }
-
-    // Export function
-    const handleExport = async (): Promise<void> => {
-        await window.api.exportFile()
-        closeMenu()
-    }
-
     // Tray setting change handler
     const handleTraySettingChange = async (key: string, value: boolean): Promise<void> => {
         try {
@@ -348,98 +333,113 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                     {/* Dropdown Menu */}
                     {menuOpen && (
                         <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            {/* Language Settings */}
-                            <div className="relative">
-                                <MenuItem onClick={(): void => setLanguageMenuOpen(!languageMenuOpen)}>
-                                    <div className="flex justify-between items-center w-full">
-                                        <span className="mr-2">{t('settings.language')}</span>
-                                        <span className="text-sm text-gray-900 dark:text-gray-100 ml-auto font-medium">{availableLanguages[locale as keyof typeof availableLanguages]}</span>
-                                    </div>
-                                </MenuItem>
-                                
-                                {/* Language Submenu */}
-                                {languageMenuOpen && (
-                                    <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-20 border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                        {Object.entries(availableLanguages).map(([code, name]): JSX.Element => (
-                                            <MenuItem 
-                                                key={code}
-                                                onClick={(): void => handleLanguageChange(code)}
-                                            >
-                                                <div className="flex items-center">
-                                                    <span className={locale === code ? "font-semibold" : ""}>{name}</span>
-                                                    {locale === code && (
-                                                        <svg className="ml-2 h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                            </MenuItem>
-                                        ))}
-                                    </div>
-                                )}
+                            {/* Settings / Data tabs */}
+                            <div className="flex border-b border-gray-200 dark:border-gray-700">
+                                {(['settings', 'data'] as const).map((tab): JSX.Element => {
+                                    const active = activeMainTab === tab;
+                                    return (
+                                        <button
+                                            key={tab}
+                                            className={`flex-1 py-2 text-sm font-medium ${active ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                                            onClick={(): void => setActiveMainTab(tab)}
+                                        >
+                                            {tab === 'settings' ? t('data.settingsTabLabel') : t('data.tabLabel')}
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            
-                            <MenuItem onClick={handleImport}>{t('settings.import')}</MenuItem>
-                            <MenuItem onClick={handleExport}>{t('settings.export')}</MenuItem>
-                            <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                            
-                            {/* Polling interval settings */}
-                            <div className="px-4 py-3">
-                                <label className="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-300">
-                                    {t('settings.pollingInterval')}
-                                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-2 font-normal">
-                                        {pollingInterval} ms
-                                    </span>
-                                </label>
-                                <div className="mb-2">
-                                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                        <span>{t('settings.faster')}</span>
-                                        <span>{t('settings.slower')}</span>
+
+                            {activeMainTab === 'settings' && (
+                                <>
+                                    {/* Language Settings */}
+                                    <div className="relative">
+                                        <MenuItem onClick={(): void => setLanguageMenuOpen(!languageMenuOpen)}>
+                                            <div className="flex justify-between items-center w-full">
+                                                <span className="mr-2">{t('settings.language')}</span>
+                                                <span className="text-sm text-gray-900 dark:text-gray-100 ml-auto font-medium">{availableLanguages[locale as keyof typeof availableLanguages]}</span>
+                                            </div>
+                                        </MenuItem>
+
+                                        {/* Language Submenu */}
+                                        {languageMenuOpen && (
+                                            <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md z-20 border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                                {Object.entries(availableLanguages).map(([code, name]): JSX.Element => (
+                                                    <MenuItem
+                                                        key={code}
+                                                        onClick={(): void => handleLanguageChange(code)}
+                                                    >
+                                                        <div className="flex items-center">
+                                                            <span className={locale === code ? "font-semibold" : ""}>{name}</span>
+                                                            {locale === code && (
+                                                                <svg className="ml-2 h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                    </MenuItem>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                    <CustomSlider
-                                        id="settings-polling-interval"
-                                        value={pollingInterval}
-                                        min={200}
-                                        step={100}
-                                        max={2000}
-                                        onChange={(e): void => {
-                                            const value = parseInt(e.target.value, 10);
-                                            // Immediately update local state
-                                            setPollingInterval(value);
-                                            
-                                            // Save settings to backend
-                                            void window.api.saveStoreSetting('pollingInterval', value);
-                                            
-                                            // Update slider UI
-                                            window.requestAnimationFrame((): void => {
-                                                const element = document.getElementById('settings-polling-interval');
-                                                if (element) {
-                                                    element.dispatchEvent(new Event('update'));
-                                                }
-                                            });
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                            
-                            <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                            <MenuItem 
-                                isToggle={true} 
-                                isChecked={traySettings.minimizeToTray}
-                                onClick={(): Promise<void> => handleTraySettingChange('minimizeToTray', !traySettings.minimizeToTray)}
-                            >
-                                {t('settings.minimizeToTray')}
-                            </MenuItem>
-                            <MenuItem 
-                                isToggle={true} 
-                                isChecked={traySettings.backgroundStart}
-                                onClick={(): Promise<void> => handleTraySettingChange('backgroundStart', !traySettings.backgroundStart)}
-                            >
-                                {t('settings.startInTray')}
-                            </MenuItem>
-                            <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                            <MenuItem onClick={handleShowUpdatesNotifications}>{t('updatesNotification.title')}</MenuItem>
-                            <MenuItem onClick={handleShowVersion}>{t('about.title')}</MenuItem>
+
+                                    {/* Polling interval settings */}
+                                    <div className="px-4 py-3">
+                                        <label className="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-300">
+                                            {t('settings.pollingInterval')}
+                                            <span className="text-sm text-gray-500 dark:text-gray-400 ml-2 font-normal">
+                                                {pollingInterval} ms
+                                            </span>
+                                        </label>
+                                        <div className="mb-2">
+                                            <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                                <span>{t('settings.faster')}</span>
+                                                <span>{t('settings.slower')}</span>
+                                            </div>
+                                            <CustomSlider
+                                                id="settings-polling-interval"
+                                                value={pollingInterval}
+                                                min={200}
+                                                step={100}
+                                                max={2000}
+                                                onChange={(e): void => {
+                                                    const value = parseInt(e.target.value, 10);
+                                                    setPollingInterval(value);
+                                                    void window.api.saveStoreSetting('pollingInterval', value);
+                                                    window.requestAnimationFrame((): void => {
+                                                        const element = document.getElementById('settings-polling-interval');
+                                                        if (element) {
+                                                            element.dispatchEvent(new Event('update'));
+                                                        }
+                                                    });
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                                    <MenuItem
+                                        isToggle={true}
+                                        isChecked={traySettings.minimizeToTray}
+                                        onClick={(): Promise<void> => handleTraySettingChange('minimizeToTray', !traySettings.minimizeToTray)}
+                                    >
+                                        {t('settings.minimizeToTray')}
+                                    </MenuItem>
+                                    <MenuItem
+                                        isToggle={true}
+                                        isChecked={traySettings.backgroundStart}
+                                        onClick={(): Promise<void> => handleTraySettingChange('backgroundStart', !traySettings.backgroundStart)}
+                                    >
+                                        {t('settings.startInTray')}
+                                    </MenuItem>
+                                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                                    <MenuItem onClick={handleShowUpdatesNotifications}>{t('updatesNotification.title')}</MenuItem>
+                                    <MenuItem onClick={handleShowVersion}>{t('about.title')}</MenuItem>
+                                </>
+                            )}
+
+                            {activeMainTab === 'data' && (
+                                <DataTab device={getActiveDevice()} />
+                            )}
                         </div>
                     )}
                 </div>
@@ -451,7 +451,7 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                 <div className="space-y-1">
                     {connectedDevices.length > 0 ? (
                         getSettingTabs().map((tab): JSX.Element => (
-                            <LeftMenuItem 
+                            <LeftMenuItem
                                 key={tab.id}
                                 active={activeSettingTab === tab.id}
                                 onClick={(): void => handleSettingTabChange(tab.id)}

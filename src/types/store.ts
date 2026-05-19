@@ -1,5 +1,5 @@
 // Store-related type definitions
-import type { LayerSetting } from './device';
+import type { DeviceConfig, LayerSetting } from './device';
 import type { NotificationData } from './ipc';
 
 export interface WindowBounds {
@@ -7,6 +7,17 @@ export interface WindowBounds {
     height: number;
     x?: number;
     y?: number;
+}
+
+export interface SavedConfig {
+    id: string;
+    name: string;
+    deviceId: string;
+    config: DeviceConfig;
+    autoLayerSettings?: AutoLayerSetting;
+    oledEnabled?: boolean;
+    pomodoroNotifEnabled?: boolean;
+    savedAt: number;
 }
 
 export interface AutoLayerSetting {
@@ -32,6 +43,7 @@ export interface StoreSchema {
     windowBounds: WindowBounds;
     locale: string;
     notificationApiEndpoint: string;
+    savedConfigs?: SavedConfig[];
     // Legacy fields for backward compatibility
     minimizeToTray?: boolean;
     backgroundStart?: boolean;

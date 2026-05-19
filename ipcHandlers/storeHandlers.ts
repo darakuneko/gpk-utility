@@ -6,7 +6,7 @@ import { ipcMain, BrowserWindow } from "electron";
 import type Store from 'electron-store';
 
 import { updateAutoLayerSettings } from '../gpkrc';
-import type { StoreSchema } from '../src/types/store';
+import type { StoreSchema, SavedConfig } from '../src/types/store';
 import type { StoreSettings, AutoLayerSetting } from '../preload/types';
 import type { 
     SaveResult, 
@@ -359,6 +359,53 @@ export const setupStoreHandlers = (): void => {
             return { success: true };
         } catch (error) {
             console.error('Error opening external link:', error);
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+
+    // List all saved configs
+    ipcMain.handle('listSavedConfigs', async (): Promise<SavedConfig[]> => {
+        return store.get('savedConfigs') || [];
+    });
+
+    // Save a config slot (add or replace by id)
+    ipcMain.handle('saveConfig', async (_event, entry: SavedConfig): Promise<SaveResult> => {
+        try {
+            const current = store.get('savedConfigs') || [];
+            const idx = current.findIndex((c): boolean => c.id === entry.id);
+            if (idx !== -1) {
+                current[idx] = entry;
+            } else {
+                current.push(entry);
+            }
+            store.set('savedConfigs', current);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+
+    // Delete a config slot by id
+    ipcMain.handle('deleteConfig', async (_event, id: string): Promise<SaveResult> => {
+        try {
+            const current = store.get('savedConfigs') || [];
+            store.set('savedConfigs', current.filter((c): boolean => c.id !== id));
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+
+    // Rename a config slot
+    ipcMain.handle('renameConfig', async (_event, id: string, name: string): Promise<SaveResult> => {
+        try {
+            const current = store.get('savedConfigs') || [];
+            const idx = current.findIndex((c): boolean => c.id === id);
+            if (idx === -1) return { success: false, error: 'Config not found' };
+            current[idx] = { ...current[idx]!, name };
+            store.set('savedConfigs', current);
+            return { success: true };
+        } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });

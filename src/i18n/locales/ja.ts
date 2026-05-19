@@ -134,6 +134,16 @@ const jaMessages: LocaleMessages = {
     enableDesktopNotifications: 'デスクトップ通知',
     enableHapticNotifications: '振動フィードバック通知'
   },
+  data: {
+    tabLabel: 'データ',
+    settingsTabLabel: '設定',
+    saveHint: 'マウス・スクロール・ジェスチャーを保存',
+    save: '保存',
+    saveList: '保存リスト',
+    load: 'ロード',
+    deleteConfirm: 'この保存を削除しますか？',
+    noSaves: '保存済み設定がありません'
+  },
   led: {
     title: 'LED設定',
     mouseSpeedAccel: 'マウス速度加速',
