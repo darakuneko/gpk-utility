@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
-import type { JSX } from 'react';
 import { SketchPicker } from 'react-color';
 import type { ColorResult } from 'react-color';
+
+import React, { useState, useEffect, useMemo } from "react";
+import type { JSX } from 'react';
 
 import { useLanguage } from "../../i18n/LanguageContext.tsx";
 import type { Device, RgbColor } from "../../types/device";

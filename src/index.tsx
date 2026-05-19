@@ -1,6 +1,7 @@
+import { createRoot } from 'react-dom/client'
+
 import React, { useState, useEffect } from "react"
 import type { JSX } from 'react'
-import { createRoot } from 'react-dom/client'
 
 import Content from "./content.tsx"
 import { AppProvider } from "./context.tsx"

@@ -120,7 +120,7 @@ const getDeviceConfig = async (device: Device, retryCount: number = 0): Promise<
                 }
                 hidDeviceInstances[id] = null;
             }
-            throw new Error(`HID instance not ready for ${id}: ${(hidCheckError as Error).message}`);
+            throw new Error(`HID instance not ready for ${id}: ${(hidCheckError as Error).message}`, { cause: hidCheckError });
         }
         
         // Wait a bit before attempting communication to ensure device is ready

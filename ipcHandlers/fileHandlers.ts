@@ -48,7 +48,7 @@ const importFile = async (): Promise<string | null> => {
             return fileContent;
         } catch (readErr) {
             console.error(`Error reading file ${filePath}:`, readErr);
-            throw new Error(`Failed to read file: ${readErr instanceof Error ? readErr.message : String(readErr)}`);
+            throw new Error(`Failed to read file: ${readErr instanceof Error ? readErr.message : String(readErr)}`, { cause: readErr });
         }
     } catch {
         console.error("Error in import file dialog");

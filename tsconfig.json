@@ -25,10 +25,10 @@
     "sourceMap": true,
     "inlineSources": true,
     "sourceRoot": "/",
-    "baseUrl": ".",
+    "allowArbitraryExtensions": true,
     "paths": {
-      "@/*": ["src/*"],
-      "@types/*": ["src/types/*"]
+      "@/*": ["./src/*"],
+      "@types/*": ["./src/types/*"]
     }
   },
   "include": [
