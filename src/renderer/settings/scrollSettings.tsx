@@ -9,16 +9,16 @@ interface ScrollSettingsProps {
   handleChange: (property: string, deviceId: string) => (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSliderStart: () => void;
   handleSliderEnd: () => void;
+  disabled?: boolean;
 }
 
-const ScrollSettings: React.FC<ScrollSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd }): React.ReactElement => {
+const ScrollSettings: React.FC<ScrollSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, disabled }): React.ReactElement => {
   const { t } = useLanguage();
-      
-  // Ensure that the device's trackpad settings exist
+
   const trackpadConfig: TrackpadConfig = device.config?.trackpad || {};
-  
+
   return (
-    <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
+    <div className={`w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs${disabled ? ' opacity-50 pointer-events-none select-none' : ''}`}>
       <div className="flex flex-wrap items-center gap-6 mb-3">
         <div className="pt-2 w-[45%]">
           <label className="block mb-1 text-gray-900 dark:text-white">{t('scroll.reverseDirection')}</label>

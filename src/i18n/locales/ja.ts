@@ -78,7 +78,10 @@ const jaMessages: LocaleMessages = {
     actions: 'アクション',
     noMappingsFound: 'マッピングが見つかりません。「マッピングを追加」をクリックして新しいマッピングを作成してください。',
     application: 'アプリケーション',
-    layer: 'レイヤー'
+    layer: 'レイヤー',
+    config: '設定',
+    noConfig: '--- なし ---',
+    autoLayerOnDisabled: '自動レイヤー切替がONの間は編集不可'
   },
   timer: {
     title: 'ポモドーロタイマー',

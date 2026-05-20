@@ -1,15 +1,17 @@
 import Store from 'electron-store';
 
-import type { 
-    DeviceStatus, 
-    AutoLayerSettings, 
-    LayerSetting, 
+import type {
+    DeviceStatus,
+    AutoLayerSettings,
+    LayerSetting,
     ActiveWindowResult,
-    WriteCommandFunction 
+    WriteCommandFunction
 } from '../src/types/device';
-import type { StoreSchema } from '../src/types/store';
+import type { StoreSchema, SavedConfig } from '../src/types/store';
 
 import { commandId, actionId, parseDeviceId } from './communication';
+import { buildTrackpadConfigByteArray } from './trackpadConfig';
+import { DeviceType } from './deviceTypes';
 
 // Dependency injection
 interface WindowMonitoringDependencies {
@@ -27,8 +29,6 @@ let dependencies: WindowMonitoringDependencies | null = null;
 
 export const injectWindowMonitoringDependencies = (deps: WindowMonitoringDependencies): void => {
     dependencies = deps;
-    
-    // Clean up any undefined entries in activeWindows
     for (let i = activeWindows.length - 1; i >= 0; i--) {
         if (!activeWindows[i]) {
             activeWindows.splice(i, 1);
@@ -36,9 +36,13 @@ export const injectWindowMonitoringDependencies = (deps: WindowMonitoringDepende
     }
 };
 
+const CURRENT_CONFIG_NAME = 'current';
+
 // Store active windows history
 export const activeWindows: string[] = [];
-export const currentLayers: { [deviceId: string]: number } = {}; // Track current layer for each device
+export const currentLayers: { [deviceId: string]: number } = {};
+const previousAutoLayerEnabled: { [deviceId: string]: boolean } = {};
+const lastAppliedSavedConfigId: { [deviceId: string]: string | null } = {};
 
 // ActiveWindow type definition
 interface ActiveWindowModule {
@@ -89,53 +93,107 @@ export const startWindowMonitoring = async (ActiveWindow: ActiveWindowModule): P
     }
 };
 
-// Switch layers based on active application
+const applyTempSavedConfig = (id: string, deviceInfo: ReturnType<typeof parseDeviceId>, savedConfigId: string | null, savedConfigs: SavedConfig[]): void => {
+    if (!deviceInfo || !dependencies) return;
+
+    const { writeCommand, deviceStatusMap } = dependencies;
+    let config: SavedConfig | undefined;
+
+    if (savedConfigId) {
+        config = savedConfigs.find((c): boolean => c.id === savedConfigId);
+    } else {
+        config = savedConfigs.find((c): boolean => c.name === CURRENT_CONFIG_NAME && c.deviceId === id);
+    }
+
+    if (!config?.config?.trackpad) return;
+
+    const effectiveId = savedConfigId !== null ? savedConfigId : (CURRENT_CONFIG_NAME + ':' + id);
+    if (lastAppliedSavedConfigId[id] === effectiveId) return;
+
+    try {
+        const baseTrackpad = (deviceStatusMap[id] as DeviceStatus)?.config?.trackpad ?? {};
+        const mergedTrackpad = { ...baseTrackpad, ...config.config.trackpad };
+        const bytes = buildTrackpadConfigByteArray(mergedTrackpad);
+        writeCommand(deviceInfo, [commandId.gpkRCOperation, actionId.trackpadTempApply, ...bytes])
+            .then((result): void => {
+                if (result.success) {
+                    lastAppliedSavedConfigId[id] = effectiveId;
+                } else {
+                    console.error(`Error applying temp config for device ${id}:`, result.error);
+                }
+            }).catch((err: Error): void => {
+                console.error(`Error applying temp config for device ${id}:`, err);
+            });
+    } catch (err) {
+        console.error(`Failed to apply temp config for device ${id}:`, err);
+    }
+};
+
 export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
     if (!appName || !dependencies) return;
-    
+
     const { deviceStatusMap, settingsStore, writeCommand } = dependencies;
-    
+
     if (!settingsStore) return;
-    
+
+    const savedConfigs: SavedConfig[] = settingsStore.get('savedConfigs') || [];
+    const autoLayerSettings: AutoLayerSettings = settingsStore.get('autoLayerSettings') || {};
+
     Object.keys(deviceStatusMap).forEach((id): void => {
         const device = deviceStatusMap[id] as DeviceStatus;
         if (!device || !device.connected) {
             return;
         }
-    
-        const autoLayerSettings: AutoLayerSettings = settingsStore.get('autoLayerSettings') || {};
-        const settings = autoLayerSettings[id];
 
-        if (!settings || !settings.enabled || !Array.isArray(settings.layerSettings) || !settings.layerSettings.length) {
+        const isTrackpadDevice = device.deviceType === DeviceType.KEYBOARD_TP ||
+                                 device.deviceType === DeviceType.MACROPAD_TP ||
+                                 device.deviceType === DeviceType.MACROPAD_TP_BTNS;
+        if (!isTrackpadDevice) return;
+
+        const settings = autoLayerSettings[id];
+        const isEnabled = settings?.enabled ?? false;
+        const wasEnabled = previousAutoLayerEnabled[id] ?? false;
+
+        if (wasEnabled && !isEnabled) {
+            const deviceInfo = parseDeviceId(id);
+            if (deviceInfo) {
+                lastAppliedSavedConfigId[id] = null;
+                applyTempSavedConfig(id, deviceInfo, null, savedConfigs);
+            }
+        }
+        previousAutoLayerEnabled[id] = isEnabled;
+
+        if (!isEnabled || !Array.isArray(settings?.layerSettings) || !settings.layerSettings.length) {
             return;
         }
-        
+
         // Find matching setting for the current application
-        const matchingSetting = settings.layerSettings.find((s: LayerSetting): boolean => 
+        const matchingSetting = settings.layerSettings.find((s: LayerSetting): boolean =>
             s.applicationName === appName || s.appName === appName
         );
         const deviceInfo = parseDeviceId(id);
-        
+
         if (!deviceInfo) {
             return;
         }
-        
-        // Initialize current layer tracking if needed
+
         if (currentLayers[id] === undefined) {
             currentLayers[id] = 0;
         }
-        
-        // Determine target layer (0 is default if no matching setting)
+
         const targetLayer = matchingSetting ? (matchingSetting.layer || 0) : 0;
         const currentLayer = currentLayers[id];
-        
-        // Only switch if current layer is different
+        const savedConfigId = matchingSetting?.savedConfigId ?? null;
+
         if (currentLayer !== targetLayer) {
             try {
                 writeCommand(deviceInfo, [commandId.gpkRCOperation, actionId.layerMove, targetLayer])
                     .then((result): void => {
                         if (result.success) {
                             currentLayers[id] = targetLayer;
+                            setTimeout((): void => {
+                                applyTempSavedConfig(id, deviceInfo, savedConfigId, savedConfigs);
+                            }, 500);
                         } else {
                             console.error(`Error switching layer for device ${id}:`, result.error);
                         }
@@ -145,6 +203,8 @@ export const checkAndSwitchLayer = async (appName: string): Promise<void> => {
             } catch (err) {
                 console.error(`Failed to initiate layer switch for device ${id}:`, err);
             }
+        } else {
+            applyTempSavedConfig(id, deviceInfo, savedConfigId, savedConfigs);
         }
     });
 };
@@ -214,5 +274,11 @@ export const addNewAppToAutoLayerSettings = async (deviceId: string, appName: st
 export const cleanupDeviceLayerTracking = (deviceId: string): void => {
     if (currentLayers[deviceId] !== undefined) {
         delete currentLayers[deviceId];
+    }
+    if (previousAutoLayerEnabled[deviceId] !== undefined) {
+        delete previousAutoLayerEnabled[deviceId];
+    }
+    if (lastAppliedSavedConfigId[deviceId] !== undefined) {
+        delete lastAppliedSavedConfigId[deviceId];
     }
 };

@@ -206,6 +206,7 @@ export interface LayerSetting {
     applicationName: string;
     appName: string;
     layer: number;
+    savedConfigId?: string;
 }
 
 export interface ActiveWindowResult {

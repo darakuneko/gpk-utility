@@ -80,6 +80,9 @@ export interface LocaleMessages {
     noMappingsFound: string;
     application: string;
     layer: string;
+    config: string;
+    noConfig: string;
+    autoLayerOnDisabled: string;
   };
   timer: {
     title: string;

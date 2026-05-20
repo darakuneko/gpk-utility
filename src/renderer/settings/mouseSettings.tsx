@@ -9,16 +9,16 @@ interface MouseSettingsProps {
   handleChange: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
   handleSliderStart: () => void;
   handleSliderEnd: () => void;
+  disabled?: boolean;
 }
 
-const MouseSettings: React.FC<MouseSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd }): React.ReactElement => {
+const MouseSettings: React.FC<MouseSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, disabled }): React.ReactElement => {
   const { t } = useLanguage();
-  
-  // Ensure that the device's trackpad settings exist
+
   const trackpadConfig: TrackpadConfig = device.config?.trackpad || {};
-  
+
   return (
-    <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
+    <div className={`w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs${disabled ? ' opacity-50 pointer-events-none select-none' : ''}`}>
       <div className="flex items-center justify-center mb-3">
         <div className="pt-4 w-full">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">

@@ -25,7 +25,8 @@ export const actionId = {
 
     // Actions for gpkRCOperation (commandId: 0x04)
     layerMove: 0x01,
-    oledWrite: 0x02,    
+    oledWrite: 0x02,
+    trackpadTempApply: 0x03,
 } as const;
 
 export const PACKET_PADDING = 64;

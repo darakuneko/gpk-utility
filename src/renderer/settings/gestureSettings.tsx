@@ -10,16 +10,16 @@ interface GestureSettingsProps {
   handleChange: (configKey: string, deviceId: string) => (e: { target: { value: string | number } }) => void;
   handleSliderStart: () => void;
   handleSliderEnd: () => void;
+  disabled?: boolean;
 }
 
-const GestureSettings: React.FC<GestureSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd }): JSX.Element => {
+const GestureSettings: React.FC<GestureSettingsProps> = ({ device, handleChange, handleSliderStart, handleSliderEnd, disabled }): JSX.Element => {
   const { t } = useLanguage();
-  
-  // Get trackpad configuration or empty object if not defined
+
   const trackpadConfig = device.config?.trackpad || {};
-  
+
   return (
-    <div className="w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs">
+    <div className={`w-full bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-xs${disabled ? ' opacity-50 pointer-events-none select-none' : ''}`}>
       <div className="flex flex-wrap items-center gap-6 mb-6">
         <div className="pt-2 w-[45%]">
           <label className="flex justify-between items-center mb-1 text-gray-900 dark:text-white">

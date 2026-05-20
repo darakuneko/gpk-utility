@@ -78,7 +78,10 @@ const enMessages: LocaleMessages = {
     actions: 'Actions',
     noMappingsFound: 'No mappings found. Click "Add Mapping" to create a new mapping.',
     application: 'Application',
-    layer: 'Layer'
+    layer: 'Layer',
+    config: 'Config',
+    noConfig: '--- None ---',
+    autoLayerOnDisabled: 'Disabled while Auto Layer Switching is ON'
   },
   timer: {
     title: 'Pomodoro Timer',

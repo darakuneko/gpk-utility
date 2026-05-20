@@ -6,10 +6,11 @@ import {
     savePomodoroConfigData,
     saveLedConfig,
     saveLedLayerConfig,
-    updateAutoLayerSettings
+    updateAutoLayerSettings,
+    buildTrackpadConfigByteArray
 } from '../gpkrc';
 import type { StoreSchema } from '../src/types/store';
-import type { Device, TrackpadConfig, PomodoroConfig } from '../src/types/device';
+import type { Device, PomodoroConfig } from '../src/types/device';
 
 let mainWindow: BrowserWindow | null;
 let store: Store<StoreSchema>;
@@ -23,49 +24,6 @@ export const setStore = (storeInstance: Store<StoreSchema>): void => {
 };
 
 
-// Convert trackpad config object to byte array for device communication
-const buildTrackpadConfigByteArray = (trackpadConfig: TrackpadConfig): number[] => {
-    const byteArray = new Array(19); // 19 bytes for updated trackpad config
-    const upper_scroll_term = (trackpadConfig.scroll_term! & 0b1111110000) >> 4;
-    const lower_drag_term = (trackpadConfig.drag_term! & 0b1111000000) >> 6;
-    const lower_default_speed = (trackpadConfig.default_speed! & 0b110000) >> 4;
-    byteArray[0] = trackpadConfig.hf_waveform_number!;
-    byteArray[1] = trackpadConfig.can_hf_for_layer! << 7 |
-        trackpadConfig.can_drag! << 6 |
-        upper_scroll_term;
-    byteArray[2] = (trackpadConfig.scroll_term! & 0b0000001111) << 4 | lower_drag_term;
-    byteArray[3] = (trackpadConfig.drag_term! & 0b0000111111) << 2 |
-        trackpadConfig.can_trackpad_layer! << 1 |
-        trackpadConfig.can_reverse_scrolling_direction!;
-    byteArray[4] = trackpadConfig.drag_strength_mode! << 7 |
-        trackpadConfig.drag_strength! << 2 |
-        lower_default_speed;
-    byteArray[5] = (trackpadConfig.default_speed! & 0b001111) << 4 |
-        trackpadConfig.scroll_step!;
-    byteArray[6] = trackpadConfig.can_short_scroll! << 7 |
-        trackpadConfig.can_reverse_h_scrolling_direction! << 6;
-    
-    // Updated for 2-byte values - high byte, low byte for each value
-    byteArray[7] = (trackpadConfig.tap_term || 0) >> 8;     
-    byteArray[8] = (trackpadConfig.tap_term || 0) & 0xFF;   
-    
-    byteArray[9] = (trackpadConfig.swipe_term || 0) >> 8;    
-    byteArray[10] = (trackpadConfig.swipe_term || 0) & 0xFF; 
-    
-    byteArray[11] = (trackpadConfig.pinch_term || 0) >> 8;    
-    byteArray[12] = (trackpadConfig.pinch_term || 0) & 0xFF;  
-    
-    byteArray[13] = (trackpadConfig.gesture_term || 0) >> 8;    
-    byteArray[14] = (trackpadConfig.gesture_term || 0) & 0xFF;  
-    
-    byteArray[15] = (trackpadConfig.short_scroll_term || 0) >> 8;        
-    byteArray[16] = (trackpadConfig.short_scroll_term || 0) & 0xFF;  
-    
-    byteArray[17] = (trackpadConfig.pinch_distance || 0) >> 8;        
-    byteArray[18] = (trackpadConfig.pinch_distance || 0) & 0xFF;  
-    
-    return byteArray;
-};
 
 // Convert pomodoro config object to byte array for device communication
 const buildPomodoroConfigByteArray = (pomodoroConfig: PomodoroConfig): number[] => {

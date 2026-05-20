@@ -51,6 +51,41 @@ export function receiveTrackpadSpecificConfig(buffer: number[]): TrackpadConfig 
     };
 }
 
+export const buildTrackpadConfigByteArray = (trackpadConfig: TrackpadConfig): number[] => {
+    const byteArray = new Array(19);
+    const upper_scroll_term = ((trackpadConfig.scroll_term || 0) & 0b1111110000) >> 4;
+    const lower_drag_term = ((trackpadConfig.drag_term || 0) & 0b1111000000) >> 6;
+    const lower_default_speed = ((trackpadConfig.default_speed || 0) & 0b110000) >> 4;
+    byteArray[0] = trackpadConfig.hf_waveform_number || 0;
+    byteArray[1] = (trackpadConfig.can_hf_for_layer || 0) << 7 |
+        (trackpadConfig.can_drag || 0) << 6 |
+        upper_scroll_term;
+    byteArray[2] = ((trackpadConfig.scroll_term || 0) & 0b0000001111) << 4 | lower_drag_term;
+    byteArray[3] = ((trackpadConfig.drag_term || 0) & 0b0000111111) << 2 |
+        (trackpadConfig.can_trackpad_layer || 0) << 1 |
+        (trackpadConfig.can_reverse_scrolling_direction || 0);
+    byteArray[4] = (trackpadConfig.drag_strength_mode || 0) << 7 |
+        (trackpadConfig.drag_strength || 0) << 2 |
+        lower_default_speed;
+    byteArray[5] = ((trackpadConfig.default_speed || 0) & 0b001111) << 4 |
+        (trackpadConfig.scroll_step || 0);
+    byteArray[6] = (trackpadConfig.can_short_scroll || 0) << 7 |
+        (trackpadConfig.can_reverse_h_scrolling_direction || 0) << 6;
+    byteArray[7] = (trackpadConfig.tap_term || 0) >> 8;
+    byteArray[8] = (trackpadConfig.tap_term || 0) & 0xFF;
+    byteArray[9] = (trackpadConfig.swipe_term || 0) >> 8;
+    byteArray[10] = (trackpadConfig.swipe_term || 0) & 0xFF;
+    byteArray[11] = (trackpadConfig.pinch_term || 0) >> 8;
+    byteArray[12] = (trackpadConfig.pinch_term || 0) & 0xFF;
+    byteArray[13] = (trackpadConfig.gesture_term || 0) >> 8;
+    byteArray[14] = (trackpadConfig.gesture_term || 0) & 0xFF;
+    byteArray[15] = (trackpadConfig.short_scroll_term || 0) >> 8;
+    byteArray[16] = (trackpadConfig.short_scroll_term || 0) & 0xFF;
+    byteArray[17] = (trackpadConfig.pinch_distance || 0) >> 8;
+    byteArray[18] = (trackpadConfig.pinch_distance || 0) & 0xFF;
+    return byteArray;
+};
+
 export const saveTrackpadConfig = async (device: Device, trackpadDataBytes: number[]): Promise<CommandResult> => {
     if (!writeCommandFunction) {
         throw new Error("WriteCommand function not injected in trackpadConfig");

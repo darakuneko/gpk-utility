@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { JSX } from 'react';
 
 import type { Device, DeviceConfig } from '../types/device';
@@ -28,6 +28,17 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
     const device = props.device;
     const [isSliderActive, setIsSliderActive] = useState(false);
     const [pendingChanges, setPendingChanges] = useState<{ device?: Device; pType?: string }>({});
+    const [autoLayerEnabled, setAutoLayerEnabled] = useState(false);
+
+    useEffect((): void => {
+        const load = async (): Promise<void> => {
+            if (!api?.getAllStoreSettings) return;
+            const settings = await api.getAllStoreSettings();
+            const autoLayer = settings?.autoLayerSettings as Record<string, { enabled?: boolean } | undefined> | undefined;
+            setAutoLayerEnabled(autoLayer?.[device.id]?.enabled ?? false);
+        };
+        void load();
+    }, [device.id]);
     
     // Get active tab from parent component
     const activeTab = props.activeTab || "mouse";
@@ -307,6 +318,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                                 handleChange={handleChangeValue}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
+                                disabled={autoLayerEnabled}
                             />
                         )}
 
@@ -314,6 +326,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                         {activeTab === "layer" && (
                             <LayerSettings
                                 device={device}
+                                onAutoLayerEnabledChange={setAutoLayerEnabled}
                             />
                         )}
 
@@ -324,6 +337,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                                 handleChange={handleChange}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
+                                disabled={autoLayerEnabled}
                             />
                         )}
 
@@ -364,6 +378,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                                 handleChange={handleChangeValue}
                                 handleSliderStart={handleSliderStart}
                                 handleSliderEnd={handleSliderEnd}
+                                disabled={autoLayerEnabled}
                             />
                         )}
 

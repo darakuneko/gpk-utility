@@ -35,12 +35,13 @@ import {
     updateAutoLayerSettings
 } from './gpkrc-modules/deviceManagement';
 import { 
-    joinScrollTerm, 
-    joinDragTerm, 
-    joinDefaultSpeed, 
-    receiveTrackpadSpecificConfig, 
-    saveTrackpadConfig, 
-    getTrackpadConfigData 
+    joinScrollTerm,
+    joinDragTerm,
+    joinDefaultSpeed,
+    receiveTrackpadSpecificConfig,
+    saveTrackpadConfig,
+    buildTrackpadConfigByteArray,
+    getTrackpadConfigData
 } from './gpkrc-modules/trackpadConfig';
 import { 
     receivePomodoroConfig, 
@@ -219,7 +220,7 @@ export { getSelectedAppSettings, addNewAppToAutoLayerSettings };
 export { encodeDeviceId, parseDeviceId };
 export { getDeviceInitConfig, getDeviceConfig, writeTimeToOled, getPomodoroConfig };
 export { getDeviceType };
-export { saveTrackpadConfig, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData, getLedConfig, getLedLayerConfig, saveLedConfig, saveLedLayerConfig };
+export { saveTrackpadConfig, buildTrackpadConfigByteArray, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData, getLedConfig, getLedLayerConfig, saveLedConfig, saveLedLayerConfig };
 
 // Export additional functions and variables that were in the original file
 export { deviceStatusMap, hidDeviceInstances, activeTabPerDevice, isEditingPomodoroPerDevice, settingsStore };
