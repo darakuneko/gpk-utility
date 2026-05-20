@@ -241,6 +241,9 @@ export const exposeAPI = (): void => {
         saveConfig: async (entry: SavedConfig): Promise<ImportResult> => {
             return await ipcRenderer.invoke('saveConfig', entry);
         },
+        applyTrackpadTemp: async (device: Device): Promise<{ success: boolean; error?: string }> => {
+            return await ipcRenderer.invoke('applyTrackpadTemp', device);
+        },
         loadConfig: async (entry: SavedConfig): Promise<ImportResult> => {
             try {
                 const device = cachedDeviceRegistry.find((d): boolean => d.id === entry.deviceId);

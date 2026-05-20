@@ -9,18 +9,20 @@ import {
 import { useLanguage } from "../../i18n/LanguageContext.tsx";
 import type { LayerSetting, ActiveWindowResult, Device, DeviceConfig, AutoLayerSettings, TrackpadConfig } from "../../types/device";
 import type { SavedConfig } from "../../types/store";
+import { BASELINE_CONFIG_NAME } from "../../types/store";
 import { DeviceType } from '../../../gpkrc-modules/deviceTypes';
+import DataTab from "../DataTab.tsx";
 
 const { api } = window;
 
-const CURRENT_CONFIG_NAME = 'current';
-
 interface LayerSettingsProps {
     device: Device;
+    isConfigEditMode?: boolean;
     onAutoLayerEnabledChange?: (enabled: boolean) => void;
+    onConfigEditModeChange?: (enabled: boolean) => void;
 }
 
-const LayerSettings: React.FC<LayerSettingsProps> = ({ device, onAutoLayerEnabledChange }): JSX.Element => {
+const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode = false, onAutoLayerEnabledChange, onConfigEditModeChange }): JSX.Element => {
     const { state, setState } = useStateContext();
     const { t } = useLanguage();
     const [layerSettings, setLayerSettings] = useState<LayerSetting[]>([]);
@@ -119,28 +121,35 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, onAutoLayerEnable
         });
     }, [device.id]);
 
+    // Snapshot the live trackpad config as the auto-layer-off baseline (restored on edit-mode exit
+    // and used as the fallback config for apps without a layer mapping).
+    const persistBaseline = async (): Promise<void> => {
+        if (!device.config?.trackpad) return;
+        const existing = savedConfigs.find((c): boolean => c.name === BASELINE_CONFIG_NAME);
+        const entry: SavedConfig = {
+            id: existing?.id ?? crypto.randomUUID(),
+            name: BASELINE_CONFIG_NAME,
+            deviceId: device.id,
+            config: { trackpad: { ...device.config.trackpad, auto_layer_enabled: 0 }, pomodoro: {} },
+            savedAt: Date.now()
+        };
+        await api.saveConfig(entry);
+        setSavedConfigs((prev): SavedConfig[] => [
+            ...prev.filter((c): boolean => c.name !== BASELINE_CONFIG_NAME),
+            entry
+        ]);
+    };
+
     const handleToggleEnabled = async (e: React.ChangeEvent<HTMLInputElement> | { target: { checked: boolean } }): Promise<void> => {
         const enabled = e.target.checked ? 1 : 0;
         setIsEnabled(enabled === 1);
+        if (enabled === 1 && isConfigEditMode) {
+            onConfigEditModeChange?.(false);
+        }
 
-        if (!e.target.checked && device.config?.trackpad) {
-            const src = device.config.trackpad;
-            const trackpad: TrackpadConfig = { ...src };
-
-            const existingCurrent = savedConfigs.find((c): boolean => c.name === CURRENT_CONFIG_NAME);
-            const entry: SavedConfig = {
-                id: existingCurrent?.id ?? crypto.randomUUID(),
-                name: CURRENT_CONFIG_NAME,
-                deviceId: device.id,
-                config: { trackpad, pomodoro: {} },
-                savedAt: Date.now()
-            };
+        if (!e.target.checked) {
             try {
-                await api.saveConfig(entry);
-                setSavedConfigs((prev): SavedConfig[] => {
-                    const filtered = prev.filter((c): boolean => c.name !== CURRENT_CONFIG_NAME);
-                    return [...filtered, entry];
-                });
+                await persistBaseline();
             } catch {
                 // ignore save errors
             }
@@ -315,6 +324,63 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, onAutoLayerEnable
         return config?.name ?? '---';
     };
 
+    const handleToggleConfigEditMode = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+        const enabled = e.target.checked;
+        onConfigEditModeChange?.(enabled);
+
+        if (!enabled) {
+            // Restore the device to the pre-edit baseline captured when edit mode turned on.
+            // Fetch fresh rather than reading savedConfigs state: on a tab-switch remount the
+            // state may not have reloaded yet, but the baseline is always persisted in the store.
+            const all = await api.listSavedConfigs();
+            const baseline = all.find((c): boolean => c.name === BASELINE_CONFIG_NAME && c.deviceId === device.id);
+            if (baseline?.config?.trackpad && device.config?.trackpad) {
+                const restoredTrackpad: TrackpadConfig = {
+                    ...baseline.config.trackpad,
+                    auto_layer_enabled: 0,
+                    auto_layer_settings: device.config.trackpad.auto_layer_settings ?? []
+                };
+                const updatedDevice: Device = {
+                    ...device,
+                    config: { ...device.config, trackpad: restoredTrackpad } as DeviceConfig
+                };
+                try {
+                    await api.dispatchSaveDeviceConfig(updatedDevice, ['trackpad']);
+                } catch {
+                    // ignore device write errors
+                }
+                setState({
+                    ...state,
+                    devices: state.devices.map((d): Device => d.id === device.id ? updatedDevice : d)
+                });
+            }
+            return;
+        }
+
+        const tasks: Promise<unknown>[] = [
+            persistBaseline().catch((): void => { /* ignore save errors */ })
+        ];
+
+        if (isEnabled) {
+            setIsEnabled(false);
+            onAutoLayerEnabledChange?.(false);
+            const updatedDevice: Device = {
+                ...device,
+                config: {
+                    ...(device.config ?? { pomodoro: {}, trackpad: {} }),
+                    trackpad: { ...(device.config?.trackpad ?? {}), auto_layer_enabled: 0 }
+                } as DeviceConfig
+            };
+            setState({
+                ...state,
+                devices: state.devices.map((d): Device => d.id === device.id ? updatedDevice : d)
+            });
+            tasks.push(saveSettingsToStore(false, layerSettings));
+        }
+
+        await Promise.all(tasks);
+    };
+
     const _handleEditMode = (): void => {
         setIsEditing(!isEditing);
     };
@@ -355,7 +421,22 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, onAutoLayerEnable
                     </div>
                 </div>
 
-                {isEnabled ? (
+                <div className="flex items-center mb-4">
+                    <div className="flex-1">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.configEditMode')}</h3>
+                    </div>
+                    <div className="ml-4">
+                        <CustomSwitch
+                            id="config-edit-mode"
+                            onChange={handleToggleConfigEditMode}
+                            checked={isConfigEditMode}
+                        />
+                    </div>
+                </div>
+
+                {isConfigEditMode ? (
+                    <DataTab device={device} />
+                ) : isEnabled ? (
                     <div className="mt-4">
                         <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">{t('layer.currentMappings')}</h4>
                         {layerSettings.length > 0 ? (

@@ -90,6 +90,7 @@ declare global {
       // Saved config slots
       listSavedConfigs: () => Promise<SavedConfig[]>;
       saveConfig: (entry: SavedConfig) => Promise<SaveResult>;
+      applyTrackpadTemp: (device: Device) => Promise<{ success: boolean; error?: string }>;
       loadConfig: (entry: SavedConfig) => Promise<ImportResult>;
       deleteConfig: (id: string) => Promise<SaveResult>;
       renameConfig: (id: string, name: string) => Promise<SaveResult>;

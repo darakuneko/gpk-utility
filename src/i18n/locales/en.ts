@@ -7,7 +7,8 @@ const enMessages: LocaleMessages = {
     saveComplete: 'Settings saved successfully',
     saveError: 'Error saving settings',
     ok: 'OK',
-    delete: 'Delete'
+    delete: 'Delete',
+    deleteConfirm: 'Delete?'
   },
   about: {
     title: 'About',
@@ -81,7 +82,8 @@ const enMessages: LocaleMessages = {
     layer: 'Layer',
     config: 'Config',
     noConfig: '--- None ---',
-    autoLayerOnDisabled: 'Disabled while Auto Layer Switching is ON'
+    autoLayerOnDisabled: 'Disabled while Auto Layer Switching is ON',
+    configEditMode: 'Config Edit Mode'
   },
   timer: {
     title: 'Pomodoro Timer',
@@ -138,16 +140,13 @@ const enMessages: LocaleMessages = {
     enableHapticNotifications: 'Haptic Feedback Notifications'
   },
   data: {
-    tabLabel: 'Data',
-    settingsTabLabel: 'Settings',
     saveHint: 'Mouse / Scroll / Gesture',
     save: 'Save',
-    saveList: 'Save list',
-    load: 'Load',
-    deleteConfirm: 'Delete this save?',
+    overwriteConfirm: 'Overwrite?',
+    apply: 'Apply',
+    applyConfirm: 'Apply?',
     noSaves: 'No saved configs',
     current: 'Current',
-    overwriteConfirm: 'A save with this name already exists. Overwrite?',
     view: 'View'
   },
   led: {

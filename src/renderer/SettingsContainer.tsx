@@ -8,10 +8,11 @@ import { CustomSlider } from "../components/CustomComponents.tsx"
 import UpdatesNotificationModal from "../components/UpdatesNotificationModal.tsx"
 import VersionModal from "../components/VersionModal.tsx"
 
-import DataTab from "./DataTab.tsx"
 import SettingEdit from "./settingEdit.tsx"
 import { HamburgerIcon, MenuItem, LeftMenuItem } from "./SettingsUIComponents.tsx"
 import { getSupportedSettingTabs } from "./SettingsDeviceUtils.ts"
+
+const CONFIG_EDIT_ALLOWED_TABS = new Set(['mouse', 'scroll', 'gesture', 'layer']);
 
 interface SettingsContainerProps {
     saveStatus?: {
@@ -25,8 +26,8 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
     const DeviceType = useDeviceType();
     const { t, locale, changeLocale, isLoading: _isLoading } = useLanguage();
     
-    const [activeMainTab, setActiveMainTab] = useState<'settings' | 'data'>('settings')
     const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null)
+    const [isConfigEditMode, setIsConfigEditMode] = useState(false)
     const [activeSettingTab, setActiveSettingTab] = useState("mouse")
     const [userSelectedTab, setUserSelectedTab] = useState(false) // Flag to track manual tab selection
     const [menuOpen, setMenuOpen] = useState(false)
@@ -224,7 +225,9 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
     // Get setting tabs for current device
     const getSettingTabs = (): Array<{ id: string; label: string }> => {
         const device = getActiveDevice();
-        return getSupportedSettingTabs(device, t, DeviceType);
+        const all = getSupportedSettingTabs(device, t, DeviceType);
+        if (!isConfigEditMode) return all;
+        return all.filter((tab): boolean => CONFIG_EDIT_ALLOWED_TABS.has(tab.id));
     }
 
     // Handler to close menu when clicking outside
@@ -247,15 +250,9 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
     const handleShowUpdatesNotifications = async (): Promise<void> => {
         try {
             const result = await window.api.getCachedNotifications();
-            if (result && result.length > 0) {
-                setUpdates(result);
-                setIsUpdatesNotificationModalOpen(true);
-                setMenuOpen(false);
-            } else {
-                // No updates to show
-                alert(t('updatesNotification.noNotification'));
-                setMenuOpen(false);
-            }
+            setUpdates(result ?? []);
+            setIsUpdatesNotificationModalOpen(true);
+            setMenuOpen(false);
         } catch (error) {
             console.error("Failed to load updates:", error);
         }
@@ -279,6 +276,8 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
 
     // Check if no devices at all (not even attempting to connect)
     const hasNoDevicesAtAll = !state.devices || state.devices.length === 0;
+
+    const settingTabs = getSettingTabs();
 
     return (
         <div className="bg-card-bg dark:bg-card-bg rounded-lg shadow-xs">
@@ -333,24 +332,7 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                     {/* Dropdown Menu */}
                     {menuOpen && (
                         <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 shadow-lg rounded-md z-10 border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            {/* Settings / Data tabs */}
-                            <div className="flex border-b border-gray-200 dark:border-gray-700">
-                                {(['settings', 'data'] as const).map((tab): JSX.Element => {
-                                    const active = activeMainTab === tab;
-                                    return (
-                                        <button
-                                            key={tab}
-                                            className={`flex-1 py-2 text-sm font-medium ${active ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                                            onClick={(): void => setActiveMainTab(tab)}
-                                        >
-                                            {tab === 'settings' ? t('data.settingsTabLabel') : t('data.tabLabel')}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {activeMainTab === 'settings' && (
-                                <>
+                            <>
                                     {/* Language Settings */}
                                     <div className="relative">
                                         <MenuItem onClick={(): void => setLanguageMenuOpen(!languageMenuOpen)}>
@@ -381,6 +363,16 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* Import / Export */}
+                                    <MenuItem onClick={(): void => { void window.api.importFile(); setMenuOpen(false); }}>
+                                        {t('common.import')}
+                                    </MenuItem>
+                                    <MenuItem onClick={(): void => { void window.api.exportFile(); setMenuOpen(false); }}>
+                                        {t('common.export')}
+                                    </MenuItem>
+
+                                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
 
                                     {/* Polling interval settings */}
                                     <div className="px-4 py-3">
@@ -434,12 +426,7 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                                     <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                                     <MenuItem onClick={handleShowUpdatesNotifications}>{t('updatesNotification.title')}</MenuItem>
                                     <MenuItem onClick={handleShowVersion}>{t('about.title')}</MenuItem>
-                                </>
-                            )}
-
-                            {activeMainTab === 'data' && (
-                                <DataTab device={getActiveDevice()} />
-                            )}
+                            </>
                         </div>
                     )}
                 </div>
@@ -450,7 +437,7 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
             <div className="w-64 p-4 border-r border-gray-200 dark:border-gray-700">
                 <div className="space-y-1">
                     {connectedDevices.length > 0 ? (
-                        getSettingTabs().map((tab): JSX.Element => (
+                        settingTabs.map((tab): JSX.Element => (
                             <LeftMenuItem
                                 key={tab.id}
                                 active={activeSettingTab === tab.id}
@@ -483,7 +470,7 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                                 {t('header.pleaseConnect')}
                             </p>
                         </div>
-                    ) : getSettingTabs().length === 0 ? (
+                    ) : settingTabs.length === 0 ? (
                         <div className="text-center text-gray-600 dark:text-gray-400">
                             <p className="text-lg mb-2">{t('header.initializingDevice')}</p>
                             <p className="text-sm mb-4">
@@ -503,10 +490,17 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                                 key={`${device.id}-content-${index}`} 
                                 className={activeDeviceId === device.id ? "block" : "hidden"}
                             >
-                                <SettingEdit 
-                                    device={device} 
+                                <SettingEdit
+                                    device={device}
                                     activeTab={activeSettingTab}
                                     setActiveTab={handleSettingTabChange}
+                                    isConfigEditMode={isConfigEditMode}
+                                    onConfigEditModeChange={(enabled): void => {
+                                        setIsConfigEditMode(enabled);
+                                        if (enabled && !CONFIG_EDIT_ALLOWED_TABS.has(activeSettingTab)) {
+                                            handleSettingTabChange('layer');
+                                        }
+                                    }}
                                 />
                             </div>
                         ))

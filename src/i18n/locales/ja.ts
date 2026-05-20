@@ -7,7 +7,8 @@ const jaMessages: LocaleMessages = {
     saveComplete: '設定が正常に保存されました。',
     saveError: '設定の保存中にエラーが発生しました。',
     ok: 'OK',
-    delete: '削除'
+    delete: '削除',
+    deleteConfirm: '削除？'
   },
   about: {
     title: '概要',
@@ -81,7 +82,8 @@ const jaMessages: LocaleMessages = {
     layer: 'レイヤー',
     config: '設定',
     noConfig: '--- なし ---',
-    autoLayerOnDisabled: '自動レイヤー切替がONの間は編集不可'
+    autoLayerOnDisabled: '自動レイヤー切替がONの間は編集不可',
+    configEditMode: 'コンフィグ編集モード'
   },
   timer: {
     title: 'ポモドーロタイマー',
@@ -138,16 +140,13 @@ const jaMessages: LocaleMessages = {
     enableHapticNotifications: '振動フィードバック通知'
   },
   data: {
-    tabLabel: 'データ',
-    settingsTabLabel: '設定',
     saveHint: 'マウス・スクロール・ジェスチャーを保存',
     save: '保存',
-    saveList: '保存リスト',
-    load: 'ロード',
-    deleteConfirm: 'この保存を削除しますか？',
+    overwriteConfirm: '上書き？',
+    apply: '適用',
+    applyConfirm: '適用？',
     noSaves: '保存済み設定がありません',
     current: '現在',
-    overwriteConfirm: '同じ名前の保存データがあります。上書きしますか？',
     view: 'ビュー'
   },
   led: {

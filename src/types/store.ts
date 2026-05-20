@@ -2,6 +2,11 @@
 import type { DeviceConfig, LayerSetting } from './device';
 import type { NotificationData } from './ipc';
 
+// Reserved name for the pre-edit baseline snapshot. Restored to the device when
+// Config Edit Mode turns off, and used by auto-layer as the fallback config for
+// apps without a layer mapping. Hidden from the saved-config list.
+export const BASELINE_CONFIG_NAME = 'baseline';
+
 export interface WindowBounds {
     width: number;
     height: number;

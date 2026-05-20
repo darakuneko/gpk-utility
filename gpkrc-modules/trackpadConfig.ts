@@ -105,6 +105,18 @@ export const saveTrackpadConfig = async (device: Device, trackpadDataBytes: numb
     }
 };
 
+export const applyTrackpadTempConfig = async (device: Device, trackpadDataBytes: number[]): Promise<CommandResult> => {
+    if (!writeCommandFunction) {
+        throw new Error("WriteCommand function not injected in trackpadConfig");
+    }
+
+    const result = await writeCommandFunction(device, [commandId.gpkRCOperation, actionId.trackpadTempApply, ...trackpadDataBytes]);
+    if (!result.success) {
+        throw new Error(result.error || "Failed to apply trackpad config");
+    }
+    return result;
+};
+
 export const getTrackpadConfigData = async (device: Device): Promise<CommandResult> => {
     if (!writeCommandFunction) {
         throw new Error("WriteCommand function not injected in trackpadConfig");

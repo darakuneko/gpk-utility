@@ -9,6 +9,7 @@ export interface LocaleMessages {
     saveError: string;
     ok: string;
     delete: string;
+    deleteConfirm: string;
   };
   about: {
     title: string;
@@ -83,6 +84,7 @@ export interface LocaleMessages {
     config: string;
     noConfig: string;
     autoLayerOnDisabled: string;
+    configEditMode: string;
   };
   timer: {
     title: string;
@@ -160,16 +162,13 @@ export interface LocaleMessages {
     layerColorPickerDescription: string;
   };
   data: {
-    tabLabel: string;
-    settingsTabLabel: string;
     saveHint: string;
     save: string;
-    saveList: string;
-    load: string;
-    deleteConfirm: string;
+    overwriteConfirm: string;
+    apply: string;
+    applyConfirm: string;
     noSaves: string;
     current: string;
-    overwriteConfirm: string;
     view: string;
   };
 }

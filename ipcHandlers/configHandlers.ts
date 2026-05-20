@@ -3,6 +3,7 @@ import Store from 'electron-store';
 
 import {
     saveTrackpadConfig,
+    applyTrackpadTempConfig,
     savePomodoroConfigData,
     saveLedConfig,
     saveLedLayerConfig,
@@ -64,6 +65,20 @@ export const setupConfigHandlers = (): void => {
         }
     });
     
+    ipcMain.handle('applyTrackpadTemp', async (event, device: Device): Promise<{ success: boolean; error?: string }> => {
+        try {
+            if (!device || !device.config || !device.config.trackpad) {
+                return { success: false, error: "Invalid device or missing trackpad configuration" };
+            }
+            const trackpadBytes = buildTrackpadConfigByteArray(device.config.trackpad);
+            await applyTrackpadTempConfig(device, trackpadBytes);
+            return { success: true };
+        } catch (error) {
+            console.error("Error in applyTrackpadTemp:", error);
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+
     ipcMain.handle('savePomodoroConfigData', async (event, device: Device, pomodoroDataBytes: number[]): Promise<{ success: boolean; error?: string }> => {
         try {
             await savePomodoroConfigData(device, pomodoroDataBytes);

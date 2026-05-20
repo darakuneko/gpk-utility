@@ -8,6 +8,7 @@ import type {
     WriteCommandFunction
 } from '../src/types/device';
 import type { StoreSchema, SavedConfig } from '../src/types/store';
+import { BASELINE_CONFIG_NAME } from '../src/types/store';
 
 import { commandId, actionId, parseDeviceId } from './communication';
 import { buildTrackpadConfigByteArray } from './trackpadConfig';
@@ -35,8 +36,6 @@ export const injectWindowMonitoringDependencies = (deps: WindowMonitoringDepende
         }
     }
 };
-
-const CURRENT_CONFIG_NAME = 'current';
 
 // Store active windows history
 export const activeWindows: string[] = [];
@@ -102,12 +101,12 @@ const applyTempSavedConfig = (id: string, deviceInfo: ReturnType<typeof parseDev
     if (savedConfigId) {
         config = savedConfigs.find((c): boolean => c.id === savedConfigId);
     } else {
-        config = savedConfigs.find((c): boolean => c.name === CURRENT_CONFIG_NAME && c.deviceId === id);
+        config = savedConfigs.find((c): boolean => c.name === BASELINE_CONFIG_NAME && c.deviceId === id);
     }
 
     if (!config?.config?.trackpad) return;
 
-    const effectiveId = savedConfigId !== null ? savedConfigId : (CURRENT_CONFIG_NAME + ':' + id);
+    const effectiveId = savedConfigId !== null ? savedConfigId : (BASELINE_CONFIG_NAME + ':' + id);
     if (lastAppliedSavedConfigId[id] === effectiveId) return;
 
     try {

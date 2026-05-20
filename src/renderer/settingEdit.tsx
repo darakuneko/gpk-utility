@@ -21,6 +21,8 @@ interface SettingEditProps {
     device: Device;
     activeTab?: string;
     setActiveTab?: (tabId: string) => void;
+    isConfigEditMode?: boolean;
+    onConfigEditModeChange?: (enabled: boolean) => void;
 }
 
 const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.Element => {
@@ -326,7 +328,9 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                         {activeTab === "layer" && (
                             <LayerSettings
                                 device={device}
+                                isConfigEditMode={props.isConfigEditMode ?? false}
                                 onAutoLayerEnabledChange={setAutoLayerEnabled}
+                                {...(props.onConfigEditModeChange !== undefined && { onConfigEditModeChange: props.onConfigEditModeChange })}
                             />
                         )}
 
