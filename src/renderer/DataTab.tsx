@@ -34,6 +34,7 @@ const VIEW_GROUPS: ReadonlyArray<{ tabKey: 'mouse' | 'dragDrop' | 'scroll' | 'ge
 ];
 
 const btnSmall = "px-3 py-1 text-xs text-white rounded";
+const btnOutline = "px-3 py-1 text-xs rounded border border-blue-500 text-blue-500 hover:bg-blue-500/10";
 
 const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
     const { t } = useLanguage();
@@ -151,13 +152,13 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
                 <div className="flex gap-2">
                     <button
                         onClick={(): void => { void window.api.importFile(); }}
-                        className={`${btnSmall} bg-accent-primary hover:bg-accent-primary/90`}
+                        className={`${btnSmall} bg-blue-500 hover:bg-blue-600`}
                     >
                         {t('common.import')}
                     </button>
                     <button
                         onClick={(): void => { void window.api.exportFile(); }}
-                        className={`${btnSmall} bg-accent-primary hover:bg-accent-primary/90`}
+                        className={`${btnSmall} bg-blue-500 hover:bg-blue-600`}
                     >
                         {t('common.export')}
                     </button>
@@ -182,7 +183,7 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
                         <button
                             onClick={(): void => { void handleSave(); }}
                             disabled={!filename.trim()}
-                            className={`${btnSmall} bg-accent-primary hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed`}
+                            className={`${btnSmall} bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                             {t('data.save')}
                         </button>
@@ -196,7 +197,7 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
                             {currentTrackpad != null && (
                                 <button
                                     onClick={(): void => openView(currentTrackpad, t('data.current'))}
-                                    className={`${btnSmall} bg-blue-500 hover:bg-blue-600`}
+                                    className={btnOutline}
                                 >
                                     {t('data.view')}
                                 </button>
@@ -231,7 +232,7 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
                                     )}
                                     <button
                                         onClick={(): void => openView(entry.config.trackpad, entry.name)}
-                                        className={`${btnSmall} bg-blue-500 hover:bg-blue-600`}
+                                        className={btnOutline}
                                     >
                                         {t('data.view')}
                                     </button>
