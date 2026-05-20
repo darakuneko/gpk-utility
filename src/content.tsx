@@ -9,6 +9,8 @@ interface SaveStatus {
     visible: boolean;
     success: boolean;
     timestamp: number | null;
+    isApply?: boolean;
+    pending?: boolean;
 }
 
 const api = window.api;
@@ -78,21 +80,27 @@ const Content: React.FC = (): JSX.Element => {
     useEffect((): void => {
         if (!hasApi || !api.onConfigSaveComplete) return;
         
-        api.onConfigSaveComplete(({ success, timestamp }: { success: boolean; timestamp: number }): void => {
-            // Ignore updates within 500ms of the previous notification to prevent continuous notifications
-            if (saveStatus.timestamp && timestamp - saveStatus.timestamp < 500) {
+        api.onConfigSaveComplete(({ success, timestamp, isApply, pending }: { success: boolean; timestamp: number; isApply?: boolean; pending?: boolean }): void => {
+            // Ignore updates within 500ms of the previous notification to prevent continuous notifications.
+            // A pending (in-progress) update always shows so the apply flow stays visible.
+            if (!pending && saveStatus.timestamp && timestamp - saveStatus.timestamp < 500) {
                 return;
             }
-            
+
             setSaveStatus({
                 visible: true,
                 success,
-                timestamp
+                timestamp,
+                isApply: isApply ?? false,
+                pending: pending ?? false
             });
-            
-            setTimeout((): void => {
-                setSaveStatus((prev): SaveStatus => ({ ...prev, visible: false }));
-            }, 3000); // Reduced display time from 3000ms to 1500ms
+
+            // Keep a pending state visible until the final result arrives.
+            if (!pending) {
+                setTimeout((): void => {
+                    setSaveStatus((prev): SaveStatus => ({ ...prev, visible: false }));
+                }, 3000);
+            }
         });
     }, []);
 

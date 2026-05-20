@@ -31,6 +31,7 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
     const [isSliderActive, setIsSliderActive] = useState(false);
     const [pendingChanges, setPendingChanges] = useState<{ device?: Device; pType?: string }>({});
     const [autoLayerEnabled, setAutoLayerEnabled] = useState(false);
+    const [configEditFilename, setConfigEditFilename] = useState('');
 
     useEffect((): void => {
         const load = async (): Promise<void> => {
@@ -330,6 +331,8 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                                 device={device}
                                 isConfigEditMode={props.isConfigEditMode ?? false}
                                 onAutoLayerEnabledChange={setAutoLayerEnabled}
+                                configEditFilename={configEditFilename}
+                                onConfigEditFilenameChange={setConfigEditFilename}
                                 {...(props.onConfigEditModeChange !== undefined && { onConfigEditModeChange: props.onConfigEditModeChange })}
                             />
                         )}

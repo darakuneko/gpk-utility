@@ -7,6 +7,8 @@ export interface LocaleMessages {
     export: string;
     saveComplete: string;
     saveError: string;
+    applyComplete: string;
+    applying: string;
     ok: string;
     delete: string;
     deleteConfirm: string;
@@ -168,7 +170,7 @@ export interface LocaleMessages {
     apply: string;
     applyConfirm: string;
     noSaves: string;
-    current: string;
+    default: string;
     view: string;
   };
 }

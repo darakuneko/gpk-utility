@@ -112,9 +112,13 @@ export function StateProvider({children}: {children: React.ReactNode}): React.Re
             dispatch({ type: 'SET_INIT', payload: obj.init });
         }
         
-        if (Array.isArray(obj.devices) && JSON.stringify(obj.devices) !== JSON.stringify(prevStateRef.current.devices)) {
-            prevStateRef.current.devices = [...obj.devices];
-            dispatch({ type: 'SET_DEVICES', payload: obj.devices });
+        if (Array.isArray(obj.devices)) {
+            const next = JSON.stringify(obj.devices);
+            const prev = JSON.stringify(prevStateRef.current.devices);
+            if (next !== prev) {
+                prevStateRef.current.devices = [...obj.devices];
+                dispatch({ type: 'SET_DEVICES', payload: obj.devices });
+            }
         }
         
         if (Array.isArray(obj.activeWindow) && JSON.stringify(obj.activeWindow) !== JSON.stringify(prevStateRef.current.activeWindow)) {

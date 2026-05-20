@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import type { JSX } from 'react';
 
 import type { Device, DeviceConfig, TrackpadConfig } from '../types/device';
@@ -10,6 +10,8 @@ import { BaseModal } from "../components/BaseModalComponents";
 
 interface DataTabProps {
     device: Device | null;
+    filename?: string;
+    onFilenameChange?: (v: string) => void;
 }
 
 const TRACKPAD_SAVE_KEYS: ReadonlyArray<keyof TrackpadConfig> = [
@@ -38,13 +40,18 @@ const VIEW_GROUPS: ReadonlyArray<{ tabKey: 'mouse' | 'dragDrop' | 'scroll' | 'ge
 const btnSmall = "px-3 py-1 text-xs text-white rounded";
 const btnOutline = "px-3 py-1 text-xs rounded border border-blue-500 text-blue-500 hover:bg-blue-500/10";
 
-// Confirm-key sentinel for the read-only "Current" row (it has no SavedConfig id).
+// Confirm-key sentinel for the read-only "Default" row (it has no SavedConfig id).
 const CURRENT_APPLY_KEY = '__current__';
 
-const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
+const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename, onFilenameChange }): JSX.Element => {
     const { t } = useLanguage();
     const { state, setState } = useStateContext();
-    const [filename, setFilename] = useState('');
+    const [localFilename, setLocalFilename] = useState('');
+    const filename = controlledFilename !== undefined ? controlledFilename : localFilename;
+    const setFilename = useCallback((v: string): void => {
+        if (controlledFilename === undefined) setLocalFilename(v);
+        onFilenameChange?.(v);
+    }, [controlledFilename, onFilenameChange]);
     const [allConfigs, setAllConfigs] = useState<SavedConfig[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState('');
@@ -53,13 +60,15 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
     const [confirmingOverwrite, setConfirmingOverwrite] = useState(false);
     const [confirmingApplyId, setConfirmingApplyId] = useState<string | null>(null);
+    const [isApplying, setIsApplying] = useState(false);
 
     useEffect((): void => {
         void window.api.listSavedConfigs().then(setAllConfigs);
     }, []);
 
     const deviceConfigs = allConfigs.filter((c): boolean => c.deviceId === (device?.id ?? '') && c.name !== BASELINE_CONFIG_NAME);
-    const currentTrackpad = device?.config?.trackpad ?? null;
+    const baselineConfig = allConfigs.find((c): boolean => c.deviceId === (device?.id ?? '') && c.name === BASELINE_CONFIG_NAME);
+    const defaultTrackpad = baselineConfig?.config?.trackpad ?? null;
 
     const handleSave = async (): Promise<void> => {
         if (!device?.config || !filename.trim()) return;
@@ -105,10 +114,16 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
         setAllConfigs((prev): SavedConfig[] => prev.filter((c): boolean => c.id !== entry.id));
     };
 
+    const dispatchApplyStatus = (deviceId: string, success: boolean, pending: boolean): void => {
+        window.dispatchEvent(new CustomEvent('configSaveComplete', {
+            detail: { deviceId, success, timestamp: Date.now(), isApply: true, pending }
+        }));
+    };
+
     // Apply a saved config (or the current values) to the device and load it into the
-    // editable state for further tuning. entry === null targets the "Current" row.
+    // editable state for further tuning. entry === null targets the "Default" row.
     const handleApply = async (entry: SavedConfig | null): Promise<void> => {
-        if (!device?.config?.trackpad) return;
+        if (!device?.config?.trackpad || isApplying) return;
         const key = entry?.id ?? CURRENT_APPLY_KEY;
         if (confirmingApplyId !== key) {
             setConfirmingApplyId(key);
@@ -118,7 +133,7 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
 
         const mergedTrackpad: TrackpadConfig = entry
             ? { ...device.config.trackpad, ...entry.config.trackpad }
-            : { ...device.config.trackpad };
+            : { ...device.config.trackpad, ...(defaultTrackpad ?? {}) };
         const updatedDevice: Device = {
             ...device,
             config: { ...device.config, trackpad: mergedTrackpad } as DeviceConfig
@@ -128,14 +143,23 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
             ...state,
             devices: state.devices.map((d): Device => d.id === device.id ? updatedDevice : d)
         });
+
         setFilename(entry?.name ?? '');
         setConfirmingOverwrite(false);
 
+        setIsApplying(true);
+        dispatchApplyStatus(device.id, false, true);
+
+        let success = false;
         try {
-            await window.api.applyTrackpadTemp(updatedDevice);
+            const result = await window.api.applyTrackpadTemp(updatedDevice);
+            success = result.success;
         } catch {
-            // ignore device write errors
+            // success stays false on device write error
+        } finally {
+            setIsApplying(false);
         }
+        dispatchApplyStatus(device.id, success, false);
     };
 
     const startEditing = (entry: SavedConfig): void => {
@@ -221,12 +245,12 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
                     <div className="border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-200 dark:divide-gray-700">
                         <div className="flex items-center gap-2 px-3 py-2">
                             <span className="flex-1 text-sm truncate text-gray-500 dark:text-gray-400 italic">
-                                {t('data.current')}
+                                {t('data.default')}
                             </span>
-                            {currentTrackpad != null && (
+                            {defaultTrackpad != null && (
                                 <>
                                     <button
-                                        onClick={(): void => openView(currentTrackpad, t('data.current'))}
+                                        onClick={(): void => openView(defaultTrackpad, t('data.default'))}
                                         className={btnOutline}
                                     >
                                         {t('data.view')}
@@ -234,7 +258,8 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
                                     <button
                                         onClick={(): void => { void handleApply(null); }}
                                         onBlur={(): void => setConfirmingApplyId(null)}
-                                        className={btnOutline}
+                                        disabled={isApplying}
+                                        className={`${btnOutline} disabled:opacity-50 disabled:cursor-not-allowed`}
                                     >
                                         {confirmingApplyId === CURRENT_APPLY_KEY ? t('data.applyConfirm') : t('data.apply')}
                                     </button>
@@ -279,7 +304,8 @@ const DataTab: React.FC<DataTabProps> = ({ device }): JSX.Element => {
                                     <button
                                         onClick={(): void => { void handleApply(entry); }}
                                         onBlur={(): void => setConfirmingApplyId(null)}
-                                        className={btnOutline}
+                                        disabled={isApplying}
+                                        className={`${btnOutline} disabled:opacity-50 disabled:cursor-not-allowed`}
                                     >
                                         {confirmingApplyId === entry.id ? t('data.applyConfirm') : t('data.apply')}
                                     </button>

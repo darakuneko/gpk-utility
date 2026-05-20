@@ -4,11 +4,13 @@ import Store from 'electron-store';
 import {
     saveTrackpadConfig,
     applyTrackpadTempConfig,
+    getTrackpadConfigData,
     savePomodoroConfigData,
     saveLedConfig,
     saveLedLayerConfig,
     updateAutoLayerSettings,
-    buildTrackpadConfigByteArray
+    buildTrackpadConfigByteArray,
+    deviceStatusMap
 } from '../gpkrc';
 import type { StoreSchema } from '../src/types/store';
 import type { Device, PomodoroConfig } from '../src/types/device';
@@ -70,9 +72,37 @@ export const setupConfigHandlers = (): void => {
             if (!device || !device.config || !device.config.trackpad) {
                 return { success: false, error: "Invalid device or missing trackpad configuration" };
             }
-            const trackpadBytes = buildTrackpadConfigByteArray(device.config.trackpad);
-            await applyTrackpadTempConfig(device, trackpadBytes);
-            return { success: true };
+            const sentBytes = buildTrackpadConfigByteArray(device.config.trackpad);
+            const maxAttempts = 3;
+            const applyDelayMs = 150;
+            const verifyTimeoutMs = 600;
+            const pollIntervalMs = 100;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                await applyTrackpadTempConfig(device, sentBytes);
+                // Give the device time to process the temp apply before reading it back.
+                await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, applyDelayMs));
+
+                // Poll: re-request the read-back each iteration (a single request may be dropped),
+                // then wait for the HID data listener to update deviceStatusMap.
+                let matched = false;
+                const deadline = Date.now() + verifyTimeoutMs;
+                while (Date.now() < deadline) {
+                    await getTrackpadConfigData(device);
+                    await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, pollIntervalMs));
+                    const actual = deviceStatusMap[device.id]?.config?.trackpad;
+                    if (actual) {
+                        const actualBytes = buildTrackpadConfigByteArray(actual);
+                        if (actualBytes.length === sentBytes.length && actualBytes.every((b, i): boolean => b === sentBytes[i])) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+                if (matched) {
+                    return { success: true };
+                }
+            }
+            return { success: false, error: "Trackpad config verification failed after retries" };
         } catch (error) {
             console.error("Error in applyTrackpadTemp:", error);
             return { success: false, error: error instanceof Error ? error.message : String(error) };

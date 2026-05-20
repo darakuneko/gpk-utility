@@ -6,6 +6,8 @@ const enMessages: LocaleMessages = {
     export: 'Export',
     saveComplete: 'Settings saved successfully',
     saveError: 'Error saving settings',
+    applyComplete: 'Applied successfully',
+    applying: 'Applying...',
     ok: 'OK',
     delete: 'Delete',
     deleteConfirm: 'Delete?'
@@ -146,7 +148,7 @@ const enMessages: LocaleMessages = {
     apply: 'Apply',
     applyConfirm: 'Apply?',
     noSaves: 'No saved configs',
-    current: 'Current',
+    default: 'Default',
     view: 'View'
   },
   led: {

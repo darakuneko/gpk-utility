@@ -15,7 +15,7 @@ import type {
     AutoLayerSetting
 } from './types';
 import { command } from './device';
-import { cachedDeviceRegistry, cachedStoreSettings, listeners } from './core';
+import { cachedDeviceRegistry, cachedStoreSettings, listeners, updateCachedDeviceRegistry } from './core';
 import { saveStoreSetting } from './core';
 import type { EventCallbackMap, GenericEventCallback } from './eventTypes';
 
@@ -242,7 +242,15 @@ export const exposeAPI = (): void => {
             return await ipcRenderer.invoke('saveConfig', entry);
         },
         applyTrackpadTemp: async (device: Device): Promise<{ success: boolean; error?: string }> => {
-            return await ipcRenderer.invoke('applyTrackpadTemp', device);
+            const result = await ipcRenderer.invoke('applyTrackpadTemp', device) as { success: boolean; error?: string };
+            if (result.success) {
+                const updatedRegistry = cachedDeviceRegistry.map((d): Device =>
+                    d.id === device.id ? { ...d, config: device.config ?? null } : d
+                );
+                updateCachedDeviceRegistry(updatedRegistry);
+                command.changeConnectDevice(updatedRegistry);
+            }
+            return result;
         },
         loadConfig: async (entry: SavedConfig): Promise<ImportResult> => {
             try {
@@ -276,6 +284,7 @@ export const exposeAPI = (): void => {
                 const updatedRegistry = cachedDeviceRegistry.map((d): Device =>
                     d.id === entry.deviceId ? deviceToApply : d
                 );
+                updateCachedDeviceRegistry(updatedRegistry);
                 command.changeConnectDevice(updatedRegistry);
                 return { success: true, devicesUpdated: 1 };
             } catch (err) {

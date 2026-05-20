@@ -20,9 +20,11 @@ interface LayerSettingsProps {
     isConfigEditMode?: boolean;
     onAutoLayerEnabledChange?: (enabled: boolean) => void;
     onConfigEditModeChange?: (enabled: boolean) => void;
+    configEditFilename?: string;
+    onConfigEditFilenameChange?: (v: string) => void;
 }
 
-const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode = false, onAutoLayerEnabledChange, onConfigEditModeChange }): JSX.Element => {
+const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode = false, onAutoLayerEnabledChange, onConfigEditModeChange, configEditFilename, onConfigEditFilenameChange }): JSX.Element => {
     const { state, setState } = useStateContext();
     const { t } = useLanguage();
     const [layerSettings, setLayerSettings] = useState<LayerSetting[]>([]);
@@ -435,7 +437,11 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode 
                 </div>
 
                 {isConfigEditMode ? (
-                    <DataTab device={device} />
+                    <DataTab
+                        device={device}
+                        {...(configEditFilename !== undefined && { filename: configEditFilename })}
+                        {...(onConfigEditFilenameChange !== undefined && { onFilenameChange: onConfigEditFilenameChange })}
+                    />
                 ) : isEnabled ? (
                     <div className="mt-4">
                         <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">{t('layer.currentMappings')}</h4>

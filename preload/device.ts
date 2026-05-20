@@ -139,7 +139,11 @@ export const keyboardSendLoop = async (): Promise<void> => {
                     
                 }
                 // Update device properties but don't mark as connected until initialization is complete
+                const preservedConfig = existingDevice.config;
                 Object.assign(existingDevice, device);
+                if (preservedConfig) {
+                    existingDevice.config = preservedConfig;
+                }
                 // Only mark as connected if not initializing
                 if (!existingDevice.initializing) {
                     existingDevice.connected = true;

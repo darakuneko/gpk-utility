@@ -18,6 +18,8 @@ interface SettingsContainerProps {
     saveStatus?: {
         visible: boolean;
         success: boolean;
+        isApply?: boolean;
+        pending?: boolean;
     };
 }
 
@@ -508,17 +510,18 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                 </div>
                 
                 {/* Save status display - positioned absolutely on top-right of content */}
-                {saveStatus?.visible && (
-                    <div className={`absolute -top-1.5 right-4 p-2 text-sm transition-opacity duration-300 z-10 ${
-                        saveStatus.success 
-                            ? "text-green-600 dark:text-green-400" 
-                            : "text-red-600 dark:text-red-400"
-                    }`}>
-                        {saveStatus.success 
-                            ? t('common.saveComplete') 
-                            : t('common.saveError')}
-                    </div>
-                )}
+                {saveStatus?.visible && ((): JSX.Element => {
+                    const status = saveStatus.pending
+                        ? { color: "text-blue-600 dark:text-blue-400", message: t('common.applying') }
+                        : saveStatus.success
+                            ? { color: "text-green-600 dark:text-green-400", message: saveStatus.isApply ? t('common.applyComplete') : t('common.saveComplete') }
+                            : { color: "text-red-600 dark:text-red-400", message: t('common.saveError') };
+                    return (
+                        <div className={`absolute -top-1.5 right-4 p-2 text-sm transition-opacity duration-300 z-10 ${status.color}`}>
+                            {status.message}
+                        </div>
+                    );
+                })()}
             </div>
             
             {/* Updates Notification Modal */}

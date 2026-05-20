@@ -110,6 +110,8 @@ export interface ConfigSaveCompleteDetail {
     success: boolean;
     timestamp: number;
     importOperation?: boolean;
+    isApply?: boolean;
+    pending?: boolean;
 }
 
 export interface SliderState {

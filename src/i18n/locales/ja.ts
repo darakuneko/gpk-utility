@@ -6,6 +6,8 @@ const jaMessages: LocaleMessages = {
     export: 'エクスポート',
     saveComplete: '設定が正常に保存されました。',
     saveError: '設定の保存中にエラーが発生しました。',
+    applyComplete: '適用しました。',
+    applying: '適用中...',
     ok: 'OK',
     delete: '削除',
     deleteConfirm: '削除？'
@@ -146,7 +148,7 @@ const jaMessages: LocaleMessages = {
     apply: '適用',
     applyConfirm: '適用？',
     noSaves: '保存済み設定がありません',
-    current: '現在',
+    default: 'デフォルト',
     view: 'ビュー'
   },
   led: {
