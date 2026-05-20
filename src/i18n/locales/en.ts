@@ -145,7 +145,10 @@ const enMessages: LocaleMessages = {
     saveList: 'Save list',
     load: 'Load',
     deleteConfirm: 'Delete this save?',
-    noSaves: 'No saved configs'
+    noSaves: 'No saved configs',
+    current: 'Current',
+    overwriteConfirm: 'A save with this name already exists. Overwrite?',
+    view: 'View'
   },
   led: {
     title: 'LED Settings',

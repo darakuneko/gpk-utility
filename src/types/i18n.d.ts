@@ -168,5 +168,8 @@ export interface LocaleMessages {
     load: string;
     deleteConfirm: string;
     noSaves: string;
+    current: string;
+    overwriteConfirm: string;
+    view: string;
   };
 }

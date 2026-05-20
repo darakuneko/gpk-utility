@@ -145,7 +145,10 @@ const jaMessages: LocaleMessages = {
     saveList: '保存リスト',
     load: 'ロード',
     deleteConfirm: 'この保存を削除しますか？',
-    noSaves: '保存済み設定がありません'
+    noSaves: '保存済み設定がありません',
+    current: '現在',
+    overwriteConfirm: '同じ名前の保存データがあります。上書きしますか？',
+    view: 'ビュー'
   },
   led: {
     title: 'LED設定',
