@@ -49,10 +49,7 @@ KDE環境で同等の機能を実現するには、KWinスクリプト等を用�
     - [LED](#led)
   - [Application Settings](#application-settings)
 - [使用方法](#使用方法)
-- [カスタム](#カスタム)
-  - [定義](#定義)
-  - [作例](#作例)
-  - [実装ガイド](#実装ガイド)
+- [実装ガイド](#実装ガイド)
 - [開発者サポート](#開発者サポート)
 - [ライセンス](#ライセンス)
 
@@ -181,28 +178,7 @@ Long Break - BLUE
 4. 左側のメニューから設定したい機能を選択します
 5. 各設定を調整し、デバイスに適用します
 
-## カスタム
-https://github.com/darakuneko/vial-qmk/tree/gpk-utility
-
-ご自身のVialキーボードを対応させたい場合はgpk-utilityブランチを使用して、rules.mkにGPKRC_ENABLE = yes
-を必ず追加してください
-
-rules.mk<br>
-GPKRC_ENABLE = yes
-
-### 定義
-- **Application**: 
-https://github.com/darakuneko/vial-qmk/blob/gpk-utility/quantum/gpk_rc.h  
-- **Application**: 
-https://github.com/darakuneko/gpk-utility/blob/main/gpkrc.js  
-  
-### 作例:   
-keyboard(Auto Layer Switch/OLED): [gpk60_47gr1re_vial](https://github.com/darakuneko/keyboard/tree/main/qmk/gpk60_47gr1re_vial)   
-trakpad: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento)   
-
-**仕様は予告なく変更されます**
-
-### 実装ガイド
+## 実装ガイド
 - [Vial ファームウェア統合仕様書](./docs/features/vial_firmware_integration.ja.md)
 - [付録A: パケット / 構造体早見表](./docs/features/vial_firmware_appendix_a_packets.ja.md)
 - [付録B: device_type 別必須機能マトリクス](./docs/features/vial_firmware_appendix_b_device_matrix.ja.md)
@@ -224,7 +200,7 @@ trakpad: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/num
 
 <div align="center">
 
-**GPK FWMaker - QMK/Vialファームウェア生成をもっと簡単に**
+**GPK Utility - キーボード・タッチパッドの設定ユーティリティ**
 
 Made with ❤️ by [darakuneko](https://github.com/darakuneko)
 

@@ -50,10 +50,7 @@ We currently do not have access to a KDE environment and therefore do not provid
     - [LED](#led)
 - [Other Features](#other-features)
 - [Usage](#usage)
-- [Custom Devices](#custom-devices)
-  - [Definitions](#definitions)
-  - [Examples](#examples)
-  - [Implementation Guide](#implementation-guide)
+- [Implementation Guide](#implementation-guide)
 - [Developer Support](#developer-support)
 - [License](#license)
 
@@ -202,29 +199,7 @@ Configure LED colors for various device states and layers
 4. Choose the feature you want to configure from the left menu
 5. Adjust settings and apply them to your device
 
-## Custom Devices
-https://github.com/darakuneko/vial-qmk/tree/gpk-utility
-
-If you would like to make your own Vial-compatible keyboard work with this utility, please use the `gpk-utility` branch and make sure to add the following line to your `rules.mk`.
-
-```
-rules.mk  
-GPKRC_ENABLE = yes
-```
-
-### Definitions
-- **Device**:  
-  https://github.com/darakuneko/vial-qmk/blob/gpk-utility/quantum/gpk_rc.h  
-- **Application**:  
-  https://github.com/darakuneko/gpk-utility/blob/main/gpkrc.js  
-
-### Examples
-- **Keyboard (Auto Layer Switch / OLED)**: [gpk60_47gr1re_vial](https://github.com/darakuneko/keyboard/tree/main/qmk/gpk60_47gr1re_vial)  
-- **Trackpad**: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento)
-
-**Specifications are subject to change without notice.**
-
-### Implementation Guide
+## Implementation Guide
 - [Vial Firmware Integration Guide](./docs/features/vial_firmware_integration.md)
 - [Appendix A: Packet / Struct Reference](./docs/features/vial_firmware_appendix_a_packets.md)
 - [Appendix B: Device Type Matrix](./docs/features/vial_firmware_appendix_b_device_matrix.md)
@@ -244,7 +219,7 @@ This project is released under the [MIT License](LICENSE).
 
 <div align="center">
 
-**GPK FWMaker - Making QMK/Vial firmware generation easier**
+**GPK Utility - Configuration utility for keyboards and touchpads**
 
 Made with ❤️ by [darakuneko](https://github.com/darakuneko)
 
