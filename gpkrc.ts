@@ -51,14 +51,17 @@ import {
     getPomodoroConfig, 
     getPomodoroActiveStatus 
 } from './gpkrc-modules/pomodoroConfig';
-import { 
-    receiveLedConfig, 
-    receiveLedLayerConfig, 
-    getLedConfig, 
+import {
+    receiveLedConfig,
+    receiveLedLayerConfig,
+    getLedConfig,
     getLedLayerConfig,
     saveLedConfig,
-    saveLedLayerConfig 
+    saveLedLayerConfig,
+    buildLedConfigByteArray,
+    buildLedLayerConfigByteArray
 } from './gpkrc-modules/ledConfig';
+import { saveConfigWithVerify } from './gpkrc-modules/configSync';
 import { writeTimeToOled, lastFormattedDateMap } from './gpkrc-modules/oledDisplay';
 import {
     activeWindows, 
@@ -221,7 +224,8 @@ export { getSelectedAppSettings, addNewAppToAutoLayerSettings };
 export { encodeDeviceId, parseDeviceId };
 export { getDeviceInitConfig, getDeviceConfig, writeTimeToOled, getPomodoroConfig };
 export { getDeviceType };
-export { saveTrackpadConfig, applyTrackpadTempConfig, buildTrackpadConfigByteArray, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData, getLedConfig, getLedLayerConfig, saveLedConfig, saveLedLayerConfig };
+export { saveTrackpadConfig, applyTrackpadTempConfig, buildTrackpadConfigByteArray, savePomodoroConfigData, getPomodoroActiveStatus, getTrackpadConfigData, getLedConfig, getLedLayerConfig, saveLedConfig, saveLedLayerConfig, buildLedConfigByteArray, buildLedLayerConfigByteArray };
+export { saveConfigWithVerify };
 
 // Export additional functions and variables that were in the original file
 export { deviceStatusMap, hidDeviceInstances, activeTabPerDevice, isEditingPomodoroPerDevice, settingsStore };

@@ -1,6 +1,6 @@
 import type { Device, CommandResult, WriteCommandFunction, LedConfig, LedLayerConfig } from '../src/types/device';
 
-import { commandId, actionId } from './communication';
+import { commandId, actionId, CONFIG_SYNC_TIMING } from './communication';
 
 // Dependency injection
 let writeCommandFunction: WriteCommandFunction | null = null;
@@ -90,6 +90,7 @@ export const saveLedConfigData = async (device: Device, ledDataBytes: number[]):
         if (!result.success) {
             throw new Error(result.error || "Failed to save LED config");
         }
+        await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, CONFIG_SYNC_TIMING.settleMs)); // Settle before any read-back
         return result;
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -109,6 +110,7 @@ export const saveLedLayerConfigData = async (device: Device, ledDataBytes: numbe
         if (!result.success) {
             throw new Error(result.error || "Failed to save LED layer config");
         }
+        await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, CONFIG_SYNC_TIMING.settleMs)); // Settle before any read-back
         return result;
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -153,70 +155,64 @@ export const getLedLayerConfig = async (device: Device): Promise<CommandResult> 
     }
 };
 
-export const saveLedConfig = async (device: Device): Promise<CommandResult> => {
-    if (!device.config?.led) {
-        return { success: false, error: "No LED config found on device" };
-    }
-    
-    const ledConfig = device.config.led;
+// Build the 18-byte LED config payload. Inverse of receiveLedConfig (round-trips
+// for verification compares).
+export const buildLedConfigByteArray = (ledConfig: LedConfig): number[] => {
     const ledDataBytes: number[] = [];
-    
+
     // Based on receive_led_config firmware implementation:
     // data[0-2]: pomodoro work RGB
-    // data[3-5]: pomodoro break RGB  
+    // data[3-5]: pomodoro break RGB
     // data[6-8]: pomodoro long_break RGB
     // data[9-11]: indicator speed RGB
     // data[12-14]: indicator step RGB
     // data[15-17]: indicator h_scroll RGB
-    
+
     // Pomodoro work RGB
     ledDataBytes.push(ledConfig.pomodoro?.work?.r || 0);
     ledDataBytes.push(ledConfig.pomodoro?.work?.g || 0);
     ledDataBytes.push(ledConfig.pomodoro?.work?.b || 0);
-    
+
     // Pomodoro break RGB
     ledDataBytes.push(ledConfig.pomodoro?.break?.r || 0);
     ledDataBytes.push(ledConfig.pomodoro?.break?.g || 0);
     ledDataBytes.push(ledConfig.pomodoro?.break?.b || 0);
-    
+
     // Pomodoro long_break RGB
     ledDataBytes.push(ledConfig.pomodoro?.long_break?.r || 0);
     ledDataBytes.push(ledConfig.pomodoro?.long_break?.g || 0);
     ledDataBytes.push(ledConfig.pomodoro?.long_break?.b || 0);
-    
+
     // Indicator speed RGB
     ledDataBytes.push(ledConfig.mouse_speed_accel?.r || 0);
     ledDataBytes.push(ledConfig.mouse_speed_accel?.g || 0);
     ledDataBytes.push(ledConfig.mouse_speed_accel?.b || 0);
-    
+
     // Indicator step RGB
     ledDataBytes.push(ledConfig.scroll_step_accel?.r || 0);
     ledDataBytes.push(ledConfig.scroll_step_accel?.g || 0);
     ledDataBytes.push(ledConfig.scroll_step_accel?.b || 0);
-    
+
     // Indicator h_scroll RGB
     ledDataBytes.push(ledConfig.horizontal_scroll?.r || 0);
     ledDataBytes.push(ledConfig.horizontal_scroll?.g || 0);
     ledDataBytes.push(ledConfig.horizontal_scroll?.b || 0);
-    
-    return await saveLedConfigData(device, ledDataBytes);
+
+    return ledDataBytes;
 };
 
-export const saveLedLayerConfig = async (device: Device): Promise<CommandResult> => {
-    if (!device.config?.led) {
-        return { success: false, error: "No LED config found on device" };
-    }
-    
-    const ledConfig = device.config.led;
+// Build the LED layer config payload (layer_count followed by RGB per layer).
+// Inverse of receiveLedLayerConfig.
+export const buildLedLayerConfigByteArray = (ledConfig: LedConfig): number[] => {
     const ledDataBytes: number[] = [];
-    
+
     // Based on receive_led_layer_config firmware implementation:
     // data[0]: layer_count
     // data[1-n]: layer_colors (layer_count * 3 bytes each)
-    
+
     const layerCount = ledConfig.layers?.length || 0;
     ledDataBytes.push(layerCount);
-    
+
     // Pack layer colors - send actual layer count
     for (let i = 0; i < layerCount; i++) {
         if (ledConfig.layers && i < ledConfig.layers.length) {
@@ -226,6 +222,22 @@ export const saveLedLayerConfig = async (device: Device): Promise<CommandResult>
             ledDataBytes.push(layer?.b || 0);
         }
     }
-    
-    return await saveLedLayerConfigData(device, ledDataBytes);
+
+    return ledDataBytes;
+};
+
+export const saveLedConfig = async (device: Device): Promise<CommandResult> => {
+    if (!device.config?.led) {
+        return { success: false, error: "No LED config found on device" };
+    }
+
+    return await saveLedConfigData(device, buildLedConfigByteArray(device.config.led));
+};
+
+export const saveLedLayerConfig = async (device: Device): Promise<CommandResult> => {
+    if (!device.config?.led) {
+        return { success: false, error: "No LED config found on device" };
+    }
+
+    return await saveLedLayerConfigData(device, buildLedLayerConfigByteArray(device.config.led));
 };

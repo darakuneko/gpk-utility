@@ -6,14 +6,35 @@ import {
     applyTrackpadTempConfig,
     getTrackpadConfigData,
     savePomodoroConfigData,
+    getPomodoroConfig,
     saveLedConfig,
     saveLedLayerConfig,
+    getLedConfig,
+    getLedLayerConfig,
+    buildLedConfigByteArray,
+    buildLedLayerConfigByteArray,
     updateAutoLayerSettings,
     buildTrackpadConfigByteArray,
+    saveConfigWithVerify,
     deviceStatusMap
 } from '../gpkrc';
+import { CONFIG_SYNC_TIMING } from '../gpkrc-modules/communication';
 import type { StoreSchema } from '../src/types/store';
-import type { Device, PomodoroConfig } from '../src/types/device';
+import type { Device, PomodoroConfig, CommandResult } from '../src/types/device';
+
+// byte6 of the pomodoro payload mixes saved config (notify_haptic bit6, continuous bit5)
+// with runtime state (timer_active bit7, phase bits0-1); the runtime bits advance on the
+// device and must be ignored when verifying that a saved config landed.
+// Bit layout source: buildPomodoroConfigByteArray (below) and receivePomodoroConfig
+// (gpkrc-modules/pomodoroConfig.ts). The object-level counterpart of this split is
+// savedPomodoroFields (gpkrc-modules/deviceManagement.ts) - keep them in sync.
+const maskPomodoroRuntimeBits = (bytes: number[]): number[] => {
+    const masked = [...bytes];
+    if (masked.length > 6) {
+        masked[6] = (masked[6] ?? 0) & 0b01100000;
+    }
+    return masked;
+};
 
 let mainWindow: BrowserWindow | null;
 let store: Store<StoreSchema>;
@@ -73,11 +94,10 @@ export const setupConfigHandlers = (): void => {
                 return { success: false, error: "Invalid device or missing trackpad configuration" };
             }
             const sentBytes = buildTrackpadConfigByteArray(device.config.trackpad);
-            const maxAttempts = 3;
+            // Temp-apply targets RAM (live preview), so it uses its own short settle rather
+            // than the persistent-save settle; retry/verify timing is shared via CONFIG_SYNC_TIMING.
             const applyDelayMs = 150;
-            const verifyTimeoutMs = 600;
-            const pollIntervalMs = 100;
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            for (let attempt = 1; attempt <= CONFIG_SYNC_TIMING.maxAttempts; attempt++) {
                 await applyTrackpadTempConfig(device, sentBytes);
                 // Give the device time to process the temp apply before reading it back.
                 await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, applyDelayMs));
@@ -85,10 +105,10 @@ export const setupConfigHandlers = (): void => {
                 // Poll: re-request the read-back each iteration (a single request may be dropped),
                 // then wait for the HID data listener to update deviceStatusMap.
                 let matched = false;
-                const deadline = Date.now() + verifyTimeoutMs;
+                const deadline = Date.now() + CONFIG_SYNC_TIMING.verifyTimeoutMs;
                 while (Date.now() < deadline) {
                     await getTrackpadConfigData(device);
-                    await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, pollIntervalMs));
+                    await new Promise<void>((resolve): ReturnType<typeof setTimeout> => setTimeout(resolve, CONFIG_SYNC_TIMING.pollIntervalMs));
                     const actual = deviceStatusMap[device.id]?.config?.trackpad;
                     if (actual) {
                         const actualBytes = buildTrackpadConfigByteArray(actual);
@@ -134,30 +154,78 @@ export const setupConfigHandlers = (): void => {
             let pomodoroSaved = false;
             let ledSaved = false;
             
+            // Each save runs through saveConfigWithVerify, which writes then reads back and
+            // retries until the device confirms the value. It registers the desired value
+            // synchronously, so the broadcast shield is active even though we do not await
+            // (kept un-awaited to prevent UI sluggishness).
+            const deviceId = deviceWithConfig.id;
+
             // Handle trackpad config
             if ((updateAll || typesToUpdate.includes('trackpad')) && deviceWithConfig.config.trackpad) {
-                // Use the existing local function
                 const trackpadBytes = buildTrackpadConfigByteArray(deviceWithConfig.config.trackpad);
-                void saveTrackpadConfig(deviceWithConfig, trackpadBytes); // Deliberately not awaiting to prevent UI sluggishness
+                void saveConfigWithVerify({
+                    deviceId,
+                    section: 'trackpad',
+                    desiredBytes: trackpadBytes,
+                    write: (): Promise<CommandResult> => saveTrackpadConfig(deviceWithConfig, trackpadBytes),
+                    readback: (): Promise<CommandResult> => getTrackpadConfigData(deviceWithConfig),
+                    readActualBytes: (): number[] | undefined => {
+                        const actual = deviceStatusMap[deviceId]?.config?.trackpad;
+                        return actual ? buildTrackpadConfigByteArray(actual) : undefined;
+                    }
+                });
                 trackpadSaved = true;
             }
 
             // Handle pomodoro config
             if ((updateAll || typesToUpdate.includes('pomodoro')) && deviceWithConfig.config.pomodoro) {
                 const pomodoroBytes = buildPomodoroConfigByteArray(deviceWithConfig.config.pomodoro);
-                void savePomodoroConfigData(deviceWithConfig, pomodoroBytes); // Deliberately not awaiting to prevent UI sluggishness
+                void saveConfigWithVerify({
+                    deviceId,
+                    section: 'pomodoro',
+                    desiredBytes: pomodoroBytes,
+                    write: (): Promise<CommandResult> => savePomodoroConfigData(deviceWithConfig, pomodoroBytes),
+                    readback: (): Promise<CommandResult> => getPomodoroConfig(deviceWithConfig),
+                    readActualBytes: (): number[] | undefined => {
+                        const actual = deviceStatusMap[deviceId]?.config?.pomodoro;
+                        return actual ? buildPomodoroConfigByteArray(actual) : undefined;
+                    },
+                    compareMask: maskPomodoroRuntimeBits
+                });
                 pomodoroSaved = true;
             }
 
             // Handle LED config
             if ((updateAll || typesToUpdate.includes('led')) && deviceWithConfig.config.led) {
-                void saveLedConfig(deviceWithConfig); // Deliberately not awaiting to prevent UI sluggishness
+                const ledBytes = buildLedConfigByteArray(deviceWithConfig.config.led);
+                void saveConfigWithVerify({
+                    deviceId,
+                    section: 'led',
+                    desiredBytes: ledBytes,
+                    write: (): Promise<CommandResult> => saveLedConfig(deviceWithConfig),
+                    readback: (): Promise<CommandResult> => getLedConfig(deviceWithConfig),
+                    readActualBytes: (): number[] | undefined => {
+                        const actual = deviceStatusMap[deviceId]?.config?.led;
+                        return actual ? buildLedConfigByteArray(actual) : undefined;
+                    }
+                });
                 ledSaved = true;
             }
 
             // Handle LED layer config
             if ((updateAll || typesToUpdate.includes('led_layer')) && deviceWithConfig.config.led) {
-                void saveLedLayerConfig(deviceWithConfig); // Deliberately not awaiting to prevent UI sluggishness
+                const ledLayerBytes = buildLedLayerConfigByteArray(deviceWithConfig.config.led);
+                void saveConfigWithVerify({
+                    deviceId,
+                    section: 'led_layer',
+                    desiredBytes: ledLayerBytes,
+                    write: (): Promise<CommandResult> => saveLedLayerConfig(deviceWithConfig),
+                    readback: (): Promise<CommandResult> => getLedLayerConfig(deviceWithConfig),
+                    readActualBytes: (): number[] | undefined => {
+                        const actual = deviceStatusMap[deviceId]?.config?.led;
+                        return actual ? buildLedLayerConfigByteArray(actual) : undefined;
+                    }
+                });
                 ledSaved = true;
             }
 
