@@ -16,8 +16,6 @@ Device Polling Interval、トラックパッドの設定は設定内容により
 万が一、動作に問題が生じた場合は、Device Polling Intervalを1000msec、トラックパッドはVial Userタブにある「EEPROM Clear」ボタンを設定し押すことで、デバイス設定を初期化することが可能です。<br>
 EEPROM Clearはトラックパッド以外の全ての設定もクリアされます。
 
-![Image](https://github.com/user-attachments/assets/b9a13791-89b5-4eea-942b-cd967c2d444d)
-
 #### Linux: Auto Layer Switch機能について
 Linux環境ではX11またはGNOME Shell拡張を前提としています。
 

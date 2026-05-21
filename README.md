@@ -9,7 +9,6 @@ It provides customization features tailored to each connected device.<br>
 This application constantly monitors the state of the active window and offers a layer switching function. <br>
 For this reason, it continues to reside in the task tray (or system tray) even after the window is closed.<br>
 If you do not wish to use these functions, you can configure the application via the menu to terminate when the window is closed.<br>
-![Image](https://github.com/user-attachments/assets/b9a13791-89b5-4eea-942b-cd967c2d444d)
 
 #### Notice
 Please do not launch any applications that communicate with the device, such as Vial, before starting GPK Utility.
