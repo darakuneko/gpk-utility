@@ -1,16 +1,18 @@
-# 付録A: パケット / 構造体 ビットパッキング早見表
+# Appendix A: Packet / Struct Bit-Packing Reference
 
-> ホスト側参照: `gpkrc-modules/communication.ts`, `gpkrc-modules/trackpadConfig.ts`,
+[日本語](./vial_firmware_appendix_a_packets.ja.md)
+
+> Host references: `gpkrc-modules/communication.ts`, `gpkrc-modules/trackpadConfig.ts`,
 > `gpkrc-modules/pomodoroConfig.ts`, `gpkrc-modules/ledConfig.ts`
 >
-> ファームウェア参照: [numnum_bento_max/config/device_config.c](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/config/device_config.c),
+> Firmware reference: [numnum_bento_max/config/device_config.c](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/config/device_config.c),
 > `trackpad_config.c`, `pomodoro_config.c`, `led_config.c`
 
 ---
 
-## 1. HID パケット共通フォーマット
+## 1. Common HID Packet Format
 
-### ホスト → ファームウェア (64バイト, USB HID output report)
+### Host → Firmware (64 bytes, USB HID output report)
 
 ```
 Byte  0  : 0x00            (HID report ID / padding)
@@ -21,10 +23,10 @@ Byte  4+ : payload data
 Byte N.. : 0x00 padding to 64 bytes
 ```
 
-> ホスト実装: `gpkrc-modules/deviceManagement.ts:646`
+> Host implementation: `gpkrc-modules/deviceManagement.ts:646`
 > `const unpadded = [0, commandId.gpkRCPrefix, ...validatedCommand];`
 
-### ファームウェア → ホスト (32バイト, USB HID input report)
+### Firmware → Host (32 bytes, USB HID input report)
 
 ```
 Byte  0  : 0xFA            (id_gpk_rc_prefix)
@@ -34,7 +36,7 @@ Byte  3+ : payload data
 Byte N.. : 0x00 padding to 32 bytes
 ```
 
-> ホスト受信処理: `gpkrc-modules/deviceManagement.ts:321-324`
+> Host receive handling: `gpkrc-modules/deviceManagement.ts:321-324`
 > ```ts
 > if (buffer[0] === commandId.gpkRCPrefix) {
 >     const receivedCmdId = buffer[1];
@@ -45,30 +47,30 @@ Byte N.. : 0x00 padding to 32 bytes
 
 ---
 
-## 2. デバイス識別パケット
+## 2. Device Identification Packet
 
 ### FW → Host: send_device_config (action: id_device_get_value=0x01)
 
-`actualData` (buffer.slice(3)) のレイアウト:
+`actualData` (buffer.slice(3)) layout:
 
-| actualData[] | 説明 | 備考 |
+| actualData[] | Description | Notes |
 |---|---|---|
-| [0] | プロトコルバージョン | 固定値 `1` |
-| [1] | 初期化フラグ | `device_config.init` (0=未初期化, 1=初期化済) |
-| [2..] | device_name 文字列 | null終端, UTF-8 |
+| [0] | Protocol version | Fixed value `1` |
+| [1] | Init flag | `device_config.init` (0=uninitialized, 1=initialized) |
+| [2..] | device_name string | null-terminated, UTF-8 |
 
-**device_name 一覧** (→ `gpkrc-modules/deviceTypes.ts:3-10`):
+**device_name list** (→ `gpkrc-modules/deviceTypes.ts:3-10`):
 
-| 文字列 | 意味 | LED 対応 |
+| String | Meaning | LED Support |
 |---|---|---|
-| `"keyboard"` | 通常キーボード | × |
-| `"keyboard_oled"` | OLED付きキーボード | × |
-| `"keyboard_tp"` | タッチパッド付きキーボード | ◯ |
-| `"macropad_tp_btns"` | タッチパッド+ボタン付きマクロパッド | ◯ |
+| `"keyboard"` | Standard keyboard | × |
+| `"keyboard_oled"` | Keyboard with OLED | × |
+| `"keyboard_tp"` | Keyboard with trackpad | ◯ |
+| `"macropad_tp_btns"` | Macropad with trackpad + buttons | ◯ |
 
-> `"macropad_tp"` も同等の動作をする。`"macropad"` は `"keyboard"` と同等の動作をする。
+> `"macropad_tp"` behaves the same way. `"macropad"` behaves the same as `"keyboard"`.
 
-> LED 機能対応判定: `gpkrc.ts:145-148`
+> LED capability check: `gpkrc.ts:145-148`
 > ```ts
 > const isLedDevice = device.deviceType === 'macropad_tp_btns' ||
 >                    device.deviceType === 'macropad_tp' ||
@@ -77,29 +79,29 @@ Byte N.. : 0x00 padding to 32 bytes
 
 ---
 
-## 3. trackpad_config パケット
+## 3. trackpad_config Packet
 
-双方向で同一の19バイトレイアウト。
+Identical 19-byte layout in both directions.
 
 ### FW → Host: send_trackpad_config (action: id_trackpad_get_value=0x02)
 
-`actualData` (= FWのdata[3..21]):
+`actualData` (= FW's data[3..21]):
 
-| actualData[] | bits | フィールド | 型 | デフォルト値 | UI 表示名 |
+| actualData[] | bits | Field | Type | Default | UI Label |
 |---|---|---|---|---|---|
 | [0] | [7:1] | hf_waveform_number | uint7 | 48 | Haptic Pattern |
 | [1] | [7] | can_hf_for_layer | bool | true | Haptic on Layer Change |
 | [1] | [6] | can_drag | bool | true | Drag & Drop |
-| [1] | [5:0] | scroll_term[9:4] | — | 上位6bit | — |
-| [2] | [7:4] | scroll_term[3:0] | — | 下位4bit | Scroll Term |
-| [2] | [3:0] | drag_term[9:6] | — | 上位4bit | — |
-| [3] | [7:2] | drag_term[5:0] | — | 下位6bit | Term (drag) |
+| [1] | [5:0] | scroll_term[9:4] | — | upper 6 bits | — |
+| [2] | [7:4] | scroll_term[3:0] | — | lower 4 bits | Scroll Term |
+| [2] | [3:0] | drag_term[9:6] | — | upper 4 bits | — |
+| [3] | [7:2] | drag_term[5:0] | — | lower 6 bits | Term (drag) |
 | [3] | [1] | can_trackpad_layer | bool | false | Trackpad Layer |
 | [3] | [0] | can_reverse_scrolling_direction | bool | false | Reverse Vertical |
 | [4] | [7] | drag_strength_mode | bool | false | Mode (Strength) |
 | [4] | [6:2] | drag_strength | uint5 | 6 | Strength |
-| [4] | [1:0] | default_speed[5:4] | — | 上位2bit | — |
-| [5] | [7:4] | default_speed[3:0] | — | 下位4bit | Speed (0.1–5.0) |
+| [4] | [1:0] | default_speed[5:4] | — | upper 2 bits | — |
+| [5] | [7:4] | default_speed[3:0] | — | lower 4 bits | Speed (0.1–5.0) |
 | [5] | [3:0] | scroll_step | uint4 | 0 | Scroll Steps (lines) |
 | [6] | [7] | can_short_scroll | bool | true | Short Scroll |
 | [6] | [6] | can_reverse_h_scrolling_direction | bool | false | Reverse Horizontal |
@@ -108,9 +110,9 @@ Byte N.. : 0x00 padding to 32 bytes
 | [11..12] | — | pinch_term | uint16 BE | 300 | Pinch Term (ms) |
 | [13..14] | — | gesture_term | uint16 BE | 300 | Gesture Term (ms) |
 | [15..16] | — | short_scroll_term | uint16 BE | 70 | Short Scroll Term (ms) |
-| [17..18] | — | zoom_distance | uint16 BE | 400 | Pinch Distance (host名) |
+| [17..18] | — | zoom_distance | uint16 BE | 400 | Pinch Distance (host name) |
 
-**ビットパッキング詳細 (結合ロジック)**:
+**Bit-packing details (join logic):**
 
 ```
 scroll_term (10bit) = joinScrollTerm(actualData[1], actualData[2])
@@ -123,23 +125,23 @@ default_speed (6bit) = joinDefaultSpeed(actualData[4], actualData[5])
   = ((actualData[4] & 0b00000011) << 4) | ((actualData[5] & 0b11110000) >> 4)
 ```
 
-> ホスト実装: `gpkrc-modules/trackpadConfig.ts:12-28`
+> Host implementation: `gpkrc-modules/trackpadConfig.ts:12-28`
 
 ### Host → FW: receive_trackpad_config (action: id_trackpad_set_value=0x02)
 
-**同一レイアウト** (data[0..18])。ホストが `saveTrackpadConfig()` で送信する際も同じバイト配列。
+**Identical layout** (data[0..18]). The host sends the same byte array when calling `saveTrackpadConfig()`.
 
-> ファームウェア実装: [numnum_bento_max/config/trackpad_config.c:138-183](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/config/trackpad_config.c#L138-L183)
+> Firmware implementation: [numnum_bento_max/config/trackpad_config.c:138-183](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/config/trackpad_config.c#L138-L183)
 
 ---
 
-## 4. pomodoro_config パケット
+## 4. pomodoro_config Packet
 
 ### FW → Host: send_pomodoro_config (action: id_pomodoro_get_value=0x03)
 
-`actualData` (= FWのdata[3..10], 8バイト):
+`actualData` (= FW's data[3..10], 8 bytes):
 
-| actualData[] | bits | フィールド | デフォルト値 | UI 表示名 |
+| actualData[] | bits | Field | Default | UI Label |
 |---|---|---|---|---|
 | [0] | [7:0] | work_time | 25 | Work Time (min) |
 | [1] | [7:0] | break_time | 5 | Break Time (min) |
@@ -147,49 +149,49 @@ default_speed (6bit) = joinDefaultSpeed(actualData[4], actualData[5])
 | [3] | [3:0] | work_interval | 4 | Work Interval |
 | [4] | [7:0] | work_hf_pattern | 119 | Haptic (Work) |
 | [5] | [7:0] | break_hf_pattern | 16 | Haptic (Break) |
-| [6] | [7] | timer_active | — | (状態のみ, 設定不可) |
+| [6] | [7] | timer_active | — | (status only, not configurable) |
 | [6] | [6] | notify_haptic_enable | true | Haptic Notification |
 | [6] | [5] | continuous_mode | false | Continuous Mode |
-| [6] | [1:0] | phase | — | (状態のみ: 0=IDLE, 1=WORK, 2=BREAK, 3=LONG_BREAK) |
+| [6] | [1:0] | phase | — | (status only: 0=IDLE, 1=WORK, 2=BREAK, 3=LONG_BREAK) |
 | [7] | [3:0] | pomodoro_cycle | 3 | Pomodoro Cycle |
 
 ### Host → FW: receive_pomodoro_config (action: id_pomodoro_set_value=0x03)
 
-同じバイト位置だが [6] の `timer_active` と `phase` はホスト送信時に無視される:
+Same byte positions, but `timer_active` and `phase` in [6] are ignored when sent by the host:
 
-| data[] | bits | フィールド |
+| data[] | bits | Field |
 |---|---|---|
 | [6] | [6] | notify_haptic_enable |
 | [6] | [5] | continuous_mode |
-| [6] | [7],[1:0] | 未使用 (0 で送信) |
+| [6] | [7],[1:0] | unused (sent as 0) |
 
-> ホスト実装: `gpkrc-modules/pomodoroConfig.ts:12-28`
-> ファームウェア実装: [numnum_bento_max/config/pomodoro_config.c:56-89, 119-142](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/config/pomodoro_config.c#L56-L89)
+> Host implementation: `gpkrc-modules/pomodoroConfig.ts:12-28`
+> Firmware implementation: [numnum_bento_max/config/pomodoro_config.c:56-89, 119-142](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/config/pomodoro_config.c#L56-L89)
 
 ### FW → Host: send_pomodoro_active_status (action: id_pomodoro_active_get_value=0x04)
 
-`actualData` (5バイト):
+`actualData` (5 bytes):
 
-| actualData[] | bits | フィールド |
+| actualData[] | bits | Field |
 |---|---|---|
 | [0] | [7] | timer_active |
 | [0] | [1:0] | phase |
-| [1] | [7:0] | minutes (残り時間) |
+| [1] | [7:0] | minutes (remaining time) |
 | [2] | [7:0] | seconds |
 | [3] | [7:0] | current_work_interval |
 | [4] | [7:0] | current_pomodoro_cycle |
 
-> ホスト実装: `gpkrc-modules/pomodoroConfig.ts:30-38`
+> Host implementation: `gpkrc-modules/pomodoroConfig.ts:30-38`
 
 ---
 
-## 5. led_config パケット
+## 5. led_config Packet
 
 ### FW → Host: send_led_config (action: id_led_get_value=0x05)
 
-`actualData` (18バイト):
+`actualData` (18 bytes):
 
-| actualData[] | フィールド | UI 表示名 |
+| actualData[] | Field | UI Label |
 |---|---|---|
 | [0..2] | pomodoro work RGB | Pomodoro Work Color |
 | [3..5] | pomodoro break RGB | Pomodoro Break Color |
@@ -200,16 +202,16 @@ default_speed (6bit) = joinDefaultSpeed(actualData[4], actualData[5])
 
 ### Host → FW: receive_led_config (action: id_led_set_value=0x04)
 
-**同一レイアウト** (data[0..17])。
+**Identical layout** (data[0..17]).
 
-> ホスト実装: `gpkrc-modules/ledConfig.ts:12-58, 162-202`
-> ファームウェア実装: [numnum_bento_max/config/led_config.c:130-178, 207-283](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/config/led_config.c#L130-L178)
+> Host implementation: `gpkrc-modules/ledConfig.ts:12-58, 162-202`
+> Firmware implementation: [numnum_bento_max/config/led_config.c:130-178, 207-283](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/config/led_config.c#L130-L178)
 
 ### FW → Host: send_led_layer_config (action: id_led_layer_get_value=0x06)
 
 `actualData`:
 
-| actualData[] | フィールド |
+| actualData[] | Field |
 |---|---|
 | [0] | layer_count |
 | [1..3] | layer[0] RGB |
@@ -219,14 +221,14 @@ default_speed (6bit) = joinDefaultSpeed(actualData[4], actualData[5])
 
 ### Host → FW: receive_led_layer_config (action: id_led_layer_set_value=0x05)
 
-同一レイアウト (data[0] = layer_count, data[1..] = RGB x layer_count)。
+Identical layout (data[0] = layer_count, data[1..] = RGB × layer_count).
 
-> ホスト実装: `gpkrc-modules/ledConfig.ts:60-79, 205-230`
-> ファームウェア実装: [numnum_bento_max/config/led_config.c:181-303](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/config/led_config.c#L181-L303)
+> Host implementation: `gpkrc-modules/ledConfig.ts:60-79, 205-230`
+> Firmware implementation: [numnum_bento_max/config/led_config.c:181-303](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/config/led_config.c#L181-L303)
 
 ---
 
-## 6. OLED 書き込みパケット (operation)
+## 6. OLED Write Packet (operation)
 
 ### Host → FW: id_oled_write (gpkRCOperation=0x03, action=0x02)
 
@@ -234,14 +236,14 @@ default_speed (6bit) = joinDefaultSpeed(actualData[4], actualData[5])
 [0x00, 0xFA, 0x03, 0x02, text_bytes..., 0x00]
 ```
 
-`text_bytes` = 時刻文字列 `YYYY/MM/DD ddd HH:mm ` の ASCII バイト列 + null終端
+`text_bytes` = ASCII byte sequence of the time string `YYYY/MM/DD ddd HH:mm ` + null terminator
 
-> ホスト実装: `gpkrc-modules/oledDisplay.ts:33`
-> ファームウェア実装: `device_config.c:94-99` (oled_write handler)
+> Host implementation: `gpkrc-modules/oledDisplay.ts:33`
+> Firmware implementation: `device_config.c:94-99` (oled_write handler)
 
 ---
 
-## 7. layer_move パケット (operation)
+## 7. layer_move Packet (operation)
 
 ### Host → FW: id_layer_move (gpkRCOperation=0x03, action=0x01)
 
@@ -249,22 +251,49 @@ default_speed (6bit) = joinDefaultSpeed(actualData[4], actualData[5])
 [0x00, 0xFA, 0x03, 0x01, target_layer]
 ```
 
-`target_layer` = 移動先レイヤー番号 (0-indexed)
+`target_layer` = destination layer number (0-indexed)
 
-> ホスト実装: `gpkrc.ts:256-263`
-> ファームウェア実装: `device_config.c:92-93`
+> Host implementation: `gpkrc.ts:256-263`
+> Firmware implementation: `device_config.c:92-93`
 
 ---
 
-## 8. set_value_complete パケット
+## 8. trackpad_temp_apply Packet (operation) — Live Apply
+
+### Host → FW: id_trackpad_temp_apply (gpkRCOperation=0x03, action=0x03)
+
+```
+[0x00, 0xFA, 0x03, 0x03, trackpad_bytes(19)...]
+```
+
+`trackpad_bytes` uses the **same 19-byte layout** as `receive_trackpad_config` in §3.
+The received values are applied to the running trackpad_config **temporarily (RAM only, no EEPROM persistence)**.
+Used by the Config Edit Mode "Apply" (live preview).
+
+**Difference from `id_trackpad_set_value` (0x02):**
+- **Does not persist** (does not call `schedule_device_config_save`)
+- **Does not return `send_set_value_complete` (ACK)** (it is an operation command, like layer_move/oled_write)
+
+The host does not wait for an ACK; it reads back via `id_trackpad_get_value` to verify, and re-sends on mismatch
+(write → readback → verify → retry).
+
+> Host implementation:
+> - `gpkrc-modules/communication.ts:29` (`trackpadTempApply: 0x03`)
+> - `gpkrc-modules/trackpadConfig.ts:108-118` (`applyTrackpadTempConfig`)
+> - `ipcHandlers/configHandlers.ts:91` (`applyTrackpadTemp` — read-back verification + retry)
+> - `preload/api.ts:244` (`applyTrackpadTemp`)
+
+---
+
+## 9. set_value_complete Packet
 
 ### FW → Host (action: id_set_value_complete=0x01)
 
-Set 系コマンド受信後に FW からホストへ送信する ACK:
+ACK sent from FW to host after receiving a Set-type command:
 
 ```
 [0xFA, 0x01, 0x01, 0x00...]
 ```
 
-> ファームウェア実装: `device_config.c:41-47`
-> ホスト受信: `deviceManagement.ts:327-330`
+> Firmware implementation: `device_config.c:41-47`
+> Host receive: `deviceManagement.ts:327-330`

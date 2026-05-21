@@ -31,6 +31,32 @@ To achieve equivalent functionality on KDE, a custom implementation using KWin s
 We currently do not have access to a KDE environment and therefore do not provide official support, but pull requests for implementation or improvements are welcome.<br>
 
 
+## Table of Contents
+
+- [Feature Tabs](#feature-tabs)
+  - [Common](#common)
+    - [Layer](#layer)
+    - [Haptic](#haptic)
+  - [Trackpad Features](#trackpad-features)
+    - [Mouse](#mouse)
+    - [Scroll](#scroll)
+    - [Drag & Drop](#drag--drop)
+    - [Timer](#timer)
+    - [Gesture](#gesture)
+    - [Config Edit Mode](#config-edit-mode)
+  - [Application Settings](#application-settings)
+  - [Keyboard Features](#keyboard-features)
+    - [OLED](#oled)
+    - [LED](#led)
+- [Other Features](#other-features)
+- [Usage](#usage)
+- [Custom Devices](#custom-devices)
+  - [Definitions](#definitions)
+  - [Examples](#examples)
+  - [Implementation Guide](#implementation-guide)
+- [Developer Support](#developer-support)
+- [License](#license)
+
 ## Feature Tabs
 
 ### Common

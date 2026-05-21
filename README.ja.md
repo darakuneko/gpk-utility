@@ -31,6 +31,31 @@ KDE環境で同等の機能を実現するには、KWinスクリプト等を用�
 現時点ではKDE環境を保有していないため公式対応は行っていませんが、実装・改善に関するプルリクエストは歓迎します。<br>
 
 
+## 目次
+
+- [Feature Tabs](#feature-tabs)
+  - [Common](#common)
+    - [Layer](#layer)
+    - [Haptic](#haptic)
+  - [Trackpad Features](#trackpad-features)
+    - [Mouse](#mouse)
+    - [Scroll](#scroll)
+    - [Drag & Drop](#drag--drop)
+    - [Timer](#timer)
+    - [Gesture](#gesture)
+    - [Config Edit Mode](#config-edit-mode)
+  - [Keyboard Features](#keyboard-features)
+    - [OLED](#oled)
+    - [LED](#led)
+  - [Application Settings](#application-settings)
+- [使用方法](#使用方法)
+- [カスタム](#カスタム)
+  - [定義](#定義)
+  - [作例](#作例)
+  - [実装ガイド](#実装ガイド)
+- [開発者サポート](#開発者サポート)
+- [ライセンス](#ライセンス)
+
 ## Feature Tabs
 
 ### Common
@@ -178,11 +203,11 @@ trakpad: [numnum bento](https://github.com/darakuneko/keyboard/tree/main/qmk/num
 **仕様は予告なく変更されます**
 
 ### 実装ガイド
-- [Vial ファームウェア統合仕様書](./docs/features/vial_firmware_integration.md)
-- [付録A: パケット / 構造体早見表](./docs/features/vial_firmware_appendix_a_packets.md)
-- [付録B: device_type 別必須機能マトリクス](./docs/features/vial_firmware_appendix_b_device_matrix.md)
-- [付録C: ホスト UI ↔ フィールド対応表](./docs/features/vial_firmware_appendix_c_host_mapping.md)
-- [付録D: 実装チェックリスト](./docs/features/vial_firmware_appendix_d_checklist.md)
+- [Vial ファームウェア統合仕様書](./docs/features/vial_firmware_integration.ja.md)
+- [付録A: パケット / 構造体早見表](./docs/features/vial_firmware_appendix_a_packets.ja.md)
+- [付録B: device_type 別必須機能マトリクス](./docs/features/vial_firmware_appendix_b_device_matrix.ja.md)
+- [付録C: ホスト UI ↔ フィールド対応表](./docs/features/vial_firmware_appendix_c_host_mapping.ja.md)
+- [付録D: 実装チェックリスト](./docs/features/vial_firmware_appendix_d_checklist.ja.md)
 
 ## 開発者サポート
 

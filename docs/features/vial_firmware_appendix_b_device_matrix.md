@@ -1,35 +1,37 @@
-# 付録B: device_type 別 必須機能マトリクス
+# Appendix B: Required-Feature Matrix by device_type
 
-> ホスト参照: `gpkrc-modules/deviceTypes.ts`, `gpkrc.ts:145-148`
+[日本語](./vial_firmware_appendix_b_device_matrix.ja.md)
+
+> Host references: `gpkrc-modules/deviceTypes.ts`, `gpkrc.ts:145-148`
 
 ---
 
-## 1. 実装コンポーネント マトリクス
+## 1. Implementation Component Matrix
 
-| コンポーネント | keyboard | keyboard_oled | keyboard_tp | macropad_tp_btns |
+| Component | keyboard | keyboard_oled | keyboard_tp | macropad_tp_btns |
 |---|:---:|:---:|:---:|:---:|
-| **device_config core** | ◯必須 | ◯必須 | ◯必須 | ◯必須 |
-| **EEPROM管理 (init/save)** | — | — | ◯必須 | ◯必須 |
-| **VIAL (VIA_ENABLE)** | ◯必須 | ◯必須 | ◯必須 | ◯必須 |
-| **GPKRC_ENABLE** | ◯必須 | ◯必須 | ◯必須 | ◯必須 |
-| trackpad_config | — | — | ◯必須 | ◯必須 |
-| pomodoro_config | △任意 | △任意 | △任意 | △任意 |
-| led_config | — | — | ◯必須 | ◯必須 |
-| OLED write handler | — | ◯必須 | — | — |
-| タッチパッドドライバ | — | — | ◯必須 | ◯必須 |
-| DRV2605L (Haptic) | — | — | △推奨 | △推奨 |
-| rgb_matrix (LED) | — | — | △推奨 | △推奨 |
-| POINTING_DEVICE_ENABLE | — | — | ◯必須 | ◯必須 |
+| **device_config core** | ◯ required | ◯ required | ◯ required | ◯ required |
+| **EEPROM management (init/save)** | — | — | ◯ required | ◯ required |
+| **VIAL (VIA_ENABLE)** | ◯ required | ◯ required | ◯ required | ◯ required |
+| **GPKRC_ENABLE** | ◯ required | ◯ required | ◯ required | ◯ required |
+| trackpad_config | — | — | ◯ required | ◯ required |
+| pomodoro_config | △ optional | △ optional | △ optional | △ optional |
+| led_config | — | — | ◯ required | ◯ required |
+| OLED write handler | — | ◯ required | — | — |
+| Trackpad driver | — | — | ◯ required | ◯ required |
+| DRV2605L (Haptic) | — | — | △ recommended | △ recommended |
+| rgb_matrix (LED) | — | — | △ recommended | △ recommended |
+| POINTING_DEVICE_ENABLE | — | — | ◯ required | ◯ required |
 
-> **pomodoro_config** はタッチパッドの Haptic フィードバックと連動するため、タッチパッドなし機種では動作するが HF通知は機能しない。
+> **pomodoro_config** is linked to the trackpad's haptic feedback, so it works on devices without a trackpad but the HF notification will not function.
 >
-> **`keyboard_tp` のみ** Layer タブに「Trackpad Layer」トグルが表示される。`macropad_tp` は `macropad_tp_btns` と、`macropad` は `keyboard` と同等の動作をする。
+> **Only `keyboard_tp`** shows the "Trackpad Layer" toggle in the Layer tab. `macropad_tp` behaves the same as `macropad_tp_btns`, and `macropad` behaves the same as `keyboard`.
 
 ---
 
-## 2. rules.mk 構成例
+## 2. rules.mk Configuration Examples
 
-### keyboard (最小構成)
+### keyboard (minimal)
 
 ```makefile
 VIA_ENABLE = yes
@@ -48,15 +50,15 @@ OLED_ENABLE = yes
 SRC += config/device_config.c
 ```
 
-### macropad_tp_btns (タッチパッド付き — numnum_bento_max と同等)
+### macropad_tp_btns (with trackpad — equivalent to numnum_bento_max)
 
 ```makefile
 POINTING_DEVICE_ENABLE = yes
-POINTING_DEVICE_DRIVER = custom        # またはデバイス固有ドライバ
+POINTING_DEVICE_DRIVER = custom        # or a device-specific driver
 VIA_ENABLE = yes
 VIAL_ENABLE = yes
-VIALRGB_ENABLE = yes                    # RGB Matrix + Vial 連携
-CONSOLE_ENABLE = yes                    # デバッグ用 (本番では削除可)
+VIALRGB_ENABLE = yes                    # RGB Matrix + Vial integration
+CONSOLE_ENABLE = yes                    # for debugging (can be removed in production)
 GPKRC_ENABLE = yes
 SRC += i2c_master.c \
        device/iqs5xx.c \
@@ -67,64 +69,64 @@ SRC += i2c_master.c \
        config/led_config.c
 ```
 
-> 参照: [numnum_bento_max/rules.mk](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/rules.mk), [numnum_bento_max/keymaps/vial/rules.mk](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/keymaps/vial/rules.mk)
+> Reference: [numnum_bento_max/rules.mk](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/rules.mk), [numnum_bento_max/keymaps/vial/rules.mk](https://github.com/darakuneko/keyboard/blob/main/qmk/numnum_bento_max/keymaps/vial/rules.mk)
 
 ---
 
-## 3. keyboard.json 必須 features
+## 3. Required keyboard.json features
 
-| 機能 | 必須条件 |
+| Feature | Required when |
 |---|---|
-| `"mousekey": true` | タッチパッド系 (mouse report 使用) |
-| `"extrakey": true` | ほぼ全機種推奨 |
-| `"rgb_matrix": true` | LED 機能使用時 |
-| `"haptic": true` | DRV2605L Haptic 使用時 |
-| `"encoder_map": true` | エンコーダー使用時 |
+| `"mousekey": true` | Trackpad devices (uses mouse report) |
+| `"extrakey": true` | Recommended for nearly all devices |
+| `"rgb_matrix": true` | When using LED features |
+| `"haptic": true` | When using DRV2605L haptic |
+| `"encoder_map": true` | When using encoders |
 
 ---
 
-## 4. GPK Utility 表示タブ対応
+## 4. GPK Utility Tab Mapping
 
-| device_type | 表示されるタブ/機能 |
+| device_type | Displayed tabs/features |
 |---|---|
 | keyboard | Layer (Auto Layer), App Settings |
-| keyboard_oled | 上記 + OLED 設定 |
-| keyboard_tp | 上記 (OLED なし) + Trackpad全機能 + LED + **Trackpad Layer トグル** |
-| macropad_tp_btns | keyboard + Trackpad全機能 + Pomodoro + LED |
+| keyboard_oled | Above + OLED settings |
+| keyboard_tp | Above (no OLED) + all Trackpad features + LED + **Trackpad Layer toggle** |
+| macropad_tp_btns | keyboard + all Trackpad features + Pomodoro + LED |
 
 ---
 
-## 5. device_name 文字列 と deviceType の対応
+## 5. device_name String ↔ deviceType Mapping
 
-ファームウェアの `send_device_config()` で返す文字列がアプリの表示を決定する。
+The string returned by the firmware's `send_device_config()` determines what the app displays.
 
 ```c
 // device_config.c: send_device_config()
-const char device_name[] = "macropad_tp_btns";  // ← 機種に合わせて変更 ("macropad_tp" も可)
+const char device_name[] = "macropad_tp_btns";  // ← change to match your device ("macropad_tp" is also valid)
 memcpy(&data[5], device_name, sizeof(device_name));
 ```
 
-ホスト側の変換: `gpkrc-modules/deviceTypes.ts:15-33`
+Host-side conversion: `gpkrc-modules/deviceTypes.ts:15-33`
 ```ts
-// stringToDeviceType() で enum に変換
+// stringToDeviceType() converts to an enum
 "macropad_tp_btns" → DeviceType.MACROPAD_TP_BTNS
 ```
 
 ---
 
-## 6. EEPROM サイズ要件
+## 6. EEPROM Size Requirements
 
-`#define EECONFIG_USER_DATA_SIZE` に指定すべき最小サイズ:
+Minimum size to specify for `#define EECONFIG_USER_DATA_SIZE`:
 
-| 使用コンポーネント | 必要サイズ (目安) |
+| Components used | Required size (approx.) |
 |---|---|
-| device_config (init flag のみ) | 4 bytes |
+| device_config (init flag only) | 4 bytes |
 | + trackpad_config_t | ~16 bytes |
 | + pomodoro_config_t | ~8 bytes |
 | + led_config (9 layers + pomodoro + indicator) | ~64 bytes |
-| **フル構成合計** | **~96 bytes** |
+| **Full configuration total** | **~96 bytes** |
 
-> numnum_bento_max: `#define EECONFIG_USER_DATA_SIZE 128` (余裕を持って設定)
+> numnum_bento_max: `#define EECONFIG_USER_DATA_SIZE 128` (set with headroom)
 >
-> RP2040 の場合 `#define EECONFIG_USER_DATA_SIZE` は `quantum/eeprom/eeprom_driver.h` の
-> 上限内であれば任意の値を指定可能。
+> For RP2040, `#define EECONFIG_USER_DATA_SIZE` can be any value within the limit
+> defined in `quantum/eeprom/eeprom_driver.h`.
