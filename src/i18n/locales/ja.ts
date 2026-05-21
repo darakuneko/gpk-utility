@@ -142,7 +142,7 @@ const jaMessages: LocaleMessages = {
     enableHapticNotifications: '振動フィードバック通知'
   },
   data: {
-    saveHint: 'マウス・スクロール・ジェスチャーを保存',
+    usageHint: '名前を付けて作成後、編集ボタンを押して編集モードに切り替え、使用したいアプリを操作しながらパラメーターを調整してください',
     save: '保存',
     create: '作成',
     edit: '編集',

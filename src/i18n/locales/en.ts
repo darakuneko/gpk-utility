@@ -142,7 +142,7 @@ const enMessages: LocaleMessages = {
     enableHapticNotifications: 'Haptic Feedback Notifications'
   },
   data: {
-    saveHint: 'Mouse / Scroll / Gesture',
+    usageHint: 'After creating with a name, press the Edit button to switch to edit mode, then adjust the parameters while operating your target app.',
     save: 'Save',
     create: 'Create',
     edit: 'Edit',

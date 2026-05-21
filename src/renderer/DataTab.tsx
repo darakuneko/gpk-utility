@@ -256,12 +256,11 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
         <div className="p-4 text-text-primary dark:text-white">
             {device && (
                 <>
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex gap-2 mb-2">
                         <input
                             type="text"
                             value={filename}
                             onChange={(e): void => { setFilename(e.target.value); setConfirmingOverwrite(false); }}
-                            placeholder={t('data.saveHint')}
                             onKeyDown={(e): void => { if (e.key === 'Enter') void handleCreate(); }}
                             disabled={isEditingActive}
                             className={`flex-1 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${DISABLED_CLS}`}
@@ -275,6 +274,7 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
                             {confirmingOverwrite ? t('data.overwriteConfirm') : t('data.create')}
                         </button>
                     </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{t('data.usageHint')}</p>
 
                     <div className="border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-200 dark:divide-gray-700">
                         <div className="flex items-center gap-2 px-3 py-2">

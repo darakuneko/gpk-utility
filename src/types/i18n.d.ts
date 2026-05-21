@@ -164,7 +164,7 @@ export interface LocaleMessages {
     layerColorPickerDescription: string;
   };
   data: {
-    saveHint: string;
+    usageHint: string;
     save: string;
     create: string;
     edit: string;
