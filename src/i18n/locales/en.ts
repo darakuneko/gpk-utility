@@ -83,8 +83,6 @@ const enMessages: LocaleMessages = {
     application: 'Application',
     layer: 'Layer',
     config: 'Config',
-    noConfig: '--- None ---',
-    autoLayerOnDisabled: 'Disabled while Auto Layer Switching is ON',
     configEditMode: 'Config Edit Mode'
   },
   timer: {
@@ -143,13 +141,10 @@ const enMessages: LocaleMessages = {
   },
   data: {
     usageHint: 'After creating with a name, press the Edit button to switch to edit mode, then adjust the parameters while operating your target app.',
-    save: 'Save',
     create: 'Create',
     edit: 'Edit',
     editing: 'Editing',
     overwriteConfirm: 'Overwrite?',
-    apply: 'Apply',
-    applyConfirm: 'Apply?',
     noSaves: 'No saved configs',
     default: 'Default',
     view: 'View'

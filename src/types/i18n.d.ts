@@ -84,8 +84,6 @@ export interface LocaleMessages {
     application: string;
     layer: string;
     config: string;
-    noConfig: string;
-    autoLayerOnDisabled: string;
     configEditMode: string;
   };
   timer: {
@@ -165,13 +163,10 @@ export interface LocaleMessages {
   };
   data: {
     usageHint: string;
-    save: string;
     create: string;
     edit: string;
     editing: string;
     overwriteConfirm: string;
-    apply: string;
-    applyConfirm: string;
     noSaves: string;
     default: string;
     view: string;

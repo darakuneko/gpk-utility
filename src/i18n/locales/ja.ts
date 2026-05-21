@@ -83,8 +83,6 @@ const jaMessages: LocaleMessages = {
     application: 'アプリケーション',
     layer: 'レイヤー',
     config: '設定',
-    noConfig: '--- なし ---',
-    autoLayerOnDisabled: '自動レイヤー切替がONの間は編集不可',
     configEditMode: 'コンフィグ編集モード'
   },
   timer: {
@@ -143,13 +141,10 @@ const jaMessages: LocaleMessages = {
   },
   data: {
     usageHint: '名前を付けて作成後、編集ボタンを押して編集モードに切り替え、使用したいアプリを操作しながらパラメーターを調整してください',
-    save: '保存',
     create: '作成',
     edit: '編集',
     editing: '編集中',
     overwriteConfirm: '上書き？',
-    apply: '適用',
-    applyConfirm: '適用？',
     noSaves: '保存済み設定がありません',
     default: 'デフォルト',
     view: 'ビュー'

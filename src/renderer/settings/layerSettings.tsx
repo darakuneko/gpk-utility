@@ -287,7 +287,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode 
                 ...(localActiveWindows.map((w): string => w.application) || []),
                 ...(state.activeWindow || [])
             ])
-        ];
+        ].filter((w): boolean => Boolean(w && w.trim()));
 
         const baseOptions = [{ value: "", label: "--- Select Application ---" }];
         const windowOptions = windowsList.map((window): { value: string; label: string } => ({
@@ -317,15 +317,18 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode 
 
     const getConfigOptions = (): Array<{ value: string; label: string }> => {
         return [
-            { value: '', label: t('layer.noConfig') },
-            ...savedConfigs.map((c): { value: string; label: string } => ({ value: c.id, label: c.name }))
+            { value: '', label: t('data.default') },
+            ...savedConfigs
+                .filter((c): boolean => c.name !== BASELINE_CONFIG_NAME)
+                .map((c): { value: string; label: string } => ({ value: c.id, label: c.name }))
         ];
     };
 
     const getConfigName = (configId: string | undefined): string => {
-        if (!configId) return '---';
+        if (!configId) return t('data.default');
         const config = savedConfigs.find((c): boolean => c.id === configId);
-        return config?.name ?? '---';
+        if (!config || config.name === BASELINE_CONFIG_NAME) return t('data.default');
+        return config.name;
     };
 
     const handleToggleConfigEditMode = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
