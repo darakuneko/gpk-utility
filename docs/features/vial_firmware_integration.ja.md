@@ -16,7 +16,7 @@
 
 **前提条件**:
 - QMK / Vial ファームウェアの基本的な知識
-- `darakuneko/vial-qmk` の `gpk-utility` ブランチを使用する
+- `darakuneko/vial-qmk` の `gpk-utility` ブランチを使用する（クローン/チェックアウト手順は [§2.1 vial-qmk ブランチ](#21-vial-qmk-ブランチ) 参照）
 - 参考実装: `https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento_max` (macropad_tp_btns 型)
 
 **注意**: アプリが複数の通信ソフト (Vial アプリ等) と競合する。GPK Utility 起動前に他アプリを終了すること。

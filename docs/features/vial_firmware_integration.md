@@ -16,7 +16,7 @@
 
 **Prerequisites**:
 - Basic knowledge of QMK / Vial firmware
-- Use the `gpk-utility` branch of `darakuneko/vial-qmk`
+- Use the `gpk-utility` branch of `darakuneko/vial-qmk` — see [§2.1 vial-qmk Branch](#21-vial-qmk-branch) for the clone/checkout steps
 - Reference implementation: `https://github.com/darakuneko/keyboard/tree/main/qmk/numnum_bento_max` (macropad_tp_btns type)
 
 **Note**: The app conflicts with other communication software (the Vial app, etc.). Close other apps before launching GPK Utility.
