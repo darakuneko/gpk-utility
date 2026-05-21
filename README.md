@@ -124,6 +124,16 @@ Configure touchpad gesture settings
 - **Pinch Term**: Interval before the next pinch gesture can be recognized (0–500 ms)
 - **Pinch Distance**: Minimum distance required to recognize the next pinch gesture (0–500)
 
+#### Config Edit Mode
+Save and apply per-device trackpad configuration presets.
+
+- **Save**: Save the current Mouse / Scroll / Drag & Drop / Gesture settings under a name. Saving with an existing name asks for overwrite confirmation.
+- **Default**: The baseline configuration. Apply restores the device to this baseline.
+- **Apply**: Temporarily applies the selected preset to the device for live preview. The app verifies the device received the values, showing "Applying..." during the process and the result afterward.
+- **View**: Show the saved values.
+- **Rename**: Click a preset name to rename it.
+- **Delete**: Remove a preset.
+
 ### Application Settings
 
 - **Language**: Change the application language
