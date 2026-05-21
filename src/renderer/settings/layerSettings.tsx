@@ -511,6 +511,8 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode 
                             </div>
                         </div>
 
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t('layer.appSelectHint')}</p>
+
                         {layerSettings.length > 0 ? (
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

@@ -77,6 +77,7 @@ const enMessages: LocaleMessages = {
     layerNumber: 'Layer {{number}}',
     noMappingsEnabledHint: 'No application mappings configured yet. Disable Auto Layer to add mappings.',
     appLayerMappings: 'Application Layer Mappings',
+    appSelectHint: 'If the application you want is not listed, activate its window once and try again.',
     addMapping: 'Add Mapping',
     actions: 'Actions',
     noMappingsFound: 'No mappings found. Click "Add Mapping" to create a new mapping.',

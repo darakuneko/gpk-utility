@@ -77,6 +77,7 @@ const jaMessages: LocaleMessages = {
     layerNumber: 'レイヤー {{number}}',
     noMappingsEnabledHint: 'アプリケーションマッピングが設定されていません。マッピングを追加するには自動レイヤーを無効にしてください。',
     appLayerMappings: 'アプリケーションレイヤーマッピング',
+    appSelectHint: 'アプリケーションの選択一覧に使用したいものが表示されない場合は、一度対象のウィンドウをアクティブにしてから再度お試しください',
     addMapping: 'マッピングを追加',
     actions: 'アクション',
     noMappingsFound: 'マッピングが見つかりません。「マッピングを追加」をクリックして新しいマッピングを作成してください。',

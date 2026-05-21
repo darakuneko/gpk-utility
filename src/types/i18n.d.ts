@@ -78,6 +78,7 @@ export interface LocaleMessages {
     layerNumber: string;
     noMappingsEnabledHint: string;
     appLayerMappings: string;
+    appSelectHint: string;
     addMapping: string;
     actions: string;
     noMappingsFound: string;
