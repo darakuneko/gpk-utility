@@ -166,6 +166,9 @@ export interface LocaleMessages {
   data: {
     saveHint: string;
     save: string;
+    create: string;
+    edit: string;
+    editing: string;
     overwriteConfirm: string;
     apply: string;
     applyConfirm: string;

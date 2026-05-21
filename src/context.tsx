@@ -7,13 +7,16 @@ interface AppState {
     init: boolean;
     devices: Device[];
     activeWindow: string[];
+    // Device whose trackpad is being live-edited; readbacks must not overwrite its trackpad.
+    liveEditDeviceId: string | null;
 }
 
-type AppAction = 
-    | { type: 'SET_DEVICES'; payload: Device[] }
+type AppAction =
+    | { type: 'SET_DEVICES'; payload: Device[]; fromReadback?: boolean }
     | { type: 'UPDATE_DEVICE_CONFIG'; payload: { deviceId: string; config: Partial<DeviceConfig> } }
     | { type: 'SET_ACTIVE_WINDOW'; payload: string[] }
-    | { type: 'SET_INIT'; payload: boolean };
+    | { type: 'SET_INIT'; payload: boolean }
+    | { type: 'SET_LIVE_EDIT_DEVICE'; payload: string | null };
 
 interface StateContextValue {
     state: AppState;
@@ -29,24 +32,49 @@ const _ACTION_TYPES = {
     SET_DEVICES: 'SET_DEVICES',
     UPDATE_DEVICE_CONFIG: 'UPDATE_DEVICE_CONFIG',
     SET_ACTIVE_WINDOW: 'SET_ACTIVE_WINDOW',
-    SET_INIT: 'SET_INIT'
+    SET_INIT: 'SET_INIT',
+    SET_LIVE_EDIT_DEVICE: 'SET_LIVE_EDIT_DEVICE'
 }
 
 const initialState: AppState = {
     init: true,
     devices: [],
-    activeWindow: []
+    activeWindow: [],
+    liveEditDeviceId: null
 };
 
 // Implementation of reducer
 const reducer = (state: AppState, action: AppAction): AppState => {
     switch (action.type) {
-        case 'SET_DEVICES':
+        case 'SET_DEVICES': {
+            const incoming = Array.isArray(action.payload) ? action.payload : state.devices;
+            // A device readback must not overwrite the trackpad of a config being live-edited;
+            // keep the in-state (user-tuned) trackpad for that device.
+            if (action.fromReadback && state.liveEditDeviceId) {
+                const pinnedTrackpad = state.devices.find((d): boolean => d.id === state.liveEditDeviceId)?.config?.trackpad;
+                if (pinnedTrackpad) {
+                    return {
+                        ...state,
+                        devices: incoming.map((d): Device =>
+                            d.id === state.liveEditDeviceId && d.config
+                                ? { ...d, config: { ...d.config, trackpad: pinnedTrackpad } }
+                                : d
+                        )
+                    };
+                }
+            }
             return {
                 ...state,
-                devices: Array.isArray(action.payload) ? action.payload : state.devices
+                devices: incoming
             };
-            
+        }
+
+        case 'SET_LIVE_EDIT_DEVICE':
+            return {
+                ...state,
+                liveEditDeviceId: action.payload
+            };
+
         case 'UPDATE_DEVICE_CONFIG': {
             const { deviceId, config } = action.payload;
             return {

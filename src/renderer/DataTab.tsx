@@ -12,6 +12,8 @@ interface DataTabProps {
     device: Device | null;
     filename?: string;
     onFilenameChange?: (v: string) => void;
+    editingConfigId?: string | null;
+    onEditingChange?: (configId: string | null) => void;
 }
 
 const TRACKPAD_SAVE_KEYS: ReadonlyArray<keyof TrackpadConfig> = [
@@ -39,11 +41,15 @@ const VIEW_GROUPS: ReadonlyArray<{ tabKey: 'mouse' | 'dragDrop' | 'scroll' | 'ge
 
 const btnSmall = "px-3 py-1 text-xs text-white rounded";
 const btnOutline = "px-3 py-1 text-xs rounded border border-blue-500 text-blue-500 hover:bg-blue-500/10";
+const DISABLED_CLS = "disabled:opacity-50 disabled:cursor-not-allowed";
 
-// Confirm-key sentinel for the read-only "Default" row (it has no SavedConfig id).
-const CURRENT_APPLY_KEY = '__current__';
+// Keep only the persistable trackpad keys from a (possibly fuller) config.
+const filterTrackpadByKeys = (src: TrackpadConfig): TrackpadConfig =>
+    Object.fromEntries(
+        TRACKPAD_SAVE_KEYS.filter((k): boolean => src[k] !== undefined).map((k): [string, unknown] => [k, src[k]])
+    ) as TrackpadConfig;
 
-const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename, onFilenameChange }): JSX.Element => {
+const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename, onFilenameChange, editingConfigId: controlledEditingConfigId, onEditingChange }): JSX.Element => {
     const { t } = useLanguage();
     const { state, setState } = useStateContext();
     const [localFilename, setLocalFilename] = useState('');
@@ -53,14 +59,22 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
         onFilenameChange?.(v);
     }, [controlledFilename, onFilenameChange]);
     const [allConfigs, setAllConfigs] = useState<SavedConfig[]>([]);
+    // Inline rename of a saved config's name (distinct from the live-edit mode below).
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState('');
     const [viewingConfig, setViewingConfig] = useState<TrackpadConfig | null>(null);
     const [viewingName, setViewingName] = useState('');
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
     const [confirmingOverwrite, setConfirmingOverwrite] = useState(false);
-    const [confirmingApplyId, setConfirmingApplyId] = useState<string | null>(null);
     const [isApplying, setIsApplying] = useState(false);
+    // Live-edit mode: the config currently being tuned via the Mouse/Scroll/Gesture tabs.
+    const [localEditingConfigId, setLocalEditingConfigId] = useState<string | null>(null);
+    const editingConfigId = controlledEditingConfigId !== undefined ? controlledEditingConfigId : localEditingConfigId;
+    const setEditingConfigId = useCallback((v: string | null): void => {
+        if (controlledEditingConfigId === undefined) setLocalEditingConfigId(v);
+        onEditingChange?.(v);
+    }, [controlledEditingConfigId, onEditingChange]);
+    const isEditingActive = editingConfigId !== null;
 
     useEffect((): void => {
         void window.api.listSavedConfigs().then(setAllConfigs);
@@ -70,7 +84,8 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
     const baselineConfig = allConfigs.find((c): boolean => c.deviceId === (device?.id ?? '') && c.name === BASELINE_CONFIG_NAME);
     const defaultTrackpad = baselineConfig?.config?.trackpad ?? null;
 
-    const handleSave = async (): Promise<void> => {
+    // Create a new saved config, seeded with the Default (baseline) values.
+    const handleCreate = async (): Promise<void> => {
         if (!device?.config || !filename.trim()) return;
         const trimmedName = filename.trim();
         const existing = deviceConfigs.find((c): boolean => c.name === trimmedName);
@@ -79,10 +94,8 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
             return;
         }
 
-        const src = device.config.trackpad ?? {};
-        const filteredTrackpad = Object.fromEntries(
-            TRACKPAD_SAVE_KEYS.filter((k): boolean => src[k] !== undefined).map((k): [string, unknown] => [k, src[k]])
-        ) as TrackpadConfig;
+        const src = defaultTrackpad ?? device.config.trackpad ?? {};
+        const filteredTrackpad = filterTrackpadByKeys(src);
         const entry: SavedConfig = {
             id: existing?.id ?? crypto.randomUUID(),
             name: trimmedName,
@@ -120,32 +133,17 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
         }));
     };
 
-    // Apply a saved config (or the current values) to the device and load it into the
-    // editable state for further tuning. entry === null targets the "Default" row.
-    const handleApply = async (entry: SavedConfig | null): Promise<void> => {
-        if (!device?.config?.trackpad || isApplying) return;
-        const key = entry?.id ?? CURRENT_APPLY_KEY;
-        if (confirmingApplyId !== key) {
-            setConfirmingApplyId(key);
-            return;
-        }
-        setConfirmingApplyId(null);
-
-        const mergedTrackpad: TrackpadConfig = entry
-            ? { ...device.config.trackpad, ...entry.config.trackpad }
-            : { ...device.config.trackpad, ...(defaultTrackpad ?? {}) };
+    // Send a trackpad config to the device without persisting it, surfacing the apply status.
+    const applyConfigLive = async (mergedTrackpad: TrackpadConfig): Promise<void> => {
+        if (!device?.config) return;
         const updatedDevice: Device = {
             ...device,
             config: { ...device.config, trackpad: mergedTrackpad } as DeviceConfig
         };
-
         setState({
             ...state,
             devices: state.devices.map((d): Device => d.id === device.id ? updatedDevice : d)
         });
-
-        setFilename(entry?.name ?? '');
-        setConfirmingOverwrite(false);
 
         setIsApplying(true);
         dispatchApplyStatus(device.id, false, true);
@@ -162,7 +160,42 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
         dispatchApplyStatus(device.id, success, false);
     };
 
+    // Toggle live-edit mode for a saved config.
+    // Enter: apply the config to the device for live tuning via the Mouse/Scroll/Gesture tabs.
+    // Exit: persist the tuned values back into the config, then reset the device to Default.
+    const handleEdit = async (entry: SavedConfig): Promise<void> => {
+        if (!device?.config?.trackpad || isApplying) return;
+
+        if (editingConfigId === entry.id) {
+            const updated: SavedConfig = {
+                ...entry,
+                config: {
+                    trackpad: { ...entry.config.trackpad, ...filterTrackpadByKeys(device.config.trackpad) },
+                    pomodoro: entry.config.pomodoro ?? {}
+                },
+                savedAt: Date.now()
+            };
+            try {
+                await window.api.saveConfig(updated);
+                setAllConfigs((prev): SavedConfig[] => prev.map((c): SavedConfig => c.id === updated.id ? updated : c));
+            } catch {
+                // keep going even if the persist fails; device still resets below
+            }
+            setEditingConfigId(null);
+            await applyConfigLive({ ...device.config.trackpad, ...(defaultTrackpad ?? {}) });
+            return;
+        }
+
+        setEditingConfigId(entry.id);
+        setConfirmingOverwrite(false);
+        await applyConfigLive({ ...device.config.trackpad, ...entry.config.trackpad });
+    };
+
+    const editBtnClass = (active: boolean): string =>
+        `${active ? `${btnSmall} bg-blue-500 hover:bg-blue-600` : btnOutline} ${DISABLED_CLS}`;
+
     const startEditing = (entry: SavedConfig): void => {
+        if (isEditingActive) return;
         setEditingId(entry.id);
         setEditingName(entry.name);
     };
@@ -229,16 +262,17 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
                             value={filename}
                             onChange={(e): void => { setFilename(e.target.value); setConfirmingOverwrite(false); }}
                             placeholder={t('data.saveHint')}
-                            onKeyDown={(e): void => { if (e.key === 'Enter') void handleSave(); }}
-                            className="flex-1 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onKeyDown={(e): void => { if (e.key === 'Enter') void handleCreate(); }}
+                            disabled={isEditingActive}
+                            className={`flex-1 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${DISABLED_CLS}`}
                         />
                         <button
-                            onClick={(): void => { void handleSave(); }}
+                            onClick={(): void => { void handleCreate(); }}
                             onBlur={(): void => setConfirmingOverwrite(false)}
-                            disabled={!filename.trim()}
-                            className={`${btnSmall} ${confirmingOverwrite ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-500 hover:bg-blue-600'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                            disabled={!filename.trim() || isEditingActive}
+                            className={`${btnSmall} ${confirmingOverwrite ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-500 hover:bg-blue-600'} ${DISABLED_CLS}`}
                         >
-                            {confirmingOverwrite ? t('data.overwriteConfirm') : t('data.save')}
+                            {confirmingOverwrite ? t('data.overwriteConfirm') : t('data.create')}
                         </button>
                     </div>
 
@@ -251,19 +285,13 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
                                 <>
                                     <button
                                         onClick={(): void => openView(defaultTrackpad, t('data.default'))}
-                                        className={btnOutline}
+                                        disabled={isEditingActive}
+                                        className={`${btnOutline} ${DISABLED_CLS}`}
                                     >
                                         {t('data.view')}
                                     </button>
-                                    <button
-                                        onClick={(): void => { void handleApply(null); }}
-                                        onBlur={(): void => setConfirmingApplyId(null)}
-                                        disabled={isApplying}
-                                        className={`${btnOutline} disabled:opacity-50 disabled:cursor-not-allowed`}
-                                    >
-                                        {confirmingApplyId === CURRENT_APPLY_KEY ? t('data.applyConfirm') : t('data.apply')}
-                                    </button>
-                                    {/* Spacer to align View/Apply with the Delete-bearing rows below */}
+                                    {/* Default is read-only: spacers keep View aligned with the Edit/Delete columns below */}
+                                    <span className={`${btnOutline} invisible`} aria-hidden="true">{t('data.edit')}</span>
                                     <span className={`${btnSmall} invisible`} aria-hidden="true">{t('common.delete')}</span>
                                 </>
                             )}
@@ -288,7 +316,7 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
                                         />
                                     ) : (
                                         <span
-                                            className="flex-1 text-sm truncate cursor-pointer hover:text-blue-500"
+                                            className={`flex-1 text-sm truncate ${isEditingActive ? 'cursor-not-allowed' : 'cursor-pointer hover:text-blue-500'}`}
                                             onClick={(): void => startEditing(entry)}
                                             title={entry.name}
                                         >
@@ -297,22 +325,23 @@ const DataTab: React.FC<DataTabProps> = ({ device, filename: controlledFilename,
                                     )}
                                     <button
                                         onClick={(): void => openView(entry.config.trackpad, entry.name)}
-                                        className={btnOutline}
+                                        disabled={isEditingActive}
+                                        className={`${btnOutline} ${DISABLED_CLS}`}
                                     >
                                         {t('data.view')}
                                     </button>
                                     <button
-                                        onClick={(): void => { void handleApply(entry); }}
-                                        onBlur={(): void => setConfirmingApplyId(null)}
-                                        disabled={isApplying}
-                                        className={`${btnOutline} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        onClick={(): void => { void handleEdit(entry); }}
+                                        disabled={isApplying || (isEditingActive && editingConfigId !== entry.id)}
+                                        className={editBtnClass(editingConfigId === entry.id)}
                                     >
-                                        {confirmingApplyId === entry.id ? t('data.applyConfirm') : t('data.apply')}
+                                        {editingConfigId === entry.id ? t('data.editing') : t('data.edit')}
                                     </button>
                                     <button
                                         onClick={(): void => { void handleDelete(entry); }}
                                         onBlur={(): void => setConfirmingDeleteId(null)}
-                                        className={`${btnSmall} bg-red-500 hover:bg-red-600`}
+                                        disabled={isEditingActive}
+                                        className={`${btnSmall} bg-red-500 hover:bg-red-600 ${DISABLED_CLS}`}
                                     >
                                         {confirmingDeleteId === entry.id ? t('common.deleteConfirm') : t('common.delete')}
                                     </button>

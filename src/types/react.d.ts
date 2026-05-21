@@ -36,6 +36,7 @@ export interface CustomSwitchProps {
   checked?: boolean;
   onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
   label?: string;
+  disabled?: boolean;
 }
 
 // Custom Select Props

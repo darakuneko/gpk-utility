@@ -23,6 +23,8 @@ interface SettingEditProps {
     setActiveTab?: (tabId: string) => void;
     isConfigEditMode?: boolean;
     onConfigEditModeChange?: (enabled: boolean) => void;
+    editingConfigId?: string | null;
+    onEditingChange?: (configId: string | null) => void;
 }
 
 const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.Element => {
@@ -334,6 +336,8 @@ const SettingEdit: React.FC<SettingEditProps> = ((props: SettingEditProps): JSX.
                                 configEditFilename={configEditFilename}
                                 onConfigEditFilenameChange={setConfigEditFilename}
                                 {...(props.onConfigEditModeChange !== undefined && { onConfigEditModeChange: props.onConfigEditModeChange })}
+                                {...(props.editingConfigId !== undefined && { editingConfigId: props.editingConfigId })}
+                                {...(props.onEditingChange !== undefined && { onEditingChange: props.onEditingChange })}
                             />
                         )}
 

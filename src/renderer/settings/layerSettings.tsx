@@ -22,9 +22,11 @@ interface LayerSettingsProps {
     onConfigEditModeChange?: (enabled: boolean) => void;
     configEditFilename?: string;
     onConfigEditFilenameChange?: (v: string) => void;
+    editingConfigId?: string | null;
+    onEditingChange?: (configId: string | null) => void;
 }
 
-const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode = false, onAutoLayerEnabledChange, onConfigEditModeChange, configEditFilename, onConfigEditFilenameChange }): JSX.Element => {
+const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode = false, onAutoLayerEnabledChange, onConfigEditModeChange, configEditFilename, onConfigEditFilenameChange, editingConfigId, onEditingChange }): JSX.Element => {
     const { state, setState } = useStateContext();
     const { t } = useLanguage();
     const [layerSettings, setLayerSettings] = useState<LayerSetting[]>([]);
@@ -404,24 +406,27 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode 
                             id="config-can_trackpad_layer"
                             onChange={handleToggleTrackpadLayer}
                             checked={trackpadLayerEnabled}
+                            disabled={editingConfigId != null}
                         />
                     </div>
                 </div>
             )}
 
             <div className={`${device.deviceType === DeviceType.KEYBOARD_TP ? "border-t dark:border-gray-700 pt-4 mt-4" : ""}`}>
-                <div className="flex items-center mb-4">
-                    <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.autoSwitching')}</h3>
+                {!isConfigEditMode && (
+                    <div className="flex items-center mb-4">
+                        <div className="flex-1">
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('layer.autoSwitching')}</h3>
+                        </div>
+                        <div className="ml-4">
+                            <CustomSwitch
+                                id="config-auto_layer_enabled"
+                                onChange={handleToggleEnabled}
+                                checked={isEnabled}
+                            />
+                        </div>
                     </div>
-                    <div className="ml-4">
-                        <CustomSwitch
-                            id="config-auto_layer_enabled"
-                            onChange={handleToggleEnabled}
-                            checked={isEnabled}
-                        />
-                    </div>
-                </div>
+                )}
 
                 <div className="flex items-center mb-4">
                     <div className="flex-1">
@@ -432,6 +437,7 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode 
                             id="config-edit-mode"
                             onChange={handleToggleConfigEditMode}
                             checked={isConfigEditMode}
+                            disabled={editingConfigId != null}
                         />
                     </div>
                 </div>
@@ -441,6 +447,8 @@ const LayerSettings: React.FC<LayerSettingsProps> = ({ device, isConfigEditMode 
                         device={device}
                         {...(configEditFilename !== undefined && { filename: configEditFilename })}
                         {...(onConfigEditFilenameChange !== undefined && { onFilenameChange: onConfigEditFilenameChange })}
+                        {...(editingConfigId !== undefined && { editingConfigId })}
+                        {...(onEditingChange !== undefined && { onEditingChange })}
                     />
                 ) : isEnabled ? (
                     <div className="mt-4">

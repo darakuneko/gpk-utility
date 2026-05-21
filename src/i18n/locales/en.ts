@@ -144,6 +144,9 @@ const enMessages: LocaleMessages = {
   data: {
     saveHint: 'Mouse / Scroll / Gesture',
     save: 'Save',
+    create: 'Create',
+    edit: 'Edit',
+    editing: 'Editing',
     overwriteConfirm: 'Overwrite?',
     apply: 'Apply',
     applyConfirm: 'Apply?',

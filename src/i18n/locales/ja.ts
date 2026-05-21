@@ -144,6 +144,9 @@ const jaMessages: LocaleMessages = {
   data: {
     saveHint: 'マウス・スクロール・ジェスチャーを保存',
     save: '保存',
+    create: '作成',
+    edit: '編集',
+    editing: '編集中',
     overwriteConfirm: '上書き？',
     apply: '適用',
     applyConfirm: '適用？',

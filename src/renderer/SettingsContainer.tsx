@@ -12,7 +12,10 @@ import SettingEdit from "./settingEdit.tsx"
 import { HamburgerIcon, MenuItem, LeftMenuItem } from "./SettingsUIComponents.tsx"
 import { getSupportedSettingTabs } from "./SettingsDeviceUtils.ts"
 
-const CONFIG_EDIT_ALLOWED_TABS = new Set(['mouse', 'scroll', 'gesture', 'layer']);
+// Config Edit Mode shows only the Layer tab; Mouse/Scroll/Gesture appear only while
+// live-editing a config, so its trackpad values can be tuned.
+const CONFIG_EDIT_TABS = new Set(['layer']);
+const CONFIG_EDIT_LIVE_TABS = new Set(['layer', 'mouse', 'scroll', 'gesture']);
 
 interface SettingsContainerProps {
     saveStatus?: {
@@ -30,6 +33,7 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
     
     const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null)
     const [isConfigEditMode, setIsConfigEditMode] = useState(false)
+    const [editingConfigId, setEditingConfigId] = useState<string | null>(null)
     const [activeSettingTab, setActiveSettingTab] = useState("mouse")
     const [userSelectedTab, setUserSelectedTab] = useState(false) // Flag to track manual tab selection
     const [menuOpen, setMenuOpen] = useState(false)
@@ -74,7 +78,17 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
         
         void loadTraySettings();
     }, []);
-    
+
+    // Abandon any in-progress live-edit when the active device changes.
+    useEffect((): void => {
+        setEditingConfigId(null);
+    }, [activeDeviceId]);
+
+    // Tell the reducer which device is being live-edited, so readbacks won't overwrite its trackpad.
+    useEffect((): void => {
+        dispatch({ type: 'SET_LIVE_EDIT_DEVICE', payload: editingConfigId !== null ? activeDeviceId : null });
+    }, [editingConfigId, activeDeviceId, dispatch]);
+
     // Set active tab on initial display or when connected devices change
     useEffect((): void => {
         const checkDevices = (): void => {
@@ -170,11 +184,12 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                 payload: { deviceId: data.deviceId, config: data.config }
             });
         });
-        
+
         window.api.on("changeConnectDevice", (devices: Device[]): void => {
             dispatch({
                 type: "SET_DEVICES",
-                payload: devices
+                payload: devices,
+                fromReadback: true
             });
         });
         
@@ -229,7 +244,8 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
         const device = getActiveDevice();
         const all = getSupportedSettingTabs(device, t, DeviceType);
         if (!isConfigEditMode) return all;
-        return all.filter((tab): boolean => CONFIG_EDIT_ALLOWED_TABS.has(tab.id));
+        const allowed = editingConfigId !== null ? CONFIG_EDIT_LIVE_TABS : CONFIG_EDIT_TABS;
+        return all.filter((tab): boolean => allowed.has(tab.id));
     }
 
     // Handler to close menu when clicking outside
@@ -497,9 +513,19 @@ const SettingsContainer: React.FC<SettingsContainerProps> = ({ saveStatus }): JS
                                     activeTab={activeSettingTab}
                                     setActiveTab={handleSettingTabChange}
                                     isConfigEditMode={isConfigEditMode}
+                                    editingConfigId={editingConfigId}
+                                    onEditingChange={(configId): void => {
+                                        setEditingConfigId(configId);
+                                        // The Mouse/Scroll/Gesture tabs disappear when editing ends;
+                                        // fall back to the Layer tab if one of them is active.
+                                        if (configId === null && activeSettingTab !== 'layer') {
+                                            handleSettingTabChange('layer');
+                                        }
+                                    }}
                                     onConfigEditModeChange={(enabled): void => {
                                         setIsConfigEditMode(enabled);
-                                        if (enabled && !CONFIG_EDIT_ALLOWED_TABS.has(activeSettingTab)) {
+                                        setEditingConfigId(null);
+                                        if (enabled && activeSettingTab !== 'layer') {
                                             handleSettingTabChange('layer');
                                         }
                                     }}
